@@ -51,7 +51,31 @@ export function statusLabel(value?: string | null) {
     approved: "已通过",
     rejected: "已拒绝",
     published: "已发布",
-    unpublished: "未发布"
+    unpublished: "未发布",
+    usable: "可用",
+    waiting: "等待抓取",
+    backoff: "退避中",
+    fetch_failed: "抓取失败",
+    missing_publish_time: "缺少发布时间",
+    invalid_original_url: "原文链接无效",
+    no_current_items: "无最近 24 小时内容",
+    no_accepted_items: "无有效条目",
+    mostly_duplicates: "重复内容偏多"
+  });
+}
+
+export function diagnosticStatusLabel(value?: string | null) {
+  return lookup(value, {
+    usable: "可用",
+    waiting: "等待抓取",
+    backoff: "退避中",
+    fetch_failed: "抓取失败",
+    missing_publish_time: "缺少发布时间",
+    invalid_original_url: "原文链接无效",
+    no_current_items: "无最近 24 小时内容",
+    no_accepted_items: "无有效条目",
+    mostly_duplicates: "重复内容偏多",
+    disabled: "已停用"
   });
 }
 

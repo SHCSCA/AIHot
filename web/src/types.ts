@@ -35,6 +35,51 @@ export type SourceState = {
   noiseRatio: number;
 };
 
+export type SourceDiagnostic = {
+  sourceId: string;
+  sourceName: string;
+  channel: string;
+  tier: string;
+  enabled: boolean;
+  diagnosticStatus: string;
+  diagnosticLabel: string;
+  healthScore: number;
+  errorStreak: number;
+  duplicateRatio: number;
+  noiseRatio: number;
+  nextFetchAt: string | null;
+  lastSuccessAt: string | null;
+  lastErrorAt: string | null;
+  backoffUntil: string | null;
+  rawCount24h: number;
+  lastRun: {
+    id: string;
+    status: string;
+    startedAt: string | null;
+    finishedAt: string | null;
+    httpStatus: number | null;
+    contentType: string | null;
+    bytesReceived: number;
+    itemCount: number;
+    candidateItems: number;
+    acceptedItems: number;
+    skippedOldItems: number;
+    skippedMissingDate: number;
+    skippedInvalidOriginalUrl: number;
+    errorMessage: string | null;
+  } | null;
+  lastJob: Job | null;
+  screening: {
+    latestStatus: string | null;
+    latestBucket: string | null;
+    latestReasonCode: string | null;
+    latestReason: string | null;
+    latestAt: string | null;
+    accepted24h: number;
+    rejected24h: number;
+  };
+};
+
 export type Job = {
   id: string;
   sourceId: string;

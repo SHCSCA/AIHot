@@ -12,6 +12,7 @@ import type {
   PublicEvent,
   PublicEventDetail,
   Source,
+  SourceDiagnostic,
   SourceState,
   StrategyVersion
 } from "./types";
@@ -114,6 +115,12 @@ export class AdminApi {
   async listSourceStates(channel?: string): Promise<SourceState[]> {
     return (await this.request<{ sourceStates: SourceState[] }>(`/api/v1/internal/source-states${query({ channel })}`))
       .sourceStates;
+  }
+
+  async listSourceDiagnostics(channel?: string): Promise<SourceDiagnostic[]> {
+    return (await this.request<{ sourceDiagnostics: SourceDiagnostic[] }>(
+      `/api/v1/internal/source-diagnostics${query({ channel })}`
+    )).sourceDiagnostics;
   }
 
   async listJobs(filters: { status?: string } = {}): Promise<Job[]> {

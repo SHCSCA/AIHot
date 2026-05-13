@@ -20,10 +20,12 @@ from intel_engine.models import (
     EventClusterRecord,
     FeedbackEventRecord,
     FetchJobRecord,
+    FetchRunRecord,
     ModelScoreRecord,
     NormalizedItemRecord,
     PipelineRunRecord,
     RankedItemRecord,
+    RawDocumentRecord,
     RawScreeningResultRecord,
     SourceRecord,
     SourceStateRecord,
@@ -478,6 +480,21 @@ def internal_source_states(request: Request, channel: str | None = None) -> dict
         return {"sourceStates": states}
 
 
+@router.get("/api/v1/internal/source-diagnostics", dependencies=ADMIN_DEPENDENCIES)
+def internal_source_diagnostics(request: Request, channel: str | None = None) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        stmt = select(SourceRecord, SourceStateRecord).join(
+            SourceStateRecord,
+            SourceStateRecord.source_id == SourceRecord.id,
+        )
+        if channel:
+            stmt = stmt.where(SourceRecord.channel == channel)
+        stmt = stmt.order_by(SourceRecord.channel, SourceRecord.id)
+        diagnostics = [_source_diagnostic_payload(session, source, state) for source, state in session.execute(stmt).all()]
+        return {"sourceDiagnostics": diagnostics}
+
+
 @router.get("/api/v1/internal/jobs", dependencies=ADMIN_DEPENDENCIES)
 def internal_jobs(
     request: Request,
@@ -910,6 +927,192 @@ def _source_state_payload(state: SourceStateRecord, source: SourceRecord) -> dic
         "healthScore": state.health_score,
         "updatedAt": _iso(state.updated_at),
     }
+
+
+def _source_diagnostic_payload(session, source: SourceRecord, state: SourceStateRecord) -> dict[str, object]:
+    latest_run = _latest_fetch_run(session, source.id)
+    latest_job = _latest_fetch_job(session, source.id)
+    latest_screening = _latest_screening_result(session, source.id)
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    accepted_count = _screening_count(session, source.id, "accepted", since)
+    rejected_count = _screening_count(session, source.id, "rejected", since)
+    raw_count = _count(
+        session,
+        select(func.count())
+        .select_from(RawDocumentRecord)
+        .where(RawDocumentRecord.source_id == source.id, RawDocumentRecord.fetched_at >= since),
+    )
+    status = _diagnostic_status(source, state, latest_run, latest_screening)
+    return {
+        "sourceId": source.id,
+        "sourceName": source.name,
+        "channel": source.channel,
+        "tier": source.tier,
+        "enabled": source.enabled,
+        "diagnosticStatus": status,
+        "diagnosticLabel": _diagnostic_label(status),
+        "healthScore": state.health_score,
+        "errorStreak": state.error_streak,
+        "duplicateRatio": state.duplicate_ratio,
+        "noiseRatio": state.noise_ratio,
+        "nextFetchAt": _iso(state.next_fetch_at),
+        "lastSuccessAt": _iso(state.last_success_at),
+        "lastErrorAt": _iso(state.last_error_at),
+        "backoffUntil": _iso(state.backoff_until),
+        "rawCount24h": raw_count,
+        "lastRun": _fetch_run_payload(latest_run),
+        "lastJob": _job_payload(latest_job) if latest_job else None,
+        "screening": _screening_payload(latest_screening, accepted_count, rejected_count),
+    }
+
+
+def _latest_fetch_run(session, source_id: str) -> FetchRunRecord | None:
+    return session.scalar(
+        select(FetchRunRecord)
+        .where(FetchRunRecord.source_id == source_id)
+        .order_by(FetchRunRecord.started_at.desc(), FetchRunRecord.id.desc())
+        .limit(1)
+    )
+
+
+def _latest_fetch_job(session, source_id: str) -> FetchJobRecord | None:
+    return session.scalar(
+        select(FetchJobRecord)
+        .where(FetchJobRecord.source_id == source_id)
+        .order_by(FetchJobRecord.updated_at.desc(), FetchJobRecord.id.desc())
+        .limit(1)
+    )
+
+
+def _latest_screening_result(session, source_id: str) -> RawScreeningResultRecord | None:
+    return session.scalar(
+        select(RawScreeningResultRecord)
+        .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+        .where(RawDocumentRecord.source_id == source_id)
+        .order_by(RawScreeningResultRecord.created_at.desc(), RawScreeningResultRecord.id.desc())
+        .limit(1)
+    )
+
+
+def _screening_count(session, source_id: str, status: str, since: datetime) -> int:
+    return _count(
+        session,
+        select(func.count())
+        .select_from(RawScreeningResultRecord)
+        .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+        .where(
+            RawDocumentRecord.source_id == source_id,
+            RawScreeningResultRecord.screen_status == status,
+            RawScreeningResultRecord.created_at >= since,
+        ),
+    )
+
+
+def _fetch_run_payload(run: FetchRunRecord | None) -> dict[str, object] | None:
+    if run is None:
+        return None
+    metadata = run.metadata_json or {}
+    return {
+        "id": str(run.id),
+        "status": run.status,
+        "startedAt": _iso(run.started_at),
+        "finishedAt": _iso(run.finished_at),
+        "httpStatus": run.http_status,
+        "contentType": run.content_type,
+        "bytesReceived": run.bytes_received,
+        "itemCount": run.item_count,
+        "candidateItems": _metadata_int(metadata, "candidate_items"),
+        "acceptedItems": _metadata_int(metadata, "accepted_items"),
+        "skippedOldItems": _metadata_int(metadata, "skipped_old_items"),
+        "skippedMissingDate": _metadata_int(metadata, "skipped_missing_date"),
+        "skippedInvalidOriginalUrl": _metadata_int(metadata, "skipped_invalid_original_url"),
+        "errorMessage": run.error_message,
+    }
+
+
+def _screening_payload(
+    screening: RawScreeningResultRecord | None,
+    accepted_count: int,
+    rejected_count: int,
+) -> dict[str, object]:
+    return {
+        "latestStatus": screening.screen_status if screening else None,
+        "latestBucket": screening.screen_bucket if screening else None,
+        "latestReasonCode": screening.reason_code if screening else None,
+        "latestReason": screening.reason_cn if screening else None,
+        "latestAt": _iso(screening.created_at) if screening else None,
+        "accepted24h": accepted_count,
+        "rejected24h": rejected_count,
+    }
+
+
+def _diagnostic_status(
+    source: SourceRecord,
+    state: SourceStateRecord,
+    latest_run: FetchRunRecord | None,
+    latest_screening: RawScreeningResultRecord | None,
+) -> str:
+    now = datetime.now(timezone.utc)
+    if not source.enabled:
+        return "disabled"
+    if state.backoff_until and _aware_utc(state.backoff_until) > now:
+        return "backoff"
+    if state.error_streak > 0:
+        return "fetch_failed"
+    if latest_screening:
+        if latest_screening.screen_status == "accepted":
+            return "usable"
+        if latest_screening.reason_code in {"missing_publish_time", "invalid_original_url"}:
+            return latest_screening.reason_code
+    if latest_run:
+        metadata = latest_run.metadata_json or {}
+        if _metadata_int(metadata, "accepted_items") > 0:
+            return "usable"
+        if _metadata_int(metadata, "skipped_missing_date") > 0:
+            return "missing_publish_time"
+        if _metadata_int(metadata, "skipped_invalid_original_url") > 0:
+            return "invalid_original_url"
+        if _metadata_int(metadata, "skipped_old_items") > 0:
+            return "no_current_items"
+        if latest_run.status == "failed":
+            return "fetch_failed"
+        if state.duplicate_ratio >= 0.8:
+            return "mostly_duplicates"
+        return "no_accepted_items"
+    return "waiting"
+
+
+def _diagnostic_label(status: str) -> str:
+    labels = {
+        "usable": "可用",
+        "waiting": "等待抓取",
+        "backoff": "退避中",
+        "fetch_failed": "抓取失败",
+        "missing_publish_time": "缺少发布时间",
+        "invalid_original_url": "原文链接无效",
+        "no_current_items": "无最近 24 小时内容",
+        "no_accepted_items": "无有效条目",
+        "mostly_duplicates": "重复内容偏多",
+        "disabled": "已停用",
+    }
+    return labels.get(status, status)
+
+
+def _metadata_int(metadata: dict[str, object], key: str) -> int:
+    value = metadata.get(key, 0)
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int | float):
+        return int(value)
+    if isinstance(value, str) and value.isdigit():
+        return int(value)
+    return 0
+
+
+def _aware_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def _job_payload(job: FetchJobRecord) -> dict[str, object]:
