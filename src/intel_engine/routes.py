@@ -111,6 +111,16 @@ class FeedbackEventWrite(BaseModel):
     actor: str = "system"
 
 
+class PublicFeedbackWrite(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    item_id: int | None = Field(default=None, alias="itemId")
+    cluster_id: int | None = Field(default=None, alias="clusterId")
+    channel: str
+    feedback_type: str = Field(alias="feedbackType")
+    reason: str = ""
+
+
 class EvaluationRunWrite(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
 
@@ -145,6 +155,9 @@ class PipelineRunWrite(BaseModel):
 
     worker_id: str = Field(default="manual-worker", alias="workerId")
     limit: int = Field(default=10, ge=1, le=100)
+
+
+PUBLIC_FEEDBACK_TYPES = {"false_positive", "false_negative", "promote", "demote", "category_fix"}
 
 
 @router.get("/health")
@@ -287,6 +300,34 @@ def public_sources(
         stmt = stmt.order_by(SourceRecord.channel, SourceRecord.contributor_no, SourceRecord.authority_weight.desc())
         sources = session.scalars(stmt).all()
         return {"sources": [_source_payload(source) for source in sources]}
+
+
+@router.post("/api/v1/public/feedback-events")
+def public_create_feedback_event(request: Request, payload: PublicFeedbackWrite) -> dict[str, object]:
+    reason = payload.reason.strip()
+    if payload.feedback_type not in PUBLIC_FEEDBACK_TYPES:
+        raise HTTPException(status_code=422, detail="unsupported feedback type")
+    if len(reason) < 2:
+        raise HTTPException(status_code=422, detail="feedback reason is required")
+
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        if payload.cluster_id is not None:
+            cluster = session.get(EventClusterRecord, payload.cluster_id)
+            if cluster is None or not _is_public_cluster_ready(session, cluster, require_selected=False):
+                raise HTTPException(status_code=404, detail="event not found")
+        event = FeedbackEventRecord(
+            item_id=payload.item_id,
+            cluster_id=payload.cluster_id,
+            channel=payload.channel,
+            feedback_type=payload.feedback_type,
+            reason=reason,
+            actor="public-user",
+        )
+        session.add(event)
+        session.commit()
+        session.refresh(event)
+        return {"feedbackEvent": _feedback_payload(event)}
 
 
 @router.get("/api/v1/public/events/{event_id}")

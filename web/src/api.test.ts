@@ -117,4 +117,33 @@ describe("PublicApi", () => {
       expect.objectContaining({ headers: expect.not.objectContaining({ Authorization: expect.any(String) }) })
     );
   });
+
+  it("submits public feedback without Basic Auth", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ feedbackEvent: { id: "1", actor: "public-user" } })
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await new PublicApi().submitFeedback({
+      channel: "ai",
+      clusterId: "1",
+      feedbackType: "false_positive",
+      reason: "内容不相关"
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/public/feedback-events",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          channel: "ai",
+          clusterId: "1",
+          feedbackType: "false_positive",
+          reason: "内容不相关"
+        }),
+        headers: expect.not.objectContaining({ Authorization: expect.any(String) })
+      })
+    );
+  });
 });

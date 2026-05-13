@@ -29,7 +29,7 @@ import { formatDateTime, formatMonthDay, formatTime, today } from "../utils";
 import { useAsyncData } from "../hooks";
 
 type PublicChannel = "ai" | "amazon";
-type PublicSection = "selected" | "all" | "daily" | "rss" | "sources";
+type PublicSection = "selected" | "all" | "daily" | "rss" | "sources" | "feedback";
 
 const channels: Record<PublicChannel, { title: string; heading: string; description: string; scope: string }> = {
   ai: {
@@ -51,7 +51,8 @@ const sectionItems: Array<{ id: PublicSection; label: string; Icon: typeof Zap }
   { id: "all", label: "全部热点", Icon: List },
   { id: "daily", label: "日报", Icon: Newspaper },
   { id: "rss", label: "RSS 订阅", Icon: Rss },
-  { id: "sources", label: "信源墙", Icon: Plus }
+  { id: "sources", label: "信源墙", Icon: Plus },
+  { id: "feedback", label: "反馈", Icon: MessageCircle }
 ];
 
 const sourceGroups = [
@@ -96,7 +97,7 @@ export function PublicFrontPage({
   const activeChannel = channels[channel];
 
   useEffect(() => {
-    if (section === "daily" || section === "rss" || section === "sources") return;
+    if (section === "daily" || section === "rss" || section === "sources" || section === "feedback") return;
     let active = true;
     setEventLoading(true);
     api
@@ -240,6 +241,8 @@ export function PublicFrontPage({
           <RssLinks channel={channel} />
         ) : section === "sources" ? (
           <SourceWall api={api} channel={channel} />
+        ) : section === "feedback" ? (
+          <PublicFeedback api={api} channel={channel} />
         ) : (
           <>
             <FilterBar
@@ -439,6 +442,72 @@ function SourceWall({ api, channel }: { api: PublicApi; channel: PublicChannel }
   );
 }
 
+function PublicFeedback({ api, channel }: { api: PublicApi; channel: PublicChannel }) {
+  const [feedbackType, setFeedbackType] = useState("false_positive");
+  const [clusterId, setClusterId] = useState("");
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function submit() {
+    if (reason.trim().length < 2) {
+      setMessage("请补充具体反馈内容。");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await api.submitFeedback({
+        channel,
+        feedbackType,
+        clusterId: clusterId.trim() || undefined,
+        reason: reason.trim()
+      });
+      setReason("");
+      setClusterId("");
+      setMessage("反馈已提交，后台会把它作为质量评估样本。");
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : "反馈提交失败");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <section className="public-feedback dark">
+      <div>
+        <p className="eyebrow">{channelLabel(channel)} 用户反馈</p>
+        <h2>提交质量反馈</h2>
+        <p>反馈只作为质量信号和评估样本，不会直接改动线上评分、精选状态或日报内容。</p>
+      </div>
+      <div className="feedback-form">
+        <label>反馈类型
+          <select value={feedbackType} onChange={(event) => setFeedbackType(event.target.value)}>
+            <option value="false_positive">内容不相关 / 误选</option>
+            <option value="false_negative">漏掉重要信息</option>
+            <option value="category_fix">分类或标签不准</option>
+            <option value="promote">建议提升为精选</option>
+            <option value="demote">推荐价值偏低</option>
+          </select>
+        </label>
+        <label>关联事件 ID（可选）
+          <input value={clusterId} onChange={(event) => setClusterId(event.target.value)} placeholder="可从事件详情中查看" />
+        </label>
+        <label className="feedback-reason">具体说明
+          <textarea
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder="例如：这条内容是旧教程，不属于最近 24 小时新增情报。"
+          />
+        </label>
+        {message && <p className={message.includes("已提交") ? "success" : "error"}>{message}</p>}
+        <button className="primary" onClick={submit} disabled={submitting}>
+          {submitting ? "提交中..." : "提交反馈"}
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function DailyReader({ api, channel }: { api: PublicApi; channel: PublicChannel }) {
   const [date, setDate] = useState(today());
   const { data: daily, error, loading, reload } = useAsyncData<PublicDaily | null>(() => api.getDaily({ channel, date }), null, [channel, date]);
@@ -530,7 +599,8 @@ function sectionTitle(section: PublicSection) {
     all: "全部热点",
     daily: "AI 日报",
     rss: "RSS 订阅",
-    sources: "信源墙"
+    sources: "信源墙",
+    feedback: "反馈"
   }[section];
 }
 
@@ -540,7 +610,8 @@ function sectionDescription(section: PublicSection, fallback: string) {
     all: fallback,
     daily: "基于最近 24 小时精选情报自动生成",
     rss: "把事件流和日报接入你的阅读器",
-    sources: "公开展示已收录和待接入的信源贡献"
+    sources: "公开展示已收录和待接入的信源贡献",
+    feedback: "用户提交的质量信号会进入后台评估"
   }[section];
 }
 

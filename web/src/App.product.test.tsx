@@ -181,7 +181,8 @@ describe("后台产品化界面", () => {
         }
       ]),
       getEventDetail: vi.fn(),
-      getDaily: vi.fn().mockResolvedValue(null)
+      getDaily: vi.fn().mockResolvedValue(null),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
     } as unknown as PublicApi;
 
     render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
@@ -197,6 +198,7 @@ describe("后台产品化界面", () => {
     expect(screen.getByRole("button", { name: "日报" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "RSS 订阅" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "信源墙" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "反馈" })).toBeInTheDocument();
     await waitFor(() => expect(publicApi.listEvents).toHaveBeenCalledWith(expect.objectContaining({ channel: "amazon" })));
   });
 
@@ -252,7 +254,8 @@ describe("后台产品化界面", () => {
         }
       ]),
       getEventDetail: vi.fn(),
-      getDaily: vi.fn().mockResolvedValue(null)
+      getDaily: vi.fn().mockResolvedValue(null),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
     } as unknown as PublicApi;
 
     render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
@@ -267,6 +270,32 @@ describe("后台产品化界面", () => {
     expect(screen.getByText("AIHOT · 001")).toBeInTheDocument();
     expect(screen.getByText("待接入")).toBeInTheDocument();
   }, 10000);
+
+  it("submits public user feedback as a quality signal", async () => {
+    const publicApi = {
+      listEvents: vi.fn().mockResolvedValue({ items: [], count: 0, hasNext: false, nextCursor: null }),
+      listSources: vi.fn().mockResolvedValue([]),
+      getEventDetail: vi.fn(),
+      getDaily: vi.fn().mockResolvedValue(null),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
+    } as unknown as PublicApi;
+
+    render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "反馈" }));
+    fireEvent.change(screen.getByLabelText("具体说明"), { target: { value: "这条内容不够相关" } });
+    await userEvent.click(screen.getByRole("button", { name: "提交反馈" }));
+
+    await waitFor(() =>
+      expect(publicApi.submitFeedback).toHaveBeenCalledWith({
+        channel: "ai",
+        feedbackType: "false_positive",
+        clusterId: undefined,
+        reason: "这条内容不够相关"
+      })
+    );
+    expect(await screen.findByText("反馈已提交，后台会把它作为质量评估样本。")).toBeInTheDocument();
+  });
 
   it("maps platform values to Chinese labels", () => {
     expect(channelLabel("ai")).toBe("AI 热点");

@@ -74,10 +74,26 @@ export class PublicApi {
     return (await this.request<{ sources: Source[] }>(`/api/v1/public/sources${query(filters)}`)).sources;
   }
 
-  private async request<T>(path: string): Promise<T> {
+  async submitFeedback(payload: {
+    channel: string;
+    feedbackType: string;
+    reason: string;
+    clusterId?: string | number | null;
+    itemId?: string | number | null;
+  }): Promise<FeedbackEvent> {
+    return (await this.request<{ feedbackEvent: FeedbackEvent }>("/api/v1/public/feedback-events", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    })).feedbackEvent;
+  }
+
+  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
+      method: init.method,
+      body: init.body,
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...(init.headers ?? {})
       }
     });
     if (!response.ok) throw new ApiError(`请求失败：HTTP ${response.status}`, response.status);

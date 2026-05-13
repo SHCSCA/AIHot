@@ -1329,15 +1329,71 @@ th { background: #f8fafc; color: #667085; }
 }
 
 .daily-reader.dark,
-.rss-grid.dark {
+.rss-grid.dark,
+.public-feedback.dark {
   padding: 20px 0 0;
 }
 
 .daily-document.dark,
-.rss-grid.dark a {
+.rss-grid.dark a,
+.public-feedback.dark {
   border-color: rgba(148, 163, 184, 0.16);
   background: rgba(15, 23, 42, 0.62);
   color: #e2e8f0;
+}
+
+.public-feedback.dark {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(320px, 1.2fr);
+  gap: 24px;
+  padding: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 18px;
+}
+
+.public-feedback.dark h2 {
+  margin: 8px 0;
+  color: #f8fafc;
+  font-size: 30px;
+}
+
+.public-feedback.dark p {
+  color: #9fb1c7;
+  line-height: 1.7;
+}
+
+.feedback-form {
+  display: grid;
+  gap: 14px;
+}
+
+.feedback-form label {
+  display: grid;
+  gap: 7px;
+  color: #a7b7cc;
+  font-size: 13px;
+}
+
+.feedback-form input,
+.feedback-form select,
+.feedback-form textarea {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.86);
+  color: #e2e8f0;
+}
+
+.feedback-form textarea {
+  min-height: 120px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+.feedback-form .success {
+  margin: 0;
+  color: #5eead4;
+  font-weight: 700;
 }
 
 .public-login-panel.dark {
@@ -1368,7 +1424,8 @@ th { background: #f8fafc; color: #667085; }
   .aihot-topbar,
   .aihot-channel-context,
   .aihot-filter-panel,
-  .source-wall-grid {
+  .source-wall-grid,
+  .public-feedback.dark {
     grid-template-columns: 1fr;
   }
   .aihot-workspace {
