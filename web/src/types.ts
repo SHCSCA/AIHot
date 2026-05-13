@@ -15,6 +15,11 @@ export type Source = {
   fetchIntervalMinutes: number;
   enabled: boolean;
   visibility: string;
+  sourceGroup?: string;
+  contributorNo?: string | null;
+  socialHandle?: string | null;
+  collectionStatus?: string;
+  freeAccess?: boolean;
   notes?: string | null;
 };
 
@@ -41,6 +46,9 @@ export type SourceDiagnostic = {
   channel: string;
   tier: string;
   enabled: boolean;
+  sourceGroup?: string;
+  collectionStatus?: string;
+  freeAccess?: boolean;
   diagnosticStatus: string;
   diagnosticLabel: string;
   healthScore: number;
@@ -100,6 +108,10 @@ export type MainItem = {
   url?: string;
   sourceId?: string;
   sourceName?: string;
+  sourceGroup?: string | null;
+  sourceType?: string | null;
+  sourceTier?: string | null;
+  socialHandle?: string | null;
   publishedAt?: string | null;
   summary?: string;
 };
@@ -147,6 +159,10 @@ export type PublicEvent = {
   tags?: string[];
   eventType?: string | null;
   keyFacts?: string[];
+  sourceGroup?: string | null;
+  sourceType?: string | null;
+  sourceTier?: string | null;
+  socialHandle?: string | null;
   windowLabel?: string;
 };
 

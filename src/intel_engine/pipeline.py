@@ -461,6 +461,9 @@ def _screening_payload(raw_document: RawDocumentRecord, source: SourceRecord, *,
             "tier": source.tier,
             "authorityWeight": source.authority_weight,
             "defaultCategories": source.default_categories,
+            "sourceGroup": source.source_group,
+            "socialHandle": source.social_handle,
+            "collectionStatus": source.collection_status,
         },
         "titleOriginal": _truncate_text(raw_document.response_headers_json.get("x-intel-title") or source.name, 300),
         "summaryOriginal": _truncate_text(raw_document.body_text, 3000),
@@ -475,6 +478,19 @@ def _screening_payload(raw_document: RawDocumentRecord, source: SourceRecord, *,
 def _channel_screening_rules(channel: str) -> dict[str, object]:
     if channel == "amazon":
         return {
+            "allowedCategories": [
+                "policy",
+                "account_health",
+                "fba_logistics",
+                "ads_ppc",
+                "listing_seo",
+                "fees_margin",
+                "product_research",
+                "tools",
+                "compliance_trade",
+            ],
+            "tagRules": "标签 2-5 个；除品牌、平台、API、产品名外必须使用中文短词；禁止 news/update/AI/Amazon 等泛标签。",
+            "reasonRules": "推荐理由必须说明对 Amazon 卖家利润、风险、广告、库存、Listing 或合规动作的具体价值。",
             "accepted": [
                 "平台政策、费用、广告、FBA、账号健康、合规、税务、贸易变化",
                 "SP-API、Seller Central、Brand Registry、广告控制台等卖家工具变更",
@@ -488,6 +504,9 @@ def _channel_screening_rules(channel: str) -> dict[str, object]:
             ],
         }
     return {
+        "allowedCategories": ["ai_models", "ai_products", "agent_tools", "papers", "industry", "monetization"],
+        "tagRules": "标签 2-5 个；除品牌、模型名、产品名、账号名外必须使用中文短词；禁止 news/update/AI/Amazon 等泛标签。",
+        "reasonRules": "推荐理由必须说明为什么值得关注，关联模型能力、产品变化、开发者动作或行业影响。",
         "accepted": [
             "新模型发布、模型能力变化、开源模型、API 或价格变化",
             "AI 产品上线、功能更新、商业化变化、重要合作",
@@ -622,11 +641,25 @@ def _model_payload(item: NormalizedItemRecord, source: SourceRecord) -> dict[str
             "trustLevel": source.tier,
             "authorityWeight": source.authority_weight,
             "defaultCategories": source.default_categories,
+            "sourceGroup": source.source_group,
+            "socialHandle": source.social_handle,
+            "collectionStatus": source.collection_status,
         },
         "titleOriginal": _truncate_text(item.title_original, 300),
         "summaryOriginal": _truncate_text(item.summary_original, 4000),
         "url": item.url,
         "publishedAt": item.published_at,
+        "rules": _channel_scoring_rules(item.channel),
+    }
+
+
+def _channel_scoring_rules(channel: str) -> dict[str, object]:
+    rules = _channel_screening_rules(channel)
+    return {
+        "allowedCategories": rules["allowedCategories"],
+        "tagRules": rules["tagRules"],
+        "reasonRules": rules["reasonRules"],
+        "scoreRules": "五维评分均为 0-100；只输出中间评分，不允许决定 selected；推荐理由不能为空。",
     }
 
 

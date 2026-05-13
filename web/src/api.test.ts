@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { AdminApi, ApiError, buildBasicAuthHeader } from "./api";
+import { AdminApi, ApiError, PublicApi, buildBasicAuthHeader } from "./api";
 
 describe("AdminApi", () => {
   it("builds a Basic Auth header", () => {
@@ -98,5 +98,23 @@ describe("AdminApi", () => {
     );
 
     expect(onUnauthorized).toHaveBeenCalledOnce();
+  });
+});
+
+describe("PublicApi", () => {
+  it("lists public source wall entries without Basic Auth", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ sources: [{ id: "openai_social", sourceGroup: "social" }] })
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const sources = await new PublicApi().listSources({ channel: "ai", sourceGroup: "social" });
+
+    expect(sources[0].id).toBe("openai_social");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/public/sources?channel=ai&sourceGroup=social",
+      expect.objectContaining({ headers: expect.not.objectContaining({ Authorization: expect.any(String) }) })
+    );
   });
 });

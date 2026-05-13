@@ -52,6 +52,11 @@ def app_with_admin_data(tmp_path):
             fetch_interval_minutes=60,
             enabled=True,
             visibility="public",
+            source_group="official",
+            contributor_no="AIHOT-001",
+            social_handle=None,
+            collection_status="collectable",
+            free_access=True,
             notes=None,
         )
         strategy = StrategyVersionRecord(

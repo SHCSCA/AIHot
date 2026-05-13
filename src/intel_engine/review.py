@@ -193,4 +193,23 @@ def _has_required_text(value: str | None, *, min_len: int) -> bool:
 
 
 def _valid_tags(tags: list[str]) -> bool:
-    return 2 <= len([tag for tag in tags if tag and tag.strip()]) <= 5
+    return 2 <= len([tag for tag in tags if _valid_tag(str(tag).strip())]) <= 5
+
+
+def _valid_tag(tag: str) -> bool:
+    if not tag:
+        return False
+    if tag.lower() in {"ai", "amazon", "news", "update", "updates", "article", "blog", "tool", "tools"}:
+        return False
+    if any("\u4e00" <= char <= "\u9fff" for char in tag):
+        return True
+    if len(tag) > 32:
+        return False
+    has_upper = any(char.isupper() for char in tag)
+    has_lower = any(char.islower() for char in tag)
+    has_digit = any(char.isdigit() for char in tag)
+    if has_digit:
+        return True
+    if has_upper and has_lower:
+        return True
+    return tag.isupper() and 2 <= len(tag) <= 10

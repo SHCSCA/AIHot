@@ -2,7 +2,7 @@ import type { AdminApi } from "../api";
 import { MetricCard, MetricGrid } from "../components/MetricCard";
 import { Section, TableWrap } from "../components/Section";
 import { useAsyncData } from "../hooks";
-import { diagnosticStatusLabel } from "../labels";
+import { collectionStatusLabel, diagnosticStatusLabel, sourceGroupLabel } from "../labels";
 import type { SourceDiagnostic } from "../types";
 import { channelLabel, formatDateTime, formatPercent } from "../utils";
 
@@ -46,13 +46,14 @@ export function HealthView({ api }: { api: AdminApi }) {
                 <tr key={source.sourceId}>
                   <td>
                     <strong>{source.sourceName}</strong>
-                    <span>{source.sourceId} · {source.tier}</span>
+                    <span>{source.sourceId} · {source.tier} · {sourceGroupLabel(source.sourceGroup)}</span>
                   </td>
                   <td>{channelLabel(source.channel)}</td>
                   <td>
                     <span className={`status diagnostic-${source.diagnosticStatus}`}>
                       {diagnosticStatusLabel(source.diagnosticStatus)}
                     </span>
+                    <span>{collectionStatusLabel(source.collectionStatus)} · {source.freeAccess ? "免费可读" : "需授权"}</span>
                     {source.screening.latestReason && <span>{source.screening.latestReason}</span>}
                   </td>
                   <td>

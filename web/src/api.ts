@@ -45,6 +45,7 @@ export class PublicApi {
       channel?: string;
       mode?: "selected" | "all";
       category?: string;
+      sourceGroup?: string;
       q?: string;
       date?: string;
       window?: number;
@@ -67,6 +68,10 @@ export class PublicApi {
 
   async getDaily(filters: { channel: string; date?: string }): Promise<PublicDaily | null> {
     return (await this.request<{ daily: PublicDaily | null }>(`/api/v1/public/daily${query(filters)}`)).daily;
+  }
+
+  async listSources(filters: { channel?: string; sourceGroup?: string } = {}): Promise<Source[]> {
+    return (await this.request<{ sources: Source[] }>(`/api/v1/public/sources${query(filters)}`)).sources;
   }
 
   private async request<T>(path: string): Promise<T> {

@@ -96,6 +96,11 @@ class SourceRecord(TimestampMixin, Base):
     fetch_interval_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     visibility: Mapped[str] = mapped_column(String(32), default="public", nullable=False)
+    source_group: Mapped[str] = mapped_column(String(32), default="media", nullable=False)
+    contributor_no: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    social_handle: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    collection_status: Mapped[str] = mapped_column(String(32), default="collectable", nullable=False)
+    free_access: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 

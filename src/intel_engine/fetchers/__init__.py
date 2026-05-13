@@ -167,11 +167,25 @@ class HttpArticleAdapter:
         )
 
 
+class PendingApiAdapter:
+    def fetch(self, source: SourceRecord, *, client: httpx.Client | None = None) -> FetchResult:
+        return FetchResult(
+            status="failed",
+            http_status=None,
+            content_type=None,
+            bytes_received=0,
+            error_message=f"{source.source_type} 信源需要专用 API 适配器，当前处于待接入状态。",
+            metadata_json={"collection_status": getattr(source, "collection_status", "pending_api")},
+        )
+
+
 def get_fetch_adapter(adapter_name: str) -> FetchAdapter:
     if adapter_name == "rss":
         return RssFetchAdapter()
     if adapter_name == "http_article":
         return HttpArticleAdapter()
+    if adapter_name == "api":
+        return PendingApiAdapter()
     raise KeyError(f"Unsupported fetch adapter: {adapter_name}")
 
 

@@ -60,7 +60,10 @@ export function statusLabel(value?: string | null) {
     invalid_original_url: "原文链接无效",
     no_current_items: "无最近 24 小时内容",
     no_accepted_items: "无有效条目",
-    mostly_duplicates: "重复内容偏多"
+    mostly_duplicates: "重复内容偏多",
+    pending_api: "待接入",
+    rate_limited: "限流",
+    unavailable: "不可用"
   });
 }
 
@@ -75,7 +78,10 @@ export function diagnosticStatusLabel(value?: string | null) {
     no_current_items: "无最近 24 小时内容",
     no_accepted_items: "无有效条目",
     mostly_duplicates: "重复内容偏多",
-    disabled: "已停用"
+    disabled: "已停用",
+    pending_api: "待接入",
+    rate_limited: "限流",
+    unavailable: "不可用"
   });
 }
 
@@ -95,7 +101,31 @@ export function sourceTypeLabel(value?: string | null) {
     feed: "订阅源",
     html: "网页",
     api: "接口",
-    manual: "人工"
+    manual: "人工",
+    social: "社媒",
+    forum: "社区",
+    github: "GitHub",
+    docs: "文档"
+  });
+}
+
+export function sourceGroupLabel(value?: string | null) {
+  return lookup(value, {
+    official: "官方",
+    first_party: "一手信源",
+    media: "资讯",
+    social: "推文",
+    community: "社区",
+    vendor: "服务商"
+  });
+}
+
+export function collectionStatusLabel(value?: string | null) {
+  return lookup(value, {
+    collectable: "可抓取",
+    pending_api: "待接入",
+    rate_limited: "限流",
+    unavailable: "不可用"
   });
 }
 

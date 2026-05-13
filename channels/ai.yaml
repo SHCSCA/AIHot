@@ -396,3 +396,122 @@ sources:
     crawl_interval_minutes: 60
     parser_type: website
     enabled: false
+  - id: x_openai
+    source_type: social
+    name: "X: OpenAI"
+    url: https://x.com/OpenAI
+    language: en
+    region: global
+    trust_level: official_social
+    base_weight: 93
+    default_categories: [ai_models, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-001
+    social_handle: "@OpenAI"
+    collection_status: pending_api
+    free_access: true
+  - id: x_anthropicai
+    source_type: social
+    name: "X: Anthropic"
+    url: https://x.com/AnthropicAI
+    language: en
+    region: global
+    trust_level: official_social
+    base_weight: 92
+    default_categories: [ai_models, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-002
+    social_handle: "@AnthropicAI"
+    collection_status: pending_api
+    free_access: true
+  - id: x_googledeepmind
+    source_type: social
+    name: "X: Google DeepMind"
+    url: https://x.com/GoogleDeepMind
+    language: en
+    region: global
+    trust_level: official_social
+    base_weight: 92
+    default_categories: [ai_models, papers, industry]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-003
+    social_handle: "@GoogleDeepMind"
+    collection_status: pending_api
+    free_access: true
+  - id: x_huggingface
+    source_type: social
+    name: "X: Hugging Face"
+    url: https://x.com/huggingface
+    language: en
+    region: global
+    trust_level: official_social
+    base_weight: 88
+    default_categories: [ai_models, papers, agent_tools]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-004
+    social_handle: "@huggingface"
+    collection_status: pending_api
+    free_access: true
+  - id: x_langchainai
+    source_type: social
+    name: "X: LangChain"
+    url: https://x.com/LangChainAI
+    language: en
+    region: global
+    trust_level: official_social
+    base_weight: 84
+    default_categories: [agent_tools, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-005
+    social_handle: "@LangChainAI"
+    collection_status: pending_api
+    free_access: true
+  - id: x_simonw
+    source_type: social
+    name: "X: Simon Willison"
+    url: https://x.com/simonw
+    language: en
+    region: global
+    trust_level: expert
+    base_weight: 82
+    default_categories: [agent_tools, ai_products, industry]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-006
+    social_handle: "@simonw"
+    collection_status: pending_api
+    free_access: true
+  - id: x_karpathy
+    source_type: social
+    name: "X: Andrej Karpathy"
+    url: https://x.com/karpathy
+    language: en
+    region: global
+    trust_level: expert
+    base_weight: 82
+    default_categories: [ai_models, papers, industry]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-007
+    social_handle: "@karpathy"
+    collection_status: pending_api
+    free_access: true

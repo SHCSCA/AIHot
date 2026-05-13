@@ -57,6 +57,8 @@ def _fetch_adapter(source: SourceConfig) -> str:
         return "github"
     if mapped_type == "api":
         return "api"
+    if mapped_type == "social":
+        return "api"
     return "http_article"
 
 
@@ -67,6 +69,49 @@ def _noise_level(tier: str) -> float:
         "T2": 0.18,
         "T3": 0.35,
     }[tier]
+
+
+def _source_group(source: SourceConfig) -> str:
+    configured = source.metadata.get("source_group")
+    if isinstance(configured, str) and configured:
+        return configured
+    if source.source_type == "social":
+        return "social"
+    if source.source_type == "forum":
+        return "community"
+    if source.trust_level == "official":
+        return "official"
+    if source.trust_level == "media":
+        return "media"
+    if source.trust_level in {"authority", "expert", "official_social"}:
+        return "first_party"
+    return "vendor"
+
+
+def _collection_status(source: SourceConfig) -> str:
+    configured = source.metadata.get("collection_status")
+    if isinstance(configured, str) and configured:
+        return configured
+    if source.enabled:
+        return "collectable"
+    if source.source_type == "social":
+        return "pending_api"
+    return "unavailable"
+
+
+def _free_access(source: SourceConfig) -> bool:
+    configured = source.metadata.get("free_access")
+    if isinstance(configured, bool):
+        return configured
+    return True
+
+
+def _visibility(source: SourceConfig) -> str:
+    if source.enabled:
+        return "public"
+    if _source_group(source) in {"social", "community"} and _free_access(source):
+        return "public"
+    return "hidden"
 
 
 def source_upsert_from_config(channel_id: str, source: SourceConfig) -> SourceUpsert:
@@ -88,7 +133,12 @@ def source_upsert_from_config(channel_id: str, source: SourceConfig) -> SourceUp
         default_categories=list(source.default_categories),
         fetch_interval_minutes=60,
         enabled=source.enabled,
-        visibility="public" if source.enabled else "hidden",
+        visibility=_visibility(source),
+        source_group=_source_group(source),
+        contributor_no=source.metadata.get("contributor_no") if isinstance(source.metadata.get("contributor_no"), str) else None,
+        social_handle=source.metadata.get("social_handle") if isinstance(source.metadata.get("social_handle"), str) else None,
+        collection_status=_collection_status(source),
+        free_access=_free_access(source),
         notes=None,
     )
 

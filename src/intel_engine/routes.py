@@ -62,6 +62,11 @@ class SourceWrite(BaseModel):
     fetch_interval_minutes: int = Field(alias="fetchIntervalMinutes")
     enabled: bool = True
     visibility: str = "public"
+    source_group: str = Field(default="media", alias="sourceGroup")
+    contributor_no: str | None = Field(default=None, alias="contributorNo")
+    social_handle: str | None = Field(default=None, alias="socialHandle")
+    collection_status: str = Field(default="collectable", alias="collectionStatus")
+    free_access: bool = Field(default=True, alias="freeAccess")
     notes: str | None = None
 
 
@@ -73,6 +78,11 @@ class SourcePatch(BaseModel):
     authority_weight: float | None = Field(default=None, alias="authorityWeight")
     noise_level: float | None = Field(default=None, alias="noiseLevel")
     fetch_interval_minutes: int | None = Field(default=None, alias="fetchIntervalMinutes")
+    source_group: str | None = Field(default=None, alias="sourceGroup")
+    contributor_no: str | None = Field(default=None, alias="contributorNo")
+    social_handle: str | None = Field(default=None, alias="socialHandle")
+    collection_status: str | None = Field(default=None, alias="collectionStatus")
+    free_access: bool | None = Field(default=None, alias="freeAccess")
     notes: str | None = None
 
 
@@ -202,6 +212,7 @@ def public_events(
     channel: str | None = None,
     mode: str = Query(default="selected", pattern="^(selected|all)$"),
     category: str | None = None,
+    source_group: str | None = Query(default=None, alias="sourceGroup"),
     event_date: date_type | None = Query(default=None, alias="date"),
     window: int | None = Query(default=None, ge=1, le=720),
     q: str | None = None,
@@ -215,6 +226,12 @@ def public_events(
             stmt = stmt.where(EventClusterRecord.channel == channel)
         if category:
             stmt = stmt.where(EventClusterRecord.category == category)
+        if source_group:
+            stmt = (
+                stmt.join(NormalizedItemRecord, NormalizedItemRecord.id == EventClusterRecord.main_item_id)
+                .join(SourceRecord, SourceRecord.id == NormalizedItemRecord.source_id)
+                .where(SourceRecord.source_group == source_group)
+            )
         if event_date is not None:
             start, end = operational_day_bounds_utc(event_date)
             stmt = stmt.where(EventClusterRecord.last_seen_at >= start).where(EventClusterRecord.last_seen_at <= end)
@@ -254,6 +271,24 @@ def public_events(
     }
 
 
+@router.get("/api/v1/public/sources")
+def public_sources(
+    request: Request,
+    channel: str | None = None,
+    source_group: str | None = Query(default=None, alias="sourceGroup"),
+) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        stmt = select(SourceRecord).where(SourceRecord.visibility == "public")
+        if channel:
+            stmt = stmt.where(SourceRecord.channel == channel)
+        if source_group:
+            stmt = stmt.where(SourceRecord.source_group == source_group)
+        stmt = stmt.order_by(SourceRecord.channel, SourceRecord.contributor_no, SourceRecord.authority_weight.desc())
+        sources = session.scalars(stmt).all()
+        return {"sources": [_source_payload(source) for source in sources]}
+
+
 @router.get("/api/v1/public/events/{event_id}")
 def public_event_detail(request: Request, event_id: int) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
@@ -282,6 +317,10 @@ def public_event_detail(request: Request, event_id: int) -> dict[str, object]:
                     "url": _safe_item_url(item, source),
                     "sourceId": item.source_id,
                     "sourceName": source.name if source else item.source_id,
+                    "sourceGroup": source.source_group if source else None,
+                    "sourceType": source.source_type if source else None,
+                    "sourceTier": source.tier if source else None,
+                    "socialHandle": source.social_handle if source else None,
                     "publishedAt": _iso(item.published_at),
                     "summary": _processed_summary(item),
                     "isMain": member.is_main,
@@ -903,6 +942,11 @@ def _source_payload(source: SourceRecord) -> dict[str, object]:
         "fetchIntervalMinutes": source.fetch_interval_minutes,
         "enabled": source.enabled,
         "visibility": source.visibility,
+        "sourceGroup": source.source_group,
+        "contributorNo": source.contributor_no,
+        "socialHandle": source.social_handle,
+        "collectionStatus": source.collection_status,
+        "freeAccess": source.free_access,
         "notes": source.notes,
         "createdAt": _iso(source.created_at),
         "updatedAt": _iso(source.updated_at),
@@ -949,6 +993,9 @@ def _source_diagnostic_payload(session, source: SourceRecord, state: SourceState
         "channel": source.channel,
         "tier": source.tier,
         "enabled": source.enabled,
+        "sourceGroup": source.source_group,
+        "collectionStatus": source.collection_status,
+        "freeAccess": source.free_access,
         "diagnosticStatus": status,
         "diagnosticLabel": _diagnostic_label(status),
         "healthScore": state.health_score,
@@ -1053,6 +1100,8 @@ def _diagnostic_status(
     latest_screening: RawScreeningResultRecord | None,
 ) -> str:
     now = datetime.now(timezone.utc)
+    if source.collection_status != "collectable" and not source.enabled:
+        return source.collection_status
     if not source.enabled:
         return "disabled"
     if state.backoff_until and _aware_utc(state.backoff_until) > now:
@@ -1094,6 +1143,9 @@ def _diagnostic_label(status: str) -> str:
         "no_accepted_items": "无有效条目",
         "mostly_duplicates": "重复内容偏多",
         "disabled": "已停用",
+        "pending_api": "待接入",
+        "rate_limited": "限流",
+        "unavailable": "不可用",
     }
     return labels.get(status, status)
 
@@ -1237,6 +1289,10 @@ def _event_payload(session, cluster: EventClusterRecord) -> dict[str, object]:
         "tags": _list_json(raw_json.get("tags")),
         "eventType": raw_json.get("eventType"),
         "keyFacts": _list_json(raw_json.get("keyFacts")),
+        "sourceGroup": source.source_group if source is not None else None,
+        "sourceType": source.source_type if source is not None else None,
+        "sourceTier": source.tier if source is not None else None,
+        "socialHandle": source.social_handle if source is not None else None,
         "windowLabel": PUBLIC_WINDOW_LABEL,
         "sourceCount": cluster.source_count,
         "memberCount": cluster.member_count,
@@ -1291,6 +1347,10 @@ def _cluster_member_payloads(session, event_id: int) -> list[dict[str, object]]:
                 "url": _safe_item_url(item, source),
                 "sourceId": item.source_id,
                 "sourceName": source.name if source else item.source_id,
+                "sourceGroup": source.source_group if source else None,
+                "sourceType": source.source_type if source else None,
+                "sourceTier": source.tier if source else None,
+                "socialHandle": source.social_handle if source else None,
                 "publishedAt": _iso(item.published_at),
                 "summary": _processed_summary(item),
                 "isMain": member.is_main,
@@ -1311,6 +1371,10 @@ def _main_item_payload(item: NormalizedItemRecord | None, source: SourceRecord |
         "url": _safe_item_url(item, source),
         "sourceId": item.source_id,
         "sourceName": source.name if source else item.source_id,
+        "sourceGroup": source.source_group if source else None,
+        "sourceType": source.source_type if source else None,
+        "sourceTier": source.tier if source else None,
+        "socialHandle": source.social_handle if source else None,
         "publishedAt": _iso(item.published_at),
         "summary": _processed_summary(item),
     }

@@ -9,6 +9,21 @@ from pydantic import BaseModel, ConfigDict, Field
 from intel_engine.settings import Settings
 
 
+GENERIC_TAGS = {
+    "ai",
+    "amazon",
+    "news",
+    "update",
+    "updates",
+    "article",
+    "blog",
+    "tool",
+    "tools",
+    "model",
+    "models",
+}
+
+
 class ModelScore(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -350,7 +365,7 @@ def _extract_chat_content(response_json: dict[str, Any]) -> str:
 
 def _normalize_model_score_payload(payload: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(payload)
-    normalized.setdefault("tags", [])
+    normalized["tags"] = _clean_tags(normalized.get("tags"))
     normalized.setdefault("key_facts", [])
     normalized.setdefault("risk_flags", [])
     seller_action_level = normalized.get("seller_action_level")
@@ -368,7 +383,7 @@ def _normalize_model_score_payload(payload: dict[str, Any]) -> dict[str, Any]:
 
 def _normalize_screening_payload(payload: dict[str, Any]) -> dict[str, Any]:
     normalized = dict(payload)
-    normalized.setdefault("tags", [])
+    normalized["tags"] = _clean_tags(normalized.get("tags"))
     raw_json = normalized.get("raw_json")
     if raw_json is None:
         normalized["raw_json"] = {}
@@ -377,3 +392,42 @@ def _normalize_screening_payload(payload: dict[str, Any]) -> dict[str, Any]:
     elif not isinstance(raw_json, dict):
         normalized["raw_json"] = {"modelOutput": str(raw_json)}
     return normalized
+
+
+def _clean_tags(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    tags: list[str] = []
+    for item in value:
+        if item is None:
+            continue
+        tag = str(item).strip()
+        if not tag or tag.lower() in GENERIC_TAGS:
+            continue
+        if not (_has_cjk(tag) or _looks_like_keyword(tag)):
+            continue
+        if tag not in tags:
+            tags.append(tag)
+        if len(tags) == 5:
+            break
+    return tags
+
+
+def _has_cjk(value: str) -> bool:
+    return any("\u4e00" <= char <= "\u9fff" for char in value)
+
+
+def _looks_like_keyword(value: str) -> bool:
+    if len(value) > 32:
+        return False
+    compact = value.replace("-", "").replace("_", "").replace(".", "")
+    if not compact:
+        return False
+    has_upper = any(char.isupper() for char in value)
+    has_lower = any(char.islower() for char in value)
+    has_digit = any(char.isdigit() for char in value)
+    if has_digit:
+        return True
+    if has_upper and has_lower:
+        return True
+    return value.isupper() and 2 <= len(value) <= 10

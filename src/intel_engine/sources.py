@@ -28,6 +28,11 @@ class SourceUpsert:
     fetch_interval_minutes: int
     enabled: bool
     visibility: str
+    source_group: str = "media"
+    contributor_no: str | None = None
+    social_handle: str | None = None
+    collection_status: str = "collectable"
+    free_access: bool = True
     notes: str | None = None
 
 
@@ -64,6 +69,11 @@ class SourceRegistry:
         record.fetch_interval_minutes = source.fetch_interval_minutes
         record.enabled = source.enabled
         record.visibility = source.visibility
+        record.source_group = source.source_group
+        record.contributor_no = source.contributor_no
+        record.social_handle = source.social_handle
+        record.collection_status = source.collection_status
+        record.free_access = source.free_access
         record.notes = source.notes
 
         if self.session.get(SourceStateRecord, source.id) is None:

@@ -85,6 +85,9 @@ def test_seed_maps_yaml_source_to_production_source(tmp_path):
     assert source.default_categories == ["ai_models"]
     assert source.fetch_interval_minutes == 60
     assert source.visibility == "public"
+    assert source.source_group == "official"
+    assert source.collection_status == "collectable"
+    assert source.free_access is True
 
 
 def test_bundled_channel_configs_have_production_source_coverage():
@@ -132,6 +135,11 @@ def test_registry_can_upsert_toggle_and_update_state(tmp_path):
                 fetch_interval_minutes=120,
                 enabled=True,
                 visibility="internal",
+                source_group="media",
+                contributor_no="AIHOT-009",
+                social_handle=None,
+                collection_status="collectable",
+                free_access=True,
                 notes=None,
             )
         )
@@ -152,6 +160,10 @@ def test_registry_can_upsert_toggle_and_update_state(tmp_path):
 
     assert source is not None
     assert source.enabled is False
+    assert source.source_group == "media"
+    assert source.contributor_no == "AIHOT-009"
+    assert source.collection_status == "collectable"
+    assert source.free_access is True
     assert state is not None
     assert state.last_success_at == now
     assert state.duplicate_ratio == 0.1

@@ -493,3 +493,98 @@ sources:
     crawl_interval_minutes: 60
     parser_type: website
     enabled: false
+  - id: x_amazonads
+    source_type: social
+    name: "X: Amazon Ads"
+    url: https://x.com/AmazonAds
+    language: en
+    region: global
+    marketplace: global
+    seller_area: ads
+    trust_level: official_social
+    base_weight: 90
+    default_categories: [ads_ppc, policy]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AMZHOT-001
+    social_handle: "@AmazonAds"
+    collection_status: pending_api
+    free_access: true
+  - id: x_amazonbusiness
+    source_type: social
+    name: "X: Amazon Business"
+    url: https://x.com/AmazonBusiness
+    language: en
+    region: global
+    marketplace: global
+    seller_area: policy
+    trust_level: official_social
+    base_weight: 86
+    default_categories: [policy, tools]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AMZHOT-002
+    social_handle: "@AmazonBusiness"
+    collection_status: pending_api
+    free_access: true
+  - id: x_marketplacepulse
+    source_type: social
+    name: "X: Marketplace Pulse"
+    url: https://x.com/MarketplacePuls
+    language: en
+    region: global
+    marketplace: global
+    seller_area: product_research
+    trust_level: authority
+    base_weight: 82
+    default_categories: [product_research, fees_margin, policy]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AMZHOT-003
+    social_handle: "@MarketplacePuls"
+    collection_status: pending_api
+    free_access: true
+  - id: x_junglescout
+    source_type: social
+    name: "X: Jungle Scout"
+    url: https://x.com/junglescout
+    language: en
+    region: global
+    marketplace: global
+    seller_area: product_research
+    trust_level: authority
+    base_weight: 78
+    default_categories: [product_research, listing_seo, ads_ppc]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AMZHOT-004
+    social_handle: "@junglescout"
+    collection_status: pending_api
+    free_access: true
+  - id: x_helium10
+    source_type: social
+    name: "X: Helium 10"
+    url: https://x.com/H10Software
+    language: en
+    region: global
+    marketplace: global
+    seller_area: tools
+    trust_level: authority
+    base_weight: 76
+    default_categories: [tools, product_research, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AMZHOT-005
+    social_handle: "@H10Software"
+    collection_status: pending_api
+    free_access: true
