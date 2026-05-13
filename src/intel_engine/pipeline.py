@@ -105,16 +105,19 @@ def run_worker_once(
     screening_provider: ScreeningProvider | None = None,
 ) -> PipelineStats:
     resolved_now = now or utc_now()
-    with SessionLocal() as session:
-        jobs = claim_fetch_jobs(session, worker_id=worker_id, limit=limit, now=resolved_now)
-        session.commit()
-
-    total = PipelineStats(claimed=len(jobs))
-    for job in jobs:
+    total = PipelineStats()
+    for _index in range(limit):
+        with SessionLocal() as session:
+            jobs = claim_fetch_jobs(session, worker_id=worker_id, limit=1, now=resolved_now)
+            session.commit()
+        if not jobs:
+            break
+        job_id = jobs[0].id
+        total = total.add(PipelineStats(claimed=1))
         with SessionLocal() as session:
             stats = process_fetch_job(
                 session,
-                job.id,
+                job_id,
                 now=resolved_now,
                 client=client,
                 llm_provider=llm_provider,
