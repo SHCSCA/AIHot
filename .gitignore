@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+uvicorn.log
+uvicorn.err.log
+.env
+.env.*
+*.sqlite
+*.sqlite3
+data/
+web/node_modules/
+web/*.tsbuildinfo
+admin-screenshot.png

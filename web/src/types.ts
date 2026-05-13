@@ -1,0 +1,213 @@
+export type Source = {
+  id: string;
+  channel: string;
+  sourceType: string;
+  tier: string;
+  name: string;
+  url: string;
+  language: string;
+  region: string;
+  authorityWeight: number;
+  noiseLevel: number;
+  fetchAdapter: string;
+  parserType: string;
+  defaultCategories: string[];
+  fetchIntervalMinutes: number;
+  enabled: boolean;
+  visibility: string;
+  notes?: string | null;
+};
+
+export type SourceState = {
+  sourceId: string;
+  channel: string;
+  sourceName: string;
+  enabled: boolean;
+  lastSuccessAt: string | null;
+  lastErrorAt: string | null;
+  errorStreak: number;
+  nextFetchAt: string | null;
+  backoffUntil: string | null;
+  avgLatencyMs: number | null;
+  itemsPerRun: number | null;
+  healthScore: number;
+  duplicateRatio: number;
+  noiseRatio: number;
+};
+
+export type Job = {
+  id: string;
+  sourceId: string;
+  status: string;
+  priority: number;
+  runAfter: string | null;
+  lockedAt: string | null;
+  lockedBy: string | null;
+  attemptCount: number;
+  lastError: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type MainItem = {
+  id?: string;
+  title: string;
+  url?: string;
+  sourceId?: string;
+  sourceName?: string;
+  publishedAt?: string | null;
+  summary?: string;
+};
+
+export type EventCluster = {
+  id: string;
+  channel: string;
+  title: string;
+  category: string;
+  score: number;
+  sourceCount: number;
+  memberCount: number;
+  firstSeenAt: string | null;
+  lastSeenAt: string | null;
+  mainItem: MainItem | null;
+  reviewStatus?: string;
+  reviewNote?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
+  rank?: Record<string, unknown> | null;
+  modelScore?: Record<string, unknown> | null;
+};
+
+export type PublicEvent = {
+  id: string;
+  channel: string;
+  title: string;
+  summary?: string | null;
+  category: string;
+  score: number;
+  sourceCount: number;
+  memberCount: number;
+  firstSeenAt: string | null;
+  lastSeenAt: string | null;
+  mainItem: MainItem | null;
+  entryReason?: string | null;
+  suggestedAction?: string | null;
+  sellerActionLevel?: string | null;
+};
+
+export type PublicEventDetail = {
+  event: PublicEvent;
+  members: EventMember[];
+};
+
+export type Page<T> = {
+  items: T[];
+  count: number;
+  hasNext: boolean;
+  nextCursor: string | null;
+};
+
+export type PublicDaily = {
+  id: string;
+  channel: string;
+  date: string;
+  generatedAt: string | null;
+  title: string;
+  sections: Record<string, unknown>;
+};
+
+export type PublicFeedLink = {
+  label: string;
+  url: string;
+  description: string;
+};
+
+export type EventMember = MainItem & {
+  id: string;
+  isMain: boolean;
+  relationScore?: number;
+  rank?: Record<string, unknown> | null;
+  modelScore?: Record<string, unknown> | null;
+};
+
+export type DailyDigest = {
+  id: string;
+  channel: string;
+  date: string;
+  generatedAt: string | null;
+  strategyVersion: string;
+  title: string;
+  sections: Record<string, unknown>;
+  published: boolean;
+  publishedBy: string | null;
+  publishedAt: string | null;
+};
+
+export type PipelineRun = {
+  id: string;
+  workerId: string;
+  limit: number;
+  status: string;
+  scheduled: number;
+  claimed: number;
+  succeeded: number;
+  failed: number;
+  rawDocumentsInserted: number;
+  normalizedItems: number;
+  rankedItems: number;
+  clusters: number;
+  errorMessage: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+};
+
+export type StrategyVersion = {
+  id: string;
+  channel: string;
+  name: string;
+  status: string;
+  thresholds: Record<string, unknown>;
+  modelConfig: Record<string, unknown>;
+};
+
+export type FeedbackEvent = {
+  id?: string;
+  itemId?: string | null;
+  clusterId?: string | null;
+  channel: string;
+  feedbackType: string;
+  reason: string;
+  actor: string;
+  createdAt?: string | null;
+};
+
+export type EvaluationMetrics = {
+  labels?: Record<string, string>;
+  values?: Record<string, unknown>;
+};
+
+export type EvaluationRun = {
+  id: string;
+  channel: string;
+  strategyVersion: string;
+  name: string;
+  status: string;
+  request: Record<string, unknown>;
+  metrics: EvaluationMetrics;
+  createdAt?: string | null;
+  completedAt?: string | null;
+};
+
+export type Dashboard = {
+  metrics: {
+    sourceCount?: number;
+    healthWarningCount?: number;
+    pendingJobCount?: number;
+    failedJobCount?: number;
+    pendingReviewEventCount?: number;
+    publishedDailyCount?: number;
+  };
+  recentFailedJobs: Job[];
+  pendingReviewEvents: EventCluster[];
+  recentPipelineRuns: PipelineRun[];
+};

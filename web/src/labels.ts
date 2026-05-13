@@ -1,0 +1,94 @@
+export function channelLabel(value?: string | null) {
+  return lookup(value, {
+    ai: "AI 热点",
+    amazon: "Amazon 情报"
+  });
+}
+
+export function categoryLabel(value?: string | null) {
+  return lookup(value, {
+    ai_models: "AI 模型",
+    ai_tools: "AI 工具",
+    ai_agents: "AI Agent",
+    ai_infra: "AI 基础设施",
+    policy: "政策监管",
+    funding: "融资并购",
+    marketplace: "平台动态",
+    ads: "广告投放",
+    logistics: "物流履约",
+    product_research: "选品研究",
+    industry: "行业观察",
+    seller_tools: "卖家工具"
+  });
+}
+
+export function statusLabel(value?: string | null) {
+  return lookup(value, {
+    enabled: "启用",
+    disabled: "停用",
+    pending: "待处理",
+    locked: "已领取",
+    running: "运行中",
+    succeeded: "成功",
+    failed: "失败",
+    cancelled: "已取消",
+    dead: "死亡",
+    draft: "草稿",
+    active: "生效",
+    retired: "已退役",
+    completed: "已完成",
+    approved: "已通过",
+    rejected: "已拒绝",
+    published: "已发布",
+    unpublished: "未发布"
+  });
+}
+
+export function feedbackTypeLabel(value?: string | null) {
+  return lookup(value, {
+    false_positive: "误选",
+    false_negative: "漏选",
+    promote: "提权",
+    demote: "降权",
+    category_fix: "分类修正"
+  });
+}
+
+export function sourceTypeLabel(value?: string | null) {
+  return lookup(value, {
+    rss: "RSS",
+    feed: "订阅源",
+    html: "网页",
+    api: "接口",
+    manual: "人工"
+  });
+}
+
+export function fetchAdapterLabel(value?: string | null) {
+  return lookup(value, {
+    rss: "RSS 抓取",
+    http_article: "网页抓取",
+    api: "接口抓取"
+  });
+}
+
+export function modeLabel(value?: string | null) {
+  return lookup(value, {
+    selected: "精选",
+    all: "全部"
+  });
+}
+
+export function sellerActionLevelLabel(value?: string | null) {
+  return lookup(value, {
+    ignore: "仅关注",
+    review: "建议查看",
+    act: "建议行动",
+    urgent: "优先处理"
+  });
+}
+
+function lookup(value: string | null | undefined, labels: Record<string, string>) {
+  if (!value) return "-";
+  return labels[value] ?? value;
+}

@@ -1,0 +1,266 @@
+id: ai
+name: AI 情报
+description: AI 模型、产品、Agent、论文、行业和商业化动态
+categories:
+  - id: ai_models
+    label: 模型发布
+  - id: ai_products
+    label: AI 产品
+  - id: agent_tools
+    label: Agent / 编程工具
+  - id: papers
+    label: 论文研究
+  - id: industry
+    label: 行业动态
+  - id: monetization
+    label: 赚钱 / 商业化案例
+scoring:
+  selected_threshold: 75
+  weights:
+    source_score: 0.20
+    relevance_score: 0.20
+    impact_score: 0.25
+    novelty_score: 0.15
+    actionability_score: 0.15
+    freshness_score: 0.05
+sources:
+  - id: openai_news
+    source_type: website
+    name: OpenAI News
+    url: https://openai.com/news/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 95
+    default_categories: [ai_models, ai_products, agent_tools]
+    crawl_interval_minutes: 360
+    parser_type: website
+    enabled: true
+  - id: anthropic_news
+    source_type: website
+    name: Anthropic News
+    url: https://www.anthropic.com/news
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 95
+    default_categories: [ai_models, ai_products]
+    crawl_interval_minutes: 360
+    parser_type: website
+    enabled: true
+  - id: huggingface_blog
+    source_type: website
+    name: Hugging Face Blog
+    url: https://huggingface.co/blog
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 85
+    default_categories: [ai_models, papers, industry]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: google_deepmind_blog
+    source_type: official
+    name: Google DeepMind Blog
+    url: https://deepmind.google/discover/blog/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 94
+    default_categories: [ai_models, papers, industry]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: google_ai_blog
+    source_type: official
+    name: Google AI Blog
+    url: https://blog.google/technology/ai/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 92
+    default_categories: [ai_models, ai_products, industry]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: microsoft_ai_blog
+    source_type: official
+    name: Microsoft AI Blog
+    url: https://blogs.microsoft.com/ai/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 90
+    default_categories: [ai_products, industry]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: meta_ai_blog
+    source_type: official
+    name: Meta AI Blog
+    url: https://ai.meta.com/blog/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 90
+    default_categories: [ai_models, papers, industry]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: nvidia_ai_blog
+    source_type: official
+    name: NVIDIA AI Blog
+    url: https://blogs.nvidia.com/blog/category/deep-learning/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 88
+    default_categories: [ai_models, industry]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: mistral_news
+    source_type: official
+    name: Mistral AI News
+    url: https://mistral.ai/news/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 90
+    default_categories: [ai_models, ai_products]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: cohere_blog
+    source_type: official
+    name: Cohere Blog
+    url: https://cohere.com/blog
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 86
+    default_categories: [ai_models, ai_products]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: stability_ai_news
+    source_type: official
+    name: Stability AI News
+    url: https://stability.ai/news
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 84
+    default_categories: [ai_models, ai_products]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: cursor_blog
+    source_type: official
+    name: Cursor Blog
+    url: https://www.cursor.com/blog
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 82
+    default_categories: [agent_tools, ai_products]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: langchain_blog
+    source_type: authority
+    name: LangChain Blog
+    url: https://blog.langchain.com/
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 82
+    default_categories: [agent_tools, ai_products]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: openrouter_blog
+    source_type: authority
+    name: OpenRouter Blog
+    url: https://openrouter.ai/blog
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 78
+    default_categories: [ai_products, industry]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: replicate_blog
+    source_type: authority
+    name: Replicate Blog
+    url: https://replicate.com/blog
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 78
+    default_categories: [ai_products, agent_tools]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: the_batch
+    source_type: authority
+    name: DeepLearning.AI The Batch
+    url: https://www.deeplearning.ai/the-batch/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 76
+    default_categories: [industry, papers, ai_models]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: simon_willison_blog
+    source_type: blog
+    name: Simon Willison Blog
+    url: https://simonwillison.net/
+    language: en
+    region: global
+    trust_level: expert
+    base_weight: 80
+    default_categories: [agent_tools, ai_products, industry]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true
+  - id: lilian_weng_blog
+    source_type: blog
+    name: Lilian Weng Blog
+    url: https://lilianweng.github.io/
+    language: en
+    region: global
+    trust_level: expert
+    base_weight: 79
+    default_categories: [papers, ai_models]
+    crawl_interval_minutes: 1440
+    parser_type: website
+    enabled: true
+  - id: semianalysis
+    source_type: authority
+    name: SemiAnalysis
+    url: https://semianalysis.com/
+    language: en
+    region: global
+    trust_level: expert
+    base_weight: 80
+    default_categories: [industry, monetization]
+    crawl_interval_minutes: 1440
+    parser_type: website
+    enabled: true
+  - id: venturebeat_ai
+    source_type: authority
+    name: VentureBeat AI
+    url: https://venturebeat.com/category/ai/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 72
+    default_categories: [industry, ai_products, monetization]
+    crawl_interval_minutes: 720
+    parser_type: website
+    enabled: true

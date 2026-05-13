@@ -1,0 +1,34 @@
+INFO:     127.0.0.1:59633 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:6649 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4948 - "GET /api/v1/public/events?channel=ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:4949 - "GET /api/v1/internal/sources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39182 - "GET /api/v1/internal/sources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25120 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:25120 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:25120 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25162 - "GET /api/v1/internal/sources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25164 - "GET /api/v1/public/events?channel=ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52044 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:52044 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42701 - "GET /api/v1/public/events?channel=ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42702 - "GET /api/v1/internal/sources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42701 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:42701 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52044 - "GET /api/v1/public/events?channel=ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:42702 - "GET /api/v1/internal/sources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5912 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:5912 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56347 - "GET /api/v1/internal/sources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56349 - "GET /api/v1/public/events?channel=ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56347 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:56347 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56349 - "GET /api/v1/internal/sources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:5912 - "GET /api/v1/public/events?channel=ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46421 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46421 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46465 - "GET /api/v1/public/events?channel=ai HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46464 - "GET /api/v1/internal/sources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46464 - "GET / HTTP/1.1" 404 Not Found
+INFO:     127.0.0.1:46464 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46465 - "GET /api/v1/internal/sources HTTP/1.1" 200 OK
+INFO:     127.0.0.1:46421 - "GET /api/v1/public/events?channel=ai HTTP/1.1" 200 OK
