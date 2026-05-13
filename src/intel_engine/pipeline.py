@@ -208,7 +208,7 @@ def process_fetch_job(
     job = _get_job(session, job_id)
     source = _get_source(session, job.source_id)
     try:
-        result = get_fetch_adapter(source.fetch_adapter).fetch(source, client=client)
+        result = get_fetch_adapter(source.fetch_adapter, now=resolved_now).fetch(source, client=client)
     except Exception as exc:  # noqa: BLE001 - isolate one bad source from the worker batch.
         mark_job_failed(session, job.id, error_message=str(exc), now=resolved_now)
         return PipelineStats(failed=1)

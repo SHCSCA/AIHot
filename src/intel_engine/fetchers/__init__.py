@@ -130,6 +130,9 @@ class RssFetchAdapter:
 
 
 class HttpArticleAdapter:
+    def __init__(self, *, now: datetime | None = None):
+        self.now = now
+
     def fetch(self, source: SourceRecord, *, client: httpx.Client | None = None) -> FetchResult:
         response = _get(client, source.url)
         content_type = response.headers.get("content-type")
@@ -156,7 +159,7 @@ class HttpArticleAdapter:
             body_html=body_html,
             response_headers_json=headers,
             content_hash=_document_hash(source.channel, source.id, canonical_url, title, body_text),
-            fetched_at=utc_now(),
+            fetched_at=self.now or utc_now(),
         )
         return FetchResult(
             status="succeeded",
@@ -179,11 +182,11 @@ class PendingApiAdapter:
         )
 
 
-def get_fetch_adapter(adapter_name: str) -> FetchAdapter:
+def get_fetch_adapter(adapter_name: str, *, now: datetime | None = None) -> FetchAdapter:
     if adapter_name == "rss":
-        return RssFetchAdapter()
+        return RssFetchAdapter(now=now)
     if adapter_name == "http_article":
-        return HttpArticleAdapter()
+        return HttpArticleAdapter(now=now)
     if adapter_name == "api":
         return PendingApiAdapter()
     raise KeyError(f"Unsupported fetch adapter: {adapter_name}")

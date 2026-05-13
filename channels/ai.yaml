@@ -239,7 +239,9 @@ sources:
     default_categories: [industry, ai_products, monetization]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: true
+    enabled: false
+    collection_status: unavailable
+    free_access: true
   - id: infoq_ai
     source_type: rss
     name: InfoQ AI/ML RSS

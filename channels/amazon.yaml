@@ -184,7 +184,9 @@ sources:
     default_categories: [account_health, compliance_trade]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: true
+    enabled: false
+    collection_status: rate_limited
+    free_access: true
   - id: sellerplex_amazon
     source_type: rss
     name: SellerPlex Amazon RSS
@@ -240,7 +242,9 @@ sources:
     default_categories: [ads_ppc, product_research, tools]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: true
+    enabled: false
+    collection_status: rate_limited
+    free_access: true
   - id: my_amazon_guy
     source_type: rss
     name: My Amazon Guy RSS
@@ -268,7 +272,9 @@ sources:
     default_categories: [ads_ppc, listing_seo, tools]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: true
+    enabled: false
+    collection_status: rate_limited
+    free_access: true
   - id: channelengine_marketplace
     source_type: rss
     name: ChannelEngine Blog RSS
@@ -310,7 +316,9 @@ sources:
     default_categories: [product_research, fees_margin]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: true
+    enabled: false
+    collection_status: rate_limited
+    free_access: true
   - id: smartscout_blog
     source_type: rss
     name: SmartScout Blog RSS
