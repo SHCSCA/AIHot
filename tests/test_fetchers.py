@@ -128,6 +128,35 @@ def test_rss_adapter_only_accepts_rolling_24_hour_specific_links():
     assert result.metadata_json["skipped_invalid_original_url"] == 1
 
 
+def test_rss_adapter_caps_accepted_documents_per_source_run():
+    now = datetime(2026, 5, 12, 12, 0, tzinfo=timezone.utc)
+    items = "\n".join(
+        f"""
+        <item>
+          <title>AI item {index}</title>
+          <link>https://example.com/news/item-{index}</link>
+          <pubDate>Tue, 12 May 2026 08:0{index}:00 GMT</pubDate>
+          <description>Summary {index}.</description>
+        </item>
+        """
+        for index in range(7)
+    )
+    rss = f"""<?xml version="1.0" encoding="UTF-8" ?>
+    <rss version="2.0"><channel><title>Feed</title>{items}</channel></rss>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=rss, headers={"content-type": "application/rss+xml"})
+
+    source = _source_record("example_feed", "rss")
+    result = RssFetchAdapter(now=now).fetch(source, client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+    assert len(result.documents) == 5
+    assert result.metadata_json["candidate_items"] == 7
+    assert result.metadata_json["accepted_items"] == 5
+    assert result.metadata_json["skipped_over_limit"] == 2
+
+
 def test_http_article_adapter_extracts_article_text():
     html = """
     <html>

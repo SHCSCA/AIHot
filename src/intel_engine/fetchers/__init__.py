@@ -16,6 +16,7 @@ from intel_engine.quality import is_publishable_original_url, is_within_recent_h
 
 
 TAG_RE = re.compile(r"<[^>]+>")
+MAX_ACCEPTED_DOCUMENTS_PER_RSS_RUN = 5
 
 
 @dataclass(frozen=True)
@@ -71,6 +72,7 @@ class RssFetchAdapter:
         skipped_old_items = 0
         skipped_missing_date = 0
         skipped_invalid_original_url = 0
+        skipped_over_limit = 0
         for entry in parsed.entries:
             candidate_items += 1
             title = collapse_whitespace(getattr(entry, "title", ""))
@@ -86,6 +88,9 @@ class RssFetchAdapter:
                 continue
             if not is_publishable_original_url(url, source.url):
                 skipped_invalid_original_url += 1
+                continue
+            if len(documents) >= MAX_ACCEPTED_DOCUMENTS_PER_RSS_RUN:
+                skipped_over_limit += 1
                 continue
             summary_html = getattr(entry, "summary", "") or getattr(entry, "description", "")
             body_text = collapse_whitespace(html.unescape(TAG_RE.sub(" ", summary_html)))
@@ -119,6 +124,7 @@ class RssFetchAdapter:
                 "skipped_old_items": skipped_old_items,
                 "skipped_missing_date": skipped_missing_date,
                 "skipped_invalid_original_url": skipped_invalid_original_url,
+                "skipped_over_limit": skipped_over_limit,
             },
         )
 
