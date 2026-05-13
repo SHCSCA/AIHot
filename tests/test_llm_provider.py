@@ -147,3 +147,45 @@ def test_deepseek_provider_normalizes_string_raw_json_from_model_output():
 
     assert score.raw_json["modelOutput"] == '{"unexpected":"string"}'
     assert score.raw_json["provider"] == "deepseek"
+
+
+def test_deepseek_provider_normalizes_non_string_seller_action_level():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "category": "ai_models",
+                                    "relevance_score": 86,
+                                    "impact_score": 82,
+                                    "novelty_score": 78,
+                                    "actionability_score": 64,
+                                    "credibility_score": 91,
+                                    "summary_cn": "中文摘要。",
+                                    "title_cn": "中文标题",
+                                    "reason": "推荐理由。",
+                                    "seller_action_level": 0,
+                                    "raw_json": {"modelOutputVersion": "test"},
+                                }
+                            )
+                        }
+                    }
+                ],
+            },
+        )
+
+    provider = DeepSeekModelProvider(
+        model="deepseek-chat",
+        api_key="test-key",
+        timeout_seconds=5,
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    score = provider.score_item({"title": "OpenAI launches GPT-5"})
+
+    assert score.seller_action_level == "review"
+    assert score.raw_json["provider"] == "deepseek"

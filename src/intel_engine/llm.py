@@ -353,6 +353,9 @@ def _normalize_model_score_payload(payload: dict[str, Any]) -> dict[str, Any]:
     normalized.setdefault("tags", [])
     normalized.setdefault("key_facts", [])
     normalized.setdefault("risk_flags", [])
+    seller_action_level = normalized.get("seller_action_level")
+    if seller_action_level is not None and not isinstance(seller_action_level, str):
+        normalized["seller_action_level"] = "review"
     raw_json = normalized.get("raw_json")
     if raw_json is None:
         normalized["raw_json"] = {}
