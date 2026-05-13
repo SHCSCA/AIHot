@@ -31,6 +31,300 @@ scoring:
     actionability_score: 0.15
     freshness_score: 0.05
 sources:
+  - id: ecomengine_blog
+    source_type: rss
+    name: eComEngine Blog RSS
+    url: https://www.ecomengine.com/blog/rss.xml
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: authority
+    base_weight: 78
+    default_categories: [account_health, listing_seo, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: ecomcrew_blog
+    source_type: rss
+    name: EcomCrew Blog RSS
+    url: https://www.ecomcrew.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: expert
+    base_weight: 76
+    default_categories: [product_research, fees_margin, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: practical_ecommerce_amazon
+    source_type: rss
+    name: Practical Ecommerce RSS
+    url: https://www.practicalecommerce.com/feed
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 72
+    default_categories: [product_research, listing_seo, ads_ppc]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: ecommercebytes
+    source_type: rss
+    name: EcommerceBytes RSS
+    url: https://www.ecommercebytes.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 70
+    default_categories: [policy, fees_margin, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: retail_dive
+    source_type: rss
+    name: Retail Dive RSS
+    url: https://www.retaildive.com/feeds/news/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 68
+    default_categories: [product_research, compliance_trade]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: modern_retail
+    source_type: rss
+    name: Modern Retail RSS
+    url: https://www.modernretail.co/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 68
+    default_categories: [product_research, ads_ppc]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: search_engine_land_amazon
+    source_type: rss
+    name: Search Engine Land RSS
+    url: https://searchengineland.com/feed
+    language: en
+    region: global
+    marketplace: global
+    seller_area: ads
+    trust_level: media
+    base_weight: 68
+    default_categories: [ads_ppc, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: fulltimefba_blog
+    source_type: rss
+    name: Full-Time FBA RSS
+    url: https://www.fulltimefba.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: expert
+    base_weight: 74
+    default_categories: [product_research, fba_logistics, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: repricerexpress_blog
+    source_type: rss
+    name: RepricerExpress RSS
+    url: https://www.repricerexpress.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: pricing
+    trust_level: authority
+    base_weight: 74
+    default_categories: [fees_margin, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: sellerengine_blog
+    source_type: rss
+    name: SellerEngine RSS
+    url: https://sellerengine.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: authority
+    base_weight: 74
+    default_categories: [account_health, product_research, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: riverbend_consulting
+    source_type: rss
+    name: Riverbend Consulting RSS
+    url: https://riverbendconsulting.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: account_health
+    trust_level: expert
+    base_weight: 76
+    default_categories: [account_health, compliance_trade]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: sellerplex_amazon
+    source_type: rss
+    name: SellerPlex Amazon RSS
+    url: https://sellerplex.com/category/amazon/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: authority
+    base_weight: 74
+    default_categories: [product_research, listing_seo, ads_ppc]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: channelx_amazon
+    source_type: rss
+    name: ChannelX Amazon RSS
+    url: https://channelx.world/category/amazon/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 68
+    default_categories: [policy, ads_ppc, product_research]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: seller_snap_blog
+    source_type: rss
+    name: Seller Snap RSS
+    url: https://sellersnap.io/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: pricing
+    trust_level: authority
+    base_weight: 72
+    default_categories: [fees_margin, ads_ppc, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: teikametrics_blog
+    source_type: rss
+    name: Teikametrics RSS
+    url: https://www.teikametrics.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: ads
+    trust_level: authority
+    base_weight: 76
+    default_categories: [ads_ppc, product_research, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: my_amazon_guy
+    source_type: rss
+    name: My Amazon Guy RSS
+    url: https://myamazonguy.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: expert
+    base_weight: 72
+    default_categories: [ads_ppc, listing_seo, account_health]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: sellerlabs_blog
+    source_type: rss
+    name: Seller Labs RSS
+    url: https://www.sellerlabs.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: ads
+    trust_level: authority
+    base_weight: 72
+    default_categories: [ads_ppc, listing_seo, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: channelengine_marketplace
+    source_type: rss
+    name: ChannelEngine Blog RSS
+    url: https://www.channelengine.com/en/blog/rss.xml
+    language: en
+    region: global
+    marketplace: global
+    seller_area: marketplaces
+    trust_level: authority
+    base_weight: 72
+    default_categories: [product_research, tools, compliance_trade]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: ecommerce_times
+    source_type: rss
+    name: E-Commerce Times RSS
+    url: https://www.ecommercetimes.com/feed
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 66
+    default_categories: [product_research, tools, compliance_trade]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: digital_commerce_360
+    source_type: rss
+    name: Digital Commerce 360 RSS
+    url: https://www.digitalcommerce360.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 66
+    default_categories: [product_research, fees_margin]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: smartscout_blog
+    source_type: rss
+    name: SmartScout Blog RSS
+    url: https://www.smartscout.com/blog/rss.xml
+    language: en
+    region: global
+    marketplace: global
+    seller_area: product_research
+    trust_level: authority
+    base_weight: 76
+    default_categories: [product_research, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
   - id: amazon_sp_api_release_notes
     source_type: official
     name: Amazon SP-API Release Notes
@@ -42,9 +336,9 @@ sources:
     trust_level: official
     base_weight: 95
     default_categories: [policy, tools]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: amazon_ads_updates
     source_type: official
     name: Amazon Ads Updates
@@ -56,9 +350,9 @@ sources:
     trust_level: official
     base_weight: 92
     default_categories: [ads_ppc]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: marketplace_pulse
     source_type: authority
     name: Marketplace Pulse
@@ -69,10 +363,10 @@ sources:
     seller_area: product_research
     trust_level: authority
     base_weight: 82
-    default_categories: [industry, product_research, fees_margin]
-    crawl_interval_minutes: 720
+    default_categories: [product_research, fees_margin]
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: junglescout_blog
     source_type: authority
     name: Jungle Scout Blog
@@ -84,9 +378,9 @@ sources:
     trust_level: authority
     base_weight: 78
     default_categories: [product_research, listing_seo, ads_ppc]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: amazon_seller_university
     source_type: official
     name: Amazon Seller University
@@ -98,9 +392,9 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [policy, listing_seo, fba_logistics]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: amazon_seller_blog
     source_type: official
     name: Amazon Seller Blog
@@ -112,9 +406,9 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [policy, listing_seo, product_research]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: amazon_supply_chain_blog
     source_type: official
     name: Amazon Supply Chain Blog
@@ -126,9 +420,9 @@ sources:
     trust_level: official
     base_weight: 88
     default_categories: [fba_logistics, fees_margin]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: amazon_pay_updates
     source_type: official
     name: Amazon Pay Updates
@@ -140,9 +434,9 @@ sources:
     trust_level: official
     base_weight: 84
     default_categories: [fees_margin, compliance_trade]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: helium10_blog
     source_type: authority
     name: Helium 10 Blog
@@ -154,23 +448,9 @@ sources:
     trust_level: authority
     base_weight: 80
     default_categories: [product_research, listing_seo, ads_ppc, tools]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: smartscout_blog
-    source_type: authority
-    name: SmartScout Blog
-    url: https://www.smartscout.com/blog
-    language: en
-    region: global
-    marketplace: global
-    seller_area: product_research
-    trust_level: authority
-    base_weight: 78
-    default_categories: [product_research, listing_seo]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: sellerapp_blog
     source_type: authority
     name: SellerApp Blog
@@ -182,37 +462,9 @@ sources:
     trust_level: authority
     base_weight: 76
     default_categories: [ads_ppc, listing_seo, product_research, tools]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: ecomengine_blog
-    source_type: authority
-    name: eComEngine Blog
-    url: https://www.ecomengine.com/blog
-    language: en
-    region: global
-    marketplace: global
-    seller_area: operations
-    trust_level: authority
-    base_weight: 76
-    default_categories: [account_health, listing_seo, tools]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
-  - id: ecomcrew_blog
-    source_type: blog
-    name: EcomCrew Blog
-    url: https://www.ecomcrew.com/blog/
-    language: en
-    region: global
-    marketplace: global
-    seller_area: operations
-    trust_level: expert
-    base_weight: 76
-    default_categories: [product_research, fees_margin, listing_seo]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: carbon6_blog
     source_type: authority
     name: Carbon6 Blog
@@ -224,9 +476,9 @@ sources:
     trust_level: expert
     base_weight: 75
     default_categories: [tools, account_health, product_research]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: amzscout_blog
     source_type: authority
     name: AMZScout Blog
@@ -238,76 +490,6 @@ sources:
     trust_level: expert
     base_weight: 74
     default_categories: [product_research, listing_seo]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: practical_ecommerce_amazon
-    source_type: authority
-    name: Practical Ecommerce
-    url: https://www.practicalecommerce.com/
-    language: en
-    region: global
-    marketplace: global
-    seller_area: industry
-    trust_level: media
-    base_weight: 72
-    default_categories: [industry, listing_seo, ads_ppc]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
-  - id: ecommercebytes
-    source_type: authority
-    name: EcommerceBytes
-    url: https://www.ecommercebytes.com/
-    language: en
-    region: global
-    marketplace: global
-    seller_area: industry
-    trust_level: media
-    base_weight: 70
-    default_categories: [industry, policy, fees_margin]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
-  - id: retail_dive
-    source_type: authority
-    name: Retail Dive
-    url: https://www.retaildive.com/
-    language: en
-    region: global
-    marketplace: global
-    seller_area: industry
-    trust_level: media
-    base_weight: 68
-    default_categories: [industry, compliance_trade]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
-  - id: modern_retail
-    source_type: authority
-    name: Modern Retail
-    url: https://www.modernretail.co/
-    language: en
-    region: global
-    marketplace: global
-    seller_area: industry
-    trust_level: media
-    base_weight: 68
-    default_categories: [industry, ads_ppc]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
-  - id: search_engine_land_amazon
-    source_type: authority
-    name: Search Engine Land Commerce
-    url: https://searchengineland.com/
-    language: en
-    region: global
-    marketplace: global
-    seller_area: ads
-    trust_level: media
-    base_weight: 68
-    default_categories: [ads_ppc, listing_seo]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
+    enabled: false

@@ -25,19 +25,247 @@ scoring:
     freshness_score: 0.05
 sources:
   - id: openai_news
-    source_type: website
-    name: OpenAI News
-    url: https://openai.com/news/
+    source_type: rss
+    name: OpenAI News RSS
+    url: https://openai.com/news/rss.xml
     language: en
     region: global
     trust_level: official
     base_weight: 95
     default_categories: [ai_models, ai_products, agent_tools]
-    crawl_interval_minutes: 360
-    parser_type: website
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: google_deepmind_blog
+    source_type: rss
+    name: Google DeepMind Blog RSS
+    url: https://deepmind.google/blog/rss.xml
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 94
+    default_categories: [ai_models, papers, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: google_ai_blog
+    source_type: rss
+    name: Google AI Blog RSS
+    url: https://blog.google/technology/ai/rss/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 92
+    default_categories: [ai_models, ai_products, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: aws_machine_learning_blog
+    source_type: rss
+    name: AWS Machine Learning Blog RSS
+    url: https://aws.amazon.com/blogs/machine-learning/feed/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 90
+    default_categories: [ai_products, agent_tools, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: github_ai_ml
+    source_type: rss
+    name: GitHub AI & ML Blog RSS
+    url: https://github.blog/ai-and-ml/feed/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 88
+    default_categories: [agent_tools, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: microsoft_research_ai
+    source_type: rss
+    name: Microsoft Research AI RSS
+    url: https://www.microsoft.com/en-us/research/feed/?facet%5Btax%5D%5Bmsr-research-area%5D%5B0%5D=13556
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 88
+    default_categories: [papers, ai_models, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: nvidia_ai_blog
+    source_type: rss
+    name: NVIDIA AI Blog RSS
+    url: https://blogs.nvidia.com/blog/category/deep-learning/feed/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 86
+    default_categories: [ai_models, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: huggingface_blog
+    source_type: rss
+    name: Hugging Face Blog RSS
+    url: https://huggingface.co/blog/feed.xml
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 85
+    default_categories: [ai_models, papers, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: langchain_blog
+    source_type: rss
+    name: LangChain Blog RSS
+    url: https://www.langchain.com/blog/rss.xml
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 82
+    default_categories: [agent_tools, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: replicate_blog
+    source_type: rss
+    name: Replicate Blog RSS
+    url: https://replicate.com/blog/rss
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 78
+    default_categories: [ai_products, agent_tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: arxiv_ai
+    source_type: rss
+    name: arXiv AI RSS
+    url: https://export.arxiv.org/rss/cs.AI
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 78
+    default_categories: [papers, ai_models]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: berkeley_ai_research
+    source_type: rss
+    name: Berkeley AI Research RSS
+    url: https://bair.berkeley.edu/blog/feed.xml
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 76
+    default_categories: [papers, ai_models]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: simon_willison_blog
+    source_type: rss
+    name: Simon Willison Blog Atom
+    url: https://simonwillison.net/atom/everything/
+    language: en
+    region: global
+    trust_level: expert
+    base_weight: 80
+    default_categories: [agent_tools, ai_products, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: semianalysis
+    source_type: rss
+    name: SemiAnalysis RSS
+    url: https://semianalysis.com/feed/
+    language: en
+    region: global
+    trust_level: expert
+    base_weight: 80
+    default_categories: [industry, monetization]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: techcrunch_ai
+    source_type: rss
+    name: TechCrunch AI RSS
+    url: https://techcrunch.com/category/artificial-intelligence/feed/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 74
+    default_categories: [industry, ai_products, monetization]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: theverge_ai
+    source_type: rss
+    name: The Verge AI RSS
+    url: https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 74
+    default_categories: [industry, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: marktechpost
+    source_type: rss
+    name: MarkTechPost RSS
+    url: https://www.marktechpost.com/feed/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 70
+    default_categories: [ai_models, papers, agent_tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: artificial_intelligence_news
+    source_type: rss
+    name: AI News RSS
+    url: https://www.artificialintelligence-news.com/feed/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 70
+    default_categories: [industry, ai_products, monetization]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: infoq_ai
+    source_type: rss
+    name: InfoQ AI/ML RSS
+    url: https://feed.infoq.com/ai-ml-data-eng/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 70
+    default_categories: [agent_tools, ai_products, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: mit_technology_review_ai
+    source_type: rss
+    name: MIT Technology Review AI RSS
+    url: https://www.technologyreview.com/topic/artificial-intelligence/feed/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 72
+    default_categories: [industry, ai_products, monetization]
+    crawl_interval_minutes: 60
+    parser_type: rss
     enabled: true
   - id: anthropic_news
-    source_type: website
+    source_type: official
     name: Anthropic News
     url: https://www.anthropic.com/news
     language: en
@@ -45,45 +273,9 @@ sources:
     trust_level: official
     base_weight: 95
     default_categories: [ai_models, ai_products]
-    crawl_interval_minutes: 360
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: huggingface_blog
-    source_type: website
-    name: Hugging Face Blog
-    url: https://huggingface.co/blog
-    language: en
-    region: global
-    trust_level: authority
-    base_weight: 85
-    default_categories: [ai_models, papers, industry]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
-  - id: google_deepmind_blog
-    source_type: official
-    name: Google DeepMind Blog
-    url: https://deepmind.google/discover/blog/
-    language: en
-    region: global
-    trust_level: official
-    base_weight: 94
-    default_categories: [ai_models, papers, industry]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
-  - id: google_ai_blog
-    source_type: official
-    name: Google AI Blog
-    url: https://blog.google/technology/ai/
-    language: en
-    region: global
-    trust_level: official
-    base_weight: 92
-    default_categories: [ai_models, ai_products, industry]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: microsoft_ai_blog
     source_type: official
     name: Microsoft AI Blog
@@ -91,11 +283,11 @@ sources:
     language: en
     region: global
     trust_level: official
-    base_weight: 90
+    base_weight: 88
     default_categories: [ai_products, industry]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: meta_ai_blog
     source_type: official
     name: Meta AI Blog
@@ -105,21 +297,9 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [ai_models, papers, industry]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: nvidia_ai_blog
-    source_type: official
-    name: NVIDIA AI Blog
-    url: https://blogs.nvidia.com/blog/category/deep-learning/
-    language: en
-    region: global
-    trust_level: official
-    base_weight: 88
-    default_categories: [ai_models, industry]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: mistral_news
     source_type: official
     name: Mistral AI News
@@ -129,9 +309,9 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [ai_models, ai_products]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: cohere_blog
     source_type: official
     name: Cohere Blog
@@ -141,9 +321,9 @@ sources:
     trust_level: official
     base_weight: 86
     default_categories: [ai_models, ai_products]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: stability_ai_news
     source_type: official
     name: Stability AI News
@@ -153,9 +333,9 @@ sources:
     trust_level: official
     base_weight: 84
     default_categories: [ai_models, ai_products]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: cursor_blog
     source_type: official
     name: Cursor Blog
@@ -165,21 +345,9 @@ sources:
     trust_level: official
     base_weight: 82
     default_categories: [agent_tools, ai_products]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: langchain_blog
-    source_type: authority
-    name: LangChain Blog
-    url: https://blog.langchain.com/
-    language: en
-    region: global
-    trust_level: authority
-    base_weight: 82
-    default_categories: [agent_tools, ai_products]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: openrouter_blog
     source_type: authority
     name: OpenRouter Blog
@@ -189,21 +357,9 @@ sources:
     trust_level: authority
     base_weight: 78
     default_categories: [ai_products, industry]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: replicate_blog
-    source_type: authority
-    name: Replicate Blog
-    url: https://replicate.com/blog
-    language: en
-    region: global
-    trust_level: authority
-    base_weight: 78
-    default_categories: [ai_products, agent_tools]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: the_batch
     source_type: authority
     name: DeepLearning.AI The Batch
@@ -213,21 +369,9 @@ sources:
     trust_level: media
     base_weight: 76
     default_categories: [industry, papers, ai_models]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: simon_willison_blog
-    source_type: blog
-    name: Simon Willison Blog
-    url: https://simonwillison.net/
-    language: en
-    region: global
-    trust_level: expert
-    base_weight: 80
-    default_categories: [agent_tools, ai_products, industry]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: lilian_weng_blog
     source_type: blog
     name: Lilian Weng Blog
@@ -237,21 +381,9 @@ sources:
     trust_level: expert
     base_weight: 79
     default_categories: [papers, ai_models]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: semianalysis
-    source_type: authority
-    name: SemiAnalysis
-    url: https://semianalysis.com/
-    language: en
-    region: global
-    trust_level: expert
-    base_weight: 80
-    default_categories: [industry, monetization]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: venturebeat_ai
     source_type: authority
     name: VentureBeat AI
@@ -261,6 +393,6 @@ sources:
     trust_level: media
     base_weight: 72
     default_categories: [industry, ai_products, monetization]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false

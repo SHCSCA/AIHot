@@ -97,6 +97,16 @@ def test_bundled_channel_configs_have_production_source_coverage():
     assert all(60 <= source.base_weight <= 100 for config in configs.values() for source in config.sources)
 
 
+def test_bundled_enabled_sources_are_rss_first_for_hourly_production():
+    configs = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}
+
+    for channel_id in ("ai", "amazon"):
+        enabled_sources = [source for source in configs[channel_id].sources if source.enabled]
+        assert len(enabled_sources) >= 15
+        assert all(source.parser_type == "rss" for source in enabled_sources)
+        assert all(source.url.startswith("https://") for source in enabled_sources)
+
+
 def test_registry_can_upsert_toggle_and_update_state(tmp_path):
     SessionLocal = _session_factory(tmp_path)
     now = datetime(2026, 5, 11, 10, 0, tzinfo=timezone.utc)
