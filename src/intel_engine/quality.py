@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
@@ -35,6 +35,13 @@ def is_same_operational_day(published_at: datetime | None, now: datetime) -> boo
     return _aware(published_at).astimezone(OPERATIONAL_TIMEZONE).date() == _aware(now).astimezone(
         OPERATIONAL_TIMEZONE
     ).date()
+
+
+def is_within_recent_hours(published_at: datetime | None, now: datetime, *, hours: int = 24) -> bool:
+    if published_at is None:
+        return False
+    age = _aware(now) - _aware(published_at)
+    return timedelta(0) <= age <= timedelta(hours=hours)
 
 
 def is_publishable_original_url(item_url: str | None, source_url: str) -> bool:

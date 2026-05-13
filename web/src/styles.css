@@ -615,6 +615,25 @@ th { background: #f8fafc; color: #667085; }
   margin: 13px 0;
 }
 
+.event-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -4px 0 12px;
+}
+
+.event-tags span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 2px 9px;
+  border: 1px solid #d8efe5;
+  border-radius: 999px;
+  background: #f0fbf6;
+  color: #0f7d51;
+  font-size: 12px;
+}
+
 .public-detail {
   display: grid;
   gap: 8px;

@@ -12,7 +12,9 @@ from intel_engine.models import (
     FetchRunRecord,
     ModelScoreRecord,
     NormalizedItemRecord,
+    RankedItemRecord,
     RawDocumentRecord,
+    RawScreeningResultRecord,
     SourceRecord,
     SourceStateRecord,
     StrategyVersionRecord,
@@ -115,7 +117,7 @@ def _app_with_event(tmp_path):
             ModelScoreRecord(
                 item_id=item.id,
                 strategy_version="ai-default-v1",
-                model="deepseek-v4-flash",
+                model="deepseek-v4-pro",
                 category="ai_models",
                 relevance_score=91,
                 impact_score=90,
@@ -124,7 +126,49 @@ def _app_with_event(tmp_path):
                 credibility_score=95,
                 seller_action_level="review",
                 reason="DeepSeek 认为这是高权威模型发布，值得关注。",
+                raw_json={
+                    "provider": "deepseek",
+                    "model": "deepseek-v4-pro",
+                    "confidenceScore": 88,
+                    "tags": ["模型发布", "官方动态"],
+                    "eventType": "model_release",
+                    "keyFacts": ["OpenAI 发布 GPT-5"],
+                    "riskFlags": [],
+                },
+            )
+        )
+        session.add(
+            RawScreeningResultRecord(
+                raw_document_id=raw.id,
+                strategy_version="ai-default-v1",
+                provider="deepseek",
+                model="deepseek-v4-flash",
+                screen_status="accepted",
+                screen_bucket="core",
+                relevance_score=92,
+                confidence_score=88,
+                category="ai_models",
+                title_cn="OpenAI 发布 GPT-5",
+                summary_cn="OpenAI 发布新模型。",
+                tags_json=["模型发布", "官方动态"],
+                reason_code="accepted",
+                reason_cn="官方模型发布，信息增量明确。",
                 raw_json={"provider": "deepseek", "model": "deepseek-v4-flash"},
+            )
+        )
+        session.add(
+            RankedItemRecord(
+                item_id=item.id,
+                strategy_version="ai-default-v1",
+                source_weight=95,
+                category_weight=80,
+                freshness_weight=100,
+                duplicate_penalty=0,
+                channel_impact_weight=90,
+                final_score=91.5,
+                selected=True,
+                threshold_used=77,
+                selection_reason="达到精选阈值",
             )
         )
         cluster = EventClusterRecord(
@@ -138,6 +182,10 @@ def _app_with_event(tmp_path):
             source_count=1,
             cluster_score=91.5,
             embedding=[0.1, 0.2],
+            review_status="approved",
+            review_note="AI 自动审核通过。",
+            reviewed_by="ai-reviewer",
+            reviewed_at=now,
         )
         session.add(cluster)
         session.flush()
@@ -167,7 +215,7 @@ def _app_with_event(tmp_path):
 def test_public_events_endpoint_returns_event_clusters_without_internal_fields(tmp_path):
     client = TestClient(_app_with_event(tmp_path))
 
-    response = client.get("/api/v1/public/events?channel=ai")
+    response = client.get("/api/v1/public/events?channel=ai&date=2026-05-11")
 
     assert response.status_code == 200
     payload = response.json()
@@ -295,7 +343,7 @@ def _add_public_event(session, *, event_id_suffix: str, observed_at: datetime, t
         ModelScoreRecord(
             item_id=item.id,
             strategy_version="ai-default-v1",
-            model="deepseek-v4-flash",
+            model="deepseek-v4-pro",
             category="ai_models",
             relevance_score=91,
             impact_score=90,
@@ -304,7 +352,49 @@ def _add_public_event(session, *, event_id_suffix: str, observed_at: datetime, t
             credibility_score=95,
             seller_action_level="review",
             reason=f"{title} 推荐理由。",
+            raw_json={
+                "provider": "deepseek",
+                "model": "deepseek-v4-pro",
+                "confidenceScore": 88,
+                "tags": ["模型发布", "官方动态"],
+                "eventType": "model_release",
+                "keyFacts": [title],
+                "riskFlags": [],
+            },
+        )
+    )
+    session.add(
+        RawScreeningResultRecord(
+            raw_document_id=raw.id,
+            strategy_version="ai-default-v1",
+            provider="deepseek",
+            model="deepseek-v4-flash",
+            screen_status="accepted",
+            screen_bucket="core",
+            relevance_score=91,
+            confidence_score=88,
+            category="ai_models",
+            title_cn=title,
+            summary_cn=f"{title} 中文摘要。",
+            tags_json=["模型发布", "官方动态"],
+            reason_code="accepted",
+            reason_cn="信息增量明确。",
             raw_json={"provider": "deepseek", "model": "deepseek-v4-flash"},
+        )
+    )
+    session.add(
+        RankedItemRecord(
+            item_id=item.id,
+            strategy_version="ai-default-v1",
+            source_weight=95,
+            category_weight=80,
+            freshness_weight=100,
+            duplicate_penalty=0,
+            channel_impact_weight=90,
+            final_score=90,
+            selected=True,
+            threshold_used=77,
+            selection_reason="达到精选阈值",
         )
     )
     cluster = EventClusterRecord(
@@ -318,6 +408,10 @@ def _add_public_event(session, *, event_id_suffix: str, observed_at: datetime, t
         source_count=1,
         cluster_score=90,
         embedding=[0.1, 0.2],
+        review_status="approved",
+        review_note="AI 自动审核通过。",
+        reviewed_by="ai-reviewer",
+        reviewed_at=observed_at,
     )
     session.add(cluster)
     session.flush()

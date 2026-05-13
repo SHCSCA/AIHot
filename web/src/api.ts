@@ -75,6 +75,9 @@ export class PublicApi {
       }
     });
     if (!response.ok) throw new ApiError(`请求失败：HTTP ${response.status}`, response.status);
+    if (!responseContentType(response).includes("application/json")) {
+      throw new ApiError("请求失败：情报接口没有返回 JSON 数据", response.status);
+    }
     return response.json() as Promise<T>;
   }
 }
@@ -244,6 +247,9 @@ export class AdminApi {
       if (response.status === 401) this.onUnauthorized?.();
       throw new ApiError(`请求失败：HTTP ${response.status}`, response.status);
     }
+    if (!responseContentType(response).includes("application/json")) {
+      throw new ApiError("请求失败：后台接口没有返回 JSON 数据", response.status);
+    }
     return response.json() as Promise<T>;
   }
 }
@@ -255,4 +261,8 @@ function query(values: Record<string, QueryValue>) {
   });
   const text = params.toString();
   return text ? `?${text}` : "";
+}
+
+function responseContentType(response: Response) {
+  return response.headers?.get?.("content-type") ?? "application/json";
 }

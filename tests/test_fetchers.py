@@ -78,7 +78,7 @@ def test_rss_adapter_fetches_entries_as_raw_documents():
     assert result.documents[0].content_hash
 
 
-def test_rss_adapter_only_accepts_beijing_same_day_specific_links():
+def test_rss_adapter_only_accepts_rolling_24_hour_specific_links():
     now = datetime(2026, 5, 12, 12, 0, tzinfo=timezone.utc)
     rss = """<?xml version="1.0" encoding="UTF-8" ?>
     <rss version="2.0">
@@ -117,10 +117,13 @@ def test_rss_adapter_only_accepts_beijing_same_day_specific_links():
     source = _source_record("example_feed", "rss")
     result = RssFetchAdapter(now=now).fetch(source, client=httpx.Client(transport=httpx.MockTransport(handler)))
 
-    assert [document.url for document in result.documents] == ["https://example.com/news/today"]
+    assert [document.url for document in result.documents] == [
+        "https://example.com/news/today",
+        "https://example.com/news/yesterday",
+    ]
     assert result.metadata_json["candidate_items"] == 4
-    assert result.metadata_json["accepted_items"] == 1
-    assert result.metadata_json["skipped_old_items"] == 1
+    assert result.metadata_json["accepted_items"] == 2
+    assert result.metadata_json["skipped_old_items"] == 0
     assert result.metadata_json["skipped_missing_date"] == 1
     assert result.metadata_json["skipped_invalid_original_url"] == 1
 

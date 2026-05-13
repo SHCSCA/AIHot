@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from intel_engine.models import DailyDigestRecord, EventClusterRecord, ModelScoreRecord, NormalizedItemRecord, utc_now
+from intel_engine.models import DailyDigestRecord, EventClusterRecord, ModelScoreRecord, NormalizedItemRecord, RankedItemRecord, utc_now
+from intel_engine.review import ROLLING_WINDOW_HOURS
 
 
 @dataclass(frozen=True)
 class DailyDigestResult:
-    digest_id: int
+    digest_id: int | None
     created: bool
     event_count: int
 
@@ -22,14 +23,22 @@ def generate_daily_digest(
     channel: str,
     digest_date: date,
     strategy_version: str,
+    now: datetime | None = None,
+    auto_publish: bool = True,
 ) -> DailyDigestResult:
-    start = datetime.combine(digest_date, time.min, tzinfo=timezone.utc)
-    end = datetime.combine(digest_date, time.max, tzinfo=timezone.utc)
+    if now is None:
+        start = datetime.combine(digest_date, time.min, tzinfo=timezone.utc)
+        end = datetime.combine(digest_date, time.max, tzinfo=timezone.utc)
+    else:
+        end = now
+        start = now - timedelta(hours=ROLLING_WINDOW_HOURS)
     clusters = list(
         session.scalars(
             select(EventClusterRecord)
+            .join(RankedItemRecord, RankedItemRecord.item_id == EventClusterRecord.main_item_id)
             .where(EventClusterRecord.channel == channel)
-            .where(EventClusterRecord.cluster_score >= 70)
+            .where(EventClusterRecord.review_status == "approved")
+            .where(RankedItemRecord.selected.is_(True))
             .where(EventClusterRecord.last_seen_at >= start)
             .where(EventClusterRecord.last_seen_at <= end)
             .order_by(EventClusterRecord.cluster_score.desc(), EventClusterRecord.last_seen_at.desc())
@@ -58,6 +67,16 @@ def generate_daily_digest(
         .where(DailyDigestRecord.strategy_version == strategy_version)
         .limit(1)
     )
+    if not clusters:
+        if existing is not None:
+            existing.sections_json = {"highlights": []}
+            existing.published = False
+            existing.published_by = None
+            existing.published_at = None
+            existing.generated_at = utc_now()
+            session.flush()
+            return DailyDigestResult(digest_id=existing.id, created=False, event_count=0)
+        return DailyDigestResult(digest_id=None, created=False, event_count=0)
     created = existing is None
     digest = existing or DailyDigestRecord(
         channel=channel,
@@ -65,12 +84,14 @@ def generate_daily_digest(
         strategy_version=strategy_version,
         title=f"{channel.upper()} 日报",
         sections_json=sections,
-        published=True,
+        published=auto_publish,
     )
     digest.generated_at = utc_now()
     digest.title = f"{channel.upper()} 日报"
     digest.sections_json = sections
-    digest.published = True
+    digest.published = auto_publish
+    digest.published_by = "ai-publisher" if auto_publish else None
+    digest.published_at = utc_now() if auto_publish else None
     if existing is None:
         session.add(digest)
     session.flush()

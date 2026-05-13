@@ -41,6 +41,7 @@ def test_init_schema_creates_production_tables(tmp_path):
         "fetch_jobs",
         "fetch_runs",
         "raw_documents",
+        "raw_screening_results",
         "normalized_items",
         "prefilter_results",
         "model_scores",

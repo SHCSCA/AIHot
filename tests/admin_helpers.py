@@ -13,6 +13,7 @@ from intel_engine.models import (
     ModelScoreRecord,
     NormalizedItemRecord,
     RawDocumentRecord,
+    RawScreeningResultRecord,
     RankedItemRecord,
     SourceRecord,
     SourceStateRecord,
@@ -131,6 +132,33 @@ def app_with_admin_data(tmp_path):
                 credibility_score=95,
                 seller_action_level="review",
                 reason="DeepSeek 认为这是高权威模型发布，值得关注。",
+                raw_json={
+                    "provider": "deepseek",
+                    "model": "deepseek-v4-pro",
+                    "confidenceScore": 88,
+                    "tags": ["模型发布", "官方动态"],
+                    "eventType": "model_release",
+                    "keyFacts": ["OpenAI 发布 GPT-5"],
+                    "riskFlags": [],
+                },
+            )
+        )
+        session.add(
+            RawScreeningResultRecord(
+                raw_document_id=raw.id,
+                strategy_version="ai-default-v1",
+                provider="deepseek",
+                model="deepseek-v4-flash",
+                screen_status="accepted",
+                screen_bucket="core",
+                relevance_score=92,
+                confidence_score=88,
+                category="ai_models",
+                title_cn="OpenAI 发布 GPT-5",
+                summary_cn="OpenAI 发布新模型。",
+                tags_json=["模型发布", "官方动态"],
+                reason_code="accepted",
+                reason_cn="官方模型发布，信息增量明确。",
                 raw_json={"provider": "deepseek", "model": "deepseek-v4-flash"},
             )
         )

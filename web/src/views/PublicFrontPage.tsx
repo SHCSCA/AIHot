@@ -45,7 +45,7 @@ export function PublicFrontPage({
   const [channel, setChannel] = useState<PublicChannel>("ai");
   const [section, setSection] = useState<PublicSection>("selected");
   const [showLogin, setShowLogin] = useState(loginOpen);
-  const [filters, setFilters] = useState({ q: "", category: "", date: today() });
+  const [filters, setFilters] = useState({ q: "", category: "", date: "" });
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [eventError, setEventError] = useState<string | null>(null);
   const [eventLoading, setEventLoading] = useState(false);
@@ -64,7 +64,8 @@ export function PublicFrontPage({
         mode: activeMode,
         category: filters.category || undefined,
         q: filters.q || undefined,
-        date: filters.date,
+        date: filters.date || undefined,
+        window: filters.date ? undefined : 24,
         take: section === "all" ? 32 : 18
       })
       .then((page) => {
@@ -94,7 +95,8 @@ export function PublicFrontPage({
         mode: activeMode,
         category: filters.category || undefined,
         q: filters.q || undefined,
-        date: filters.date,
+        date: filters.date || undefined,
+        window: filters.date ? undefined : 24,
         take: section === "all" ? 32 : 18,
         cursor: nextCursor
       });
@@ -132,7 +134,7 @@ export function PublicFrontPage({
         <div className="hero-metrics" aria-label="前台概览">
           <span><strong>{events.length}</strong>当前结果</span>
           <span><strong>{modeLabel(activeMode)}</strong>当前模式</span>
-          <span><strong>{filters.date}</strong>情报日期</span>
+          <span><strong>最近 24 小时</strong>滚动窗口</span>
         </div>
       </section>
 
@@ -153,8 +155,9 @@ export function PublicFrontPage({
         <section className="public-content">
           <aside className="public-filters">
             <label><Search size={15} />关键词<input value={filters.q} onChange={(event) => setFilters({ ...filters, q: event.target.value })} placeholder="搜索标题或摘要" /></label>
-            <label>分类<select value={filters.category} onChange={(event) => setFilters({ ...filters, category: event.target.value })}><option value="">全部分类</option><option value="ai_models">AI 模型</option><option value="product_research">选品研究</option><option value="industry">行业观察</option><option value="ads">广告投放</option></select></label>
-            <label>情报日期<input type="date" value={filters.date} onChange={(event) => setFilters({ ...filters, date: event.target.value })} /></label>
+            <label>分类<select value={filters.category} onChange={(event) => setFilters({ ...filters, category: event.target.value })}><option value="">全部分类</option>{categoryOptions(channel).map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+            <label>指定日期<input type="date" value={filters.date} onChange={(event) => setFilters({ ...filters, date: event.target.value })} /></label>
+            <p className="hint">当前展示最近 24 小时情报；指定日期后按该日历史分页查看。</p>
             <button className="ghost" onClick={() => setEventVersion((current) => current + 1)}><RefreshCw size={15} />刷新</button>
           </aside>
           <section className="event-feed" aria-label="热点信息流">
@@ -232,9 +235,15 @@ function PublicEventCard({ event, api, showDate }: { event: PublicEvent; api: Pu
         <div className="event-reason">
           <span>推荐理由：{reason}</span>
           {event.sellerActionLevel && <span>{sellerActionLevelLabel(event.sellerActionLevel)}</span>}
+          {event.confidenceScore != null && <span>置信度 {Math.round(event.confidenceScore)}</span>}
           <span>{event.sourceCount} 个来源</span>
           <span>{event.memberCount} 条相关</span>
         </div>
+        {event.tags && event.tags.length > 0 && (
+          <div className="event-tags">
+            {event.tags.map((tag) => <span key={tag}>{tag}</span>)}
+          </div>
+        )}
         <div className="inline-actions">
           {event.mainItem?.url && <a href={event.mainItem.url} target="_blank" rel="noreferrer"><ExternalLink size={15} />查看原文</a>}
           <button className="ghost" onClick={() => { setOpen((current) => !current); if (!open) reload(); }}>{open ? "收起详情" : "事件详情"}</button>
@@ -273,6 +282,7 @@ function DailyReader({ api, channel }: { api: PublicApi; channel: PublicChannel 
         <article className="daily-document">
           <p className="eyebrow">{channelLabel(daily.channel)} · {daily.date}</p>
           <h2>{daily.title}</h2>
+          <p className="hint">{daily.windowLabel || "基于最近 24 小时精选情报自动生成"}</p>
           {highlights.map((item, index) => (
             <section className="daily-timeline-item" key={item.eventId || item.title}>
               <div className="timeline-stamp compact">
@@ -307,6 +317,30 @@ function RssLinks({ channel }: { channel: PublicChannel }) {
       ))}
     </section>
   );
+}
+
+function categoryOptions(channel: PublicChannel) {
+  if (channel === "amazon") {
+    return [
+      { value: "policy", label: "政策监管" },
+      { value: "account_health", label: "账号健康" },
+      { value: "fba_logistics", label: "FBA 物流" },
+      { value: "ads_ppc", label: "广告投放" },
+      { value: "listing_seo", label: "Listing 与搜索" },
+      { value: "fees_margin", label: "费用利润" },
+      { value: "product_research", label: "选品研究" },
+      { value: "tools", label: "卖家工具" },
+      { value: "compliance_trade", label: "合规贸易" }
+    ];
+  }
+  return [
+    { value: "ai_models", label: "AI 模型" },
+    { value: "ai_products", label: "AI 产品" },
+    { value: "agent_tools", label: "Agent 与工具" },
+    { value: "papers", label: "论文报告" },
+    { value: "industry", label: "行业观察" },
+    { value: "monetization", label: "商业变现" }
+  ];
 }
 
 function dailyHighlights(daily: PublicDaily | null) {

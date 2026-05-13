@@ -16,7 +16,7 @@ def test_internal_events_can_filter_show_detail_and_review(tmp_path):
         headers=auth_header(),
     )
     approved = client.get("/api/v1/internal/events?reviewStatus=approved", headers=auth_header())
-    public = client.get("/api/v1/public/events?channel=ai")
+    public = client.get("/api/v1/public/events?channel=ai&date=2026-05-11")
 
     assert listed.status_code == 200
     assert listed.json()["events"][0]["reviewStatus"] == "pending"

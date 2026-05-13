@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, exists, func, or_, select
 
 from intel_engine.auth import require_admin
 from intel_engine.channel_config import load_channel_configs
@@ -24,12 +24,14 @@ from intel_engine.models import (
     NormalizedItemRecord,
     PipelineRunRecord,
     RankedItemRecord,
+    RawScreeningResultRecord,
     SourceRecord,
     SourceStateRecord,
     StrategyVersionRecord,
 )
 from intel_engine.pipeline import run_pipeline_once
 from intel_engine.quality import is_publishable_original_url, operational_day_bounds_utc
+from intel_engine.review import PUBLIC_WINDOW_LABEL, ROLLING_WINDOW_HOURS, public_cluster_ready
 from intel_engine.rss import build_events_feed
 from intel_engine.sources import SourceRegistry, SourceUpsert
 from intel_engine.storage import ItemRepository
@@ -206,7 +208,7 @@ def public_events(
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        stmt = select(EventClusterRecord)
+        stmt = select(EventClusterRecord).where(EventClusterRecord.review_status == "approved")
         if channel:
             stmt = stmt.where(EventClusterRecord.channel == channel)
         if category:
@@ -214,12 +216,17 @@ def public_events(
         if event_date is not None:
             start, end = operational_day_bounds_utc(event_date)
             stmt = stmt.where(EventClusterRecord.last_seen_at >= start).where(EventClusterRecord.last_seen_at <= end)
-        elif window is not None:
-            stmt = stmt.where(EventClusterRecord.last_seen_at >= datetime.now(timezone.utc) - timedelta(hours=window))
+        else:
+            hours = window or ROLLING_WINDOW_HOURS
+            stmt = stmt.where(EventClusterRecord.last_seen_at >= datetime.now(timezone.utc) - timedelta(hours=hours))
         if q:
             stmt = stmt.where(EventClusterRecord.canonical_title.contains(q))
         if mode == "selected":
-            stmt = stmt.where(EventClusterRecord.cluster_score >= 70)
+            stmt = stmt.where(
+                exists()
+                .where(RankedItemRecord.item_id == EventClusterRecord.main_item_id)
+                .where(RankedItemRecord.selected.is_(True))
+            )
         if cursor:
             cursor_value = _decode_cursor(cursor)
             stmt = stmt.where(
@@ -233,10 +240,16 @@ def public_events(
             )
         stmt = stmt.order_by(EventClusterRecord.last_seen_at.desc(), EventClusterRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.scalars(stmt).all()), take, lambda cluster: cluster.last_seen_at, lambda cluster: cluster.id)
-        clusters = page["rows"]
+        clusters = [cluster for cluster in page["rows"] if _is_public_cluster_ready(session, cluster, require_selected=mode == "selected")]
         events = [_event_payload(session, cluster) for cluster in clusters]
 
-    return {"count": len(events), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "events": events}
+    return {
+        "count": len(events),
+        "hasNext": page["hasNext"],
+        "nextCursor": page["nextCursor"],
+        "windowLabel": PUBLIC_WINDOW_LABEL,
+        "events": events,
+    }
 
 
 @router.get("/api/v1/public/events/{event_id}")
@@ -245,6 +258,8 @@ def public_event_detail(request: Request, event_id: int) -> dict[str, object]:
     with SessionLocal() as session:
         cluster = session.get(EventClusterRecord, event_id)
         if cluster is None:
+            raise HTTPException(status_code=404, detail="event not found")
+        if not _is_public_cluster_ready(session, cluster, require_selected=False):
             raise HTTPException(status_code=404, detail="event not found")
 
         members = []
@@ -298,6 +313,7 @@ def public_daily(
                 "generatedAt": digest.generated_at.isoformat(),
                 "title": digest.title,
                 "sections": digest.sections_json,
+                "windowLabel": PUBLIC_WINDOW_LABEL,
             }
         }
 
@@ -309,12 +325,19 @@ def events_feed(request: Request, channel: str) -> Response:
         clusters = session.scalars(
             select(EventClusterRecord)
             .where(EventClusterRecord.channel == channel)
-            .where(EventClusterRecord.cluster_score >= 70)
+            .where(EventClusterRecord.review_status == "approved")
+            .where(
+                exists()
+                .where(RankedItemRecord.item_id == EventClusterRecord.main_item_id)
+                .where(RankedItemRecord.selected.is_(True))
+            )
             .order_by(EventClusterRecord.last_seen_at.desc(), EventClusterRecord.cluster_score.desc())
             .limit(50)
         ).all()
         events = []
         for cluster in clusters:
+            if not _is_public_cluster_ready(session, cluster, require_selected=True):
+                continue
             payload = _event_payload(session, cluster)
             main_item = payload.get("mainItem") or {}
             events.append(
@@ -705,7 +728,11 @@ def internal_generate_daily_digest(request: Request, payload: DailyDigestGenerat
             channel=payload.channel,
             digest_date=payload.digest_date,
             strategy_version=payload.strategy_version,
+            auto_publish=False,
         )
+        if result.digest_id is None:
+            session.commit()
+            return {"dailyDigest": None, "created": False, "eventCount": 0}
         digest = session.get(DailyDigestRecord, result.digest_id)
         session.commit()
         session.refresh(digest)
@@ -993,6 +1020,7 @@ def _event_payload(session, cluster: EventClusterRecord) -> dict[str, object]:
     main_item = session.get(NormalizedItemRecord, cluster.main_item_id) if cluster.main_item_id is not None else None
     source = session.get(SourceRecord, main_item.source_id) if main_item is not None else None
     score = _model_score_for_item(session, main_item.id) if main_item is not None else None
+    raw_json = score.raw_json if score is not None else {}
     return {
         "id": str(cluster.id),
         "channel": cluster.channel,
@@ -1002,6 +1030,11 @@ def _event_payload(session, cluster: EventClusterRecord) -> dict[str, object]:
         "score": cluster.cluster_score,
         "entryReason": score.reason if score is not None and score.reason else "待 AI 处理后生成推荐理由。",
         "sellerActionLevel": score.seller_action_level if score is not None else None,
+        "confidenceScore": raw_json.get("confidenceScore"),
+        "tags": _list_json(raw_json.get("tags")),
+        "eventType": raw_json.get("eventType"),
+        "keyFacts": _list_json(raw_json.get("keyFacts")),
+        "windowLabel": PUBLIC_WINDOW_LABEL,
         "sourceCount": cluster.source_count,
         "memberCount": cluster.member_count,
         "firstSeenAt": _iso(cluster.first_seen_at),
@@ -1023,8 +1056,14 @@ def _internal_event_payload(session, cluster: EventClusterRecord) -> dict[str, o
     main_item = session.get(NormalizedItemRecord, cluster.main_item_id) if cluster.main_item_id is not None else None
     ranked = _ranked_item_for_item(session, main_item.id) if main_item is not None else None
     score = _model_score_for_item(session, main_item.id) if main_item is not None else None
+    screening = _screening_for_item(session, main_item.id) if main_item is not None else None
     payload["rank"] = _ranked_payload(ranked)
     payload["modelScore"] = _model_score_payload(score)
+    payload["screenStatus"] = screening.screen_status if screening is not None else None
+    payload["screenBucket"] = screening.screen_bucket if screening is not None else None
+    payload["screenReasonCode"] = screening.reason_code if screening is not None else None
+    payload["screenReason"] = screening.reason_cn if screening is not None else None
+    payload["riskFlags"] = _list_json(score.raw_json.get("riskFlags")) if score is not None else []
     return payload
 
 
@@ -1102,6 +1141,35 @@ def _model_score_for_item(session, item_id: int) -> ModelScoreRecord | None:
     return session.scalar(select(ModelScoreRecord).where(ModelScoreRecord.item_id == item_id).limit(1))
 
 
+def _screening_for_item(session, item_id: int) -> RawScreeningResultRecord | None:
+    item = session.get(NormalizedItemRecord, item_id)
+    if item is None:
+        return None
+    return session.scalar(
+        select(RawScreeningResultRecord)
+        .where(RawScreeningResultRecord.raw_document_id == item.raw_document_id)
+        .order_by(RawScreeningResultRecord.created_at.desc())
+        .limit(1)
+    )
+
+
+def _is_public_cluster_ready(session, cluster: EventClusterRecord, *, require_selected: bool) -> bool:
+    main_item = session.get(NormalizedItemRecord, cluster.main_item_id) if cluster.main_item_id is not None else None
+    source = session.get(SourceRecord, main_item.source_id) if main_item is not None else None
+    screening = _screening_for_item(session, main_item.id) if main_item is not None else None
+    score = _model_score_for_item(session, main_item.id) if main_item is not None else None
+    ranked = _ranked_item_for_item(session, main_item.id) if main_item is not None else None
+    return public_cluster_ready(
+        cluster=cluster,
+        item=main_item,
+        source=source,
+        screening=screening,
+        score=score,
+        ranked=ranked,
+        require_selected=require_selected,
+    )
+
+
 def _ranked_payload(ranked: RankedItemRecord | None) -> dict[str, object] | None:
     if ranked is None:
         return None
@@ -1117,6 +1185,7 @@ def _ranked_payload(ranked: RankedItemRecord | None) -> dict[str, object] | None
 def _model_score_payload(score: ModelScoreRecord | None) -> dict[str, object] | None:
     if score is None:
         return None
+    raw_json = score.raw_json or {}
     return {
         "model": score.model,
         "category": score.category,
@@ -1127,7 +1196,18 @@ def _model_score_payload(score: ModelScoreRecord | None) -> dict[str, object] | 
         "credibilityScore": score.credibility_score,
         "sellerActionLevel": score.seller_action_level,
         "reason": score.reason,
+        "confidenceScore": raw_json.get("confidenceScore"),
+        "tags": _list_json(raw_json.get("tags")),
+        "eventType": raw_json.get("eventType"),
+        "keyFacts": _list_json(raw_json.get("keyFacts")),
+        "riskFlags": _list_json(raw_json.get("riskFlags")),
     }
+
+
+def _list_json(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value if item is not None]
 
 
 def _evaluation_metrics_payload(values: dict[str, object]) -> dict[str, object]:

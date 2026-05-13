@@ -189,6 +189,43 @@ class RawDocumentRecord(Base):
     fetched_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
 
 
+class RawScreeningResultRecord(Base):
+    __tablename__ = "raw_screening_results"
+    __table_args__ = (
+        UniqueConstraint("raw_document_id", "strategy_version", name="uq_raw_screening_results_raw_strategy"),
+        CheckConstraint(
+            "screen_status in ('accepted', 'rejected', 'failed')",
+            name="ck_raw_screening_results_status",
+        ),
+        CheckConstraint(
+            "screen_bucket in ('core', 'related', 'watch', 'irrelevant', 'invalid')",
+            name="ck_raw_screening_results_bucket",
+        ),
+        CheckConstraint("relevance_score >= 0 and relevance_score <= 100", name="ck_raw_screening_results_relevance"),
+        CheckConstraint("confidence_score >= 0 and confidence_score <= 100", name="ck_raw_screening_results_confidence"),
+        Index("ix_raw_screening_results_status_created", "screen_status", "created_at"),
+        Index("ix_raw_screening_results_raw_document", "raw_document_id"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    raw_document_id: Mapped[int] = mapped_column(ForeignKey("raw_documents.id", ondelete="CASCADE"), nullable=False)
+    strategy_version: Mapped[str] = mapped_column(ForeignKey("strategy_versions.id"), nullable=False)
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    model: Mapped[str] = mapped_column(String(128), nullable=False)
+    screen_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    screen_bucket: Mapped[str] = mapped_column(String(32), nullable=False)
+    relevance_score: Mapped[float] = mapped_column(Float, nullable=False)
+    confidence_score: Mapped[float] = mapped_column(Float, nullable=False)
+    category: Mapped[str] = mapped_column(String(64), nullable=False)
+    title_cn: Mapped[str] = mapped_column(Text, nullable=False)
+    summary_cn: Mapped[str] = mapped_column(Text, nullable=False)
+    tags_json: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    reason_code: Mapped[str] = mapped_column(String(64), nullable=False)
+    reason_cn: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    raw_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+
+
 class NormalizedItemRecord(TimestampMixin, Base):
     __tablename__ = "normalized_items"
     __table_args__ = (

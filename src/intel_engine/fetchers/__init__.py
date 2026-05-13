@@ -12,7 +12,7 @@ import httpx
 
 from intel_engine.models import SourceRecord, utc_now
 from intel_engine.normalizer import canonicalize_url, collapse_whitespace
-from intel_engine.quality import is_publishable_original_url, is_same_operational_day
+from intel_engine.quality import is_publishable_original_url, is_within_recent_hours
 
 
 TAG_RE = re.compile(r"<[^>]+>")
@@ -81,7 +81,7 @@ class RssFetchAdapter:
             if published_at is None:
                 skipped_missing_date += 1
                 continue
-            if not is_same_operational_day(published_at, fetched_at):
+            if not is_within_recent_hours(published_at, fetched_at):
                 skipped_old_items += 1
                 continue
             if not is_publishable_original_url(url, source.url):

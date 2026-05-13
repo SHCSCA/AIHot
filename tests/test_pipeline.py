@@ -6,7 +6,7 @@ import httpx
 from sqlalchemy import select
 
 from intel_engine.db import create_engine_from_settings, init_schema, sessionmaker_for_engine
-from intel_engine.llm import FakeLLMProvider, ModelScore
+from intel_engine.llm import FakeLLMProvider, FakeScreeningProvider, ModelScore, ScreeningResult
 from intel_engine.models import (
     ClusterMemberRecord,
     EventClusterRecord,
@@ -88,11 +88,34 @@ def _stable_llm_provider() -> FakeLLMProvider:
             novelty_score=90,
             actionability_score=90,
             credibility_score=95,
+            confidence_score=88,
             summary_cn="AI 处理后的中文摘要。",
             title_cn=None,
             reason="测试推荐理由。",
             seller_action_level="review",
+            tags=["模型发布", "官方动态"],
+            event_type="model_release",
+            key_facts=["OpenAI 发布新模型"],
+            risk_flags=[],
             raw_json={"provider": "fake", "model": "fake-default"},
+        )
+    )
+
+
+def _stable_screening_provider() -> FakeScreeningProvider:
+    return FakeScreeningProvider(
+        ScreeningResult(
+            screen_status="accepted",
+            screen_bucket="core",
+            relevance_score=92,
+            confidence_score=88,
+            category="ai_models",
+            title_cn="OpenAI 发布 GPT-5",
+            summary_cn="OpenAI 发布新模型摘要。",
+            tags=["模型发布", "官方动态"],
+            reason_code="accepted",
+            reason_cn="信息增量明确。",
+            raw_json={"provider": "fake", "model": "fake-screening"},
         )
     )
 
@@ -125,6 +148,7 @@ def test_pipeline_once_produces_public_event_and_isolates_failed_source(tmp_path
         now=now,
         client=httpx.Client(transport=httpx.MockTransport(handler)),
         llm_provider=_stable_llm_provider(),
+        screening_provider=_stable_screening_provider(),
     )
 
     with SessionLocal() as session:
@@ -150,7 +174,7 @@ def test_pipeline_once_produces_public_event_and_isolates_failed_source(tmp_path
     assert score_count == 1
     assert rank_count == 1
     assert cluster is not None
-    assert cluster.canonical_title == "OpenAI launches GPT-5"
+    assert cluster.canonical_title == "OpenAI 发布 GPT-5"
     assert member_count == 1
 
 
@@ -178,6 +202,7 @@ def test_worker_marks_adapter_exception_failed_without_stopping_other_jobs(tmp_p
         now=now,
         client=httpx.Client(transport=httpx.MockTransport(handler)),
         llm_provider=_stable_llm_provider(),
+        screening_provider=_stable_screening_provider(),
     )
 
     with SessionLocal() as session:
@@ -206,11 +231,28 @@ def test_worker_is_idempotent_for_duplicate_documents(tmp_path):
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
     provider = _stable_llm_provider()
-    first = run_pipeline_once(SessionLocal, worker_id="worker-a", limit=10, now=now, client=client, llm_provider=provider)
+    screening = _stable_screening_provider()
+    first = run_pipeline_once(
+        SessionLocal,
+        worker_id="worker-a",
+        limit=10,
+        now=now,
+        client=client,
+        llm_provider=provider,
+        screening_provider=screening,
+    )
     with SessionLocal() as session:
         session.add(FetchJobRecord(source_id="openai_feed", status="pending", priority=10, run_after=now))
         session.commit()
-    second = run_worker_once(SessionLocal, worker_id="worker-b", limit=10, now=now, client=client, llm_provider=provider)
+    second = run_worker_once(
+        SessionLocal,
+        worker_id="worker-b",
+        limit=10,
+        now=now,
+        client=client,
+        llm_provider=provider,
+        screening_provider=screening,
+    )
 
     with SessionLocal() as session:
         raw_count = len(session.scalars(select(RawDocumentRecord)).all())
@@ -246,10 +288,15 @@ def test_pipeline_uses_injected_llm_provider_for_model_scores(tmp_path):
             novelty_score=76,
             actionability_score=65,
             credibility_score=90,
+            confidence_score=86,
             summary_cn="外部 Provider 生成的摘要。",
             title_cn="外部 Provider 生成的标题",
             reason="外部 Provider 被流水线调用。",
             seller_action_level="review",
+            tags=["产品更新", "模型能力"],
+            event_type="product_update",
+            key_facts=["外部 Provider 返回结构化结果"],
+            risk_flags=[],
             raw_json={"provider": "deepseek", "model": "deepseek-chat"},
         )
     )
@@ -260,6 +307,7 @@ def test_pipeline_uses_injected_llm_provider_for_model_scores(tmp_path):
         now=now,
         client=httpx.Client(transport=httpx.MockTransport(handler)),
         llm_provider=provider,
+        screening_provider=_stable_screening_provider(),
     )
 
     with SessionLocal() as session:
@@ -335,10 +383,15 @@ def test_reprocess_existing_items_updates_ai_processed_fields(tmp_path):
             novelty_score=84,
             actionability_score=70,
             credibility_score=95,
+            confidence_score=87,
             summary_cn="AI 处理后的中文摘要。",
             title_cn="AI 处理后的中文标题",
             reason="AI 处理后的推荐理由。",
             seller_action_level="review",
+            tags=["模型发布", "官方动态"],
+            event_type="model_release",
+            key_facts=["AI 处理字段被更新"],
+            risk_flags=[],
             raw_json={"provider": "deepseek", "model": "deepseek-v4-flash"},
         )
     )

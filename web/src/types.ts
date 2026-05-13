@@ -76,6 +76,11 @@ export type EventCluster = {
   reviewedAt?: string | null;
   rank?: Record<string, unknown> | null;
   modelScore?: Record<string, unknown> | null;
+  screenStatus?: string | null;
+  screenBucket?: string | null;
+  screenReasonCode?: string | null;
+  screenReason?: string | null;
+  riskFlags?: string[];
 };
 
 export type PublicEvent = {
@@ -93,6 +98,11 @@ export type PublicEvent = {
   entryReason?: string | null;
   suggestedAction?: string | null;
   sellerActionLevel?: string | null;
+  confidenceScore?: number | null;
+  tags?: string[];
+  eventType?: string | null;
+  keyFacts?: string[];
+  windowLabel?: string;
 };
 
 export type PublicEventDetail = {
@@ -114,6 +124,7 @@ export type PublicDaily = {
   generatedAt: string | null;
   title: string;
   sections: Record<string, unknown>;
+  windowLabel?: string;
 };
 
 export type PublicFeedLink = {

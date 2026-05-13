@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     admin_password: str = Field(default="admin")
     llm_provider: str = Field(default="fake")
     llm_model: str = Field(default="fake-default")
+    llm_screening_model: str = Field(default="deepseek-v4-flash")
+    llm_scoring_model: str = Field(default="deepseek-v4-pro")
     llm_timeout_seconds: int = Field(default=30)
     deepseek_api_key: str | None = Field(default=None)
     deepseek_base_url: str = Field(default="https://api.deepseek.com")
