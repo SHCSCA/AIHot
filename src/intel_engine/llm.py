@@ -23,6 +23,17 @@ GENERIC_TAGS = {
     "models",
 }
 
+SELLER_ACTION_LEVELS = {"urgent", "act_soon", "review", "watch"}
+SELLER_ACTION_ALIASES = {
+    "high": "act_soon",
+    "act": "act_soon",
+    "action": "act_soon",
+    "medium": "review",
+    "low": "watch",
+    "ignore": "watch",
+    "none": "watch",
+}
+
 
 class ModelScore(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -148,6 +159,7 @@ class DeepSeekModelProvider:
                         "actionability_score, credibility_score, summary_cn, title_cn, reason, "
                         "seller_action_level, confidence_score, tags, event_type, key_facts, risk_flags, raw_json。"
                         "只做多维评分、中文标题、中文摘要和推荐理由，不要决定 selected。"
+                        "seller_action_level 只能是 urgent、act_soon、review、watch，不要输出长句。"
                         "评分必须遵守：相关度、影响度、新颖度、行动价值、可信度均为 0-100。"
                         "AI 频道重技术/产品/生态影响；Amazon 频道重卖家利润、风险和行动价值。"
                     ),
@@ -368,17 +380,46 @@ def _normalize_model_score_payload(payload: dict[str, Any]) -> dict[str, Any]:
     normalized["tags"] = _clean_tags(normalized.get("tags"))
     normalized.setdefault("key_facts", [])
     normalized.setdefault("risk_flags", [])
+    raw_json = _normalize_raw_json(normalized.get("raw_json"))
     seller_action_level = normalized.get("seller_action_level")
-    if seller_action_level is not None and not isinstance(seller_action_level, str):
-        normalized["seller_action_level"] = "review"
-    raw_json = normalized.get("raw_json")
-    if raw_json is None:
-        normalized["raw_json"] = {}
-    elif isinstance(raw_json, str):
-        normalized["raw_json"] = {"modelOutput": raw_json}
-    elif not isinstance(raw_json, dict):
-        normalized["raw_json"] = {"modelOutput": str(raw_json)}
+    compact_action_level = _compact_seller_action_level(seller_action_level)
+    if compact_action_level != seller_action_level:
+        if seller_action_level is not None:
+            raw_json["sellerActionLevelOriginal"] = str(seller_action_level)
+        normalized["seller_action_level"] = compact_action_level
+    normalized["raw_json"] = raw_json
     return normalized
+
+
+def _normalize_raw_json(raw_json: object) -> dict[str, Any]:
+    if raw_json is None:
+        return {}
+    if isinstance(raw_json, str):
+        return {"modelOutput": raw_json}
+    if not isinstance(raw_json, dict):
+        return {"modelOutput": str(raw_json)}
+    return dict(raw_json)
+
+
+def _compact_seller_action_level(value: object) -> str | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        return "review"
+    normalized = value.strip().lower().replace("-", "_").replace(" ", "_")
+    if not normalized:
+        return "review"
+    if normalized in SELLER_ACTION_LEVELS:
+        return normalized
+    if normalized in SELLER_ACTION_ALIASES:
+        return SELLER_ACTION_ALIASES[normalized]
+    if any(keyword in value for keyword in ("立即", "马上", "紧急", "优先", "尽快")):
+        return "urgent"
+    if any(keyword in value for keyword in ("行动", "调整", "处理", "索赔", "赔偿", "检查", "核对", "修复")):
+        return "act_soon"
+    if any(keyword in value for keyword in ("关注", "评估", "查看", "建议", "观察")):
+        return "review"
+    return "watch"
 
 
 def _normalize_screening_payload(payload: dict[str, Any]) -> dict[str, Any]:

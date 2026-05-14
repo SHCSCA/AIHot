@@ -191,6 +191,51 @@ def test_deepseek_provider_normalizes_non_string_seller_action_level():
     assert score.raw_json["provider"] == "deepseek"
 
 
+def test_deepseek_provider_compacts_long_seller_action_level_text():
+    original_action = "建议立即检查FBA库存报告，确认是否获得应得的赔偿，并了解索赔流程。"
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "category": "fba_logistics",
+                                    "relevance_score": 85,
+                                    "impact_score": 75,
+                                    "novelty_score": 70,
+                                    "actionability_score": 90,
+                                    "credibility_score": 72,
+                                    "summary_cn": "亚马逊 FBA 入仓缺件索赔信息，卖家需要核对库存差异。",
+                                    "title_cn": "亚马逊 FBA 缺件索赔提醒",
+                                    "reason": "这会影响卖家库存核对和潜在赔偿，值得尽快查看。",
+                                    "seller_action_level": original_action,
+                                    "raw_json": {"modelOutputVersion": "test"},
+                                }
+                            )
+                        }
+                    }
+                ],
+            },
+        )
+
+    provider = DeepSeekModelProvider(
+        model="deepseek-chat",
+        api_key="test-key",
+        timeout_seconds=5,
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    score = provider.score_item({"title": "The Amazon FBA Perk You May Not Know About"})
+
+    assert score.seller_action_level == "urgent"
+    assert score.raw_json["sellerActionLevelOriginal"] == original_action
+    assert score.raw_json["provider"] == "deepseek"
+
+
 def test_deepseek_provider_filters_generic_english_tags_but_keeps_brand_keywords():
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(

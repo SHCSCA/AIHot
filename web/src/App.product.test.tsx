@@ -4,7 +4,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { PublicApi } from "./api";
 import type { AdminApi } from "./api";
-import { categoryLabel, channelLabel, feedbackTypeLabel, sourceTypeLabel, statusLabel } from "./labels";
+import {
+  categoryLabel,
+  channelLabel,
+  feedbackTypeLabel,
+  sellerActionLevelLabel,
+  sourceTypeLabel,
+  statusLabel
+} from "./labels";
 import { DailyDigestsView } from "./views/DailyDigestsView";
 import { DashboardView } from "./views/DashboardView";
 import { EvaluationsView } from "./views/EvaluationsView";
@@ -442,6 +449,7 @@ describe("后台产品化界面", () => {
     expect(feedbackTypeLabel("false_positive")).toBe("误选");
     expect(sourceTypeLabel("html")).toBe("网页");
     expect(statusLabel("approved")).toBe("已通过");
+    expect(sellerActionLevelLabel("act_soon")).toBe("建议尽快行动");
   });
 
   it("renders dashboard metrics", async () => {

@@ -158,6 +158,8 @@ export function sellerActionLevelLabel(value?: string | null) {
     ignore: "仅关注",
     review: "建议查看",
     act: "建议行动",
+    act_soon: "建议尽快行动",
+    high: "建议尽快行动",
     urgent: "优先处理"
   });
 }
