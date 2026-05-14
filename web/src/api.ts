@@ -10,6 +10,7 @@ import type {
   Page,
   QualityDashboard,
   PublicDaily,
+  DailyArchiveItem,
   PublicEvent,
   PublicEventDetail,
   Source,
@@ -52,15 +53,32 @@ export class PublicApi {
       window?: number;
       take?: number;
       cursor?: string | null;
+      page?: number;
+      pageSize?: number;
     } = {}
   ): Promise<Page<PublicEvent>> {
     const response = await this.request<{
       count: number;
+      page?: number;
+      pageSize?: number;
+      total?: number;
+      totalPages?: number;
+      hasPrev?: boolean;
       events: PublicEvent[];
       hasNext: boolean;
       nextCursor: string | null;
     }>(`/api/v1/public/events${query(filters)}`);
-    return { items: response.events, count: response.count, hasNext: response.hasNext, nextCursor: response.nextCursor };
+    return {
+      items: response.events,
+      count: response.count,
+      page: response.page,
+      pageSize: response.pageSize,
+      total: response.total,
+      totalPages: response.totalPages,
+      hasPrev: response.hasPrev,
+      hasNext: response.hasNext,
+      nextCursor: response.nextCursor
+    };
   }
 
   async getEventDetail(eventId: string): Promise<PublicEventDetail> {
@@ -71,14 +89,65 @@ export class PublicApi {
     return (await this.request<{ daily: PublicDaily | null }>(`/api/v1/public/daily${query(filters)}`)).daily;
   }
 
-  async listSources(filters: { channel?: string; sourceGroup?: string } = {}): Promise<Source[]> {
-    return (await this.request<{ sources: Source[] }>(`/api/v1/public/sources${query(filters)}`)).sources;
+  async listDailies(filters: { channel: string; page?: number; pageSize?: number }): Promise<Page<DailyArchiveItem>> {
+    const response = await this.request<{
+      items: DailyArchiveItem[];
+      count: number;
+      page?: number;
+      pageSize?: number;
+      total?: number;
+      totalPages?: number;
+      hasPrev?: boolean;
+      hasNext: boolean;
+      nextCursor: string | null;
+    }>(`/api/v1/public/dailies${query(filters)}`);
+    return {
+      items: response.items,
+      count: response.count,
+      page: response.page,
+      pageSize: response.pageSize,
+      total: response.total,
+      totalPages: response.totalPages,
+      hasPrev: response.hasPrev,
+      hasNext: response.hasNext,
+      nextCursor: response.nextCursor
+    };
+  }
+
+  async listSources(filters: { channel?: string; sourceGroup?: string; page?: number; pageSize?: number } = {}): Promise<Source[]> {
+    return (await this.listSourcesPage(filters)).items;
+  }
+
+  async listSourcesPage(filters: { channel?: string; sourceGroup?: string; page?: number; pageSize?: number } = {}): Promise<Page<Source>> {
+    const response = await this.request<{
+      sources: Source[];
+      count: number;
+      page?: number;
+      pageSize?: number;
+      total?: number;
+      totalPages?: number;
+      hasPrev?: boolean;
+      hasNext: boolean;
+      nextCursor: string | null;
+    }>(`/api/v1/public/sources${query(filters)}`);
+    return {
+      items: response.sources,
+      count: response.count,
+      page: response.page,
+      pageSize: response.pageSize,
+      total: response.total,
+      totalPages: response.totalPages,
+      hasPrev: response.hasPrev,
+      hasNext: response.hasNext,
+      nextCursor: response.nextCursor
+    };
   }
 
   async submitFeedback(payload: {
     channel: string;
     feedbackType: string;
     reason: string;
+    contact?: string | null;
     clusterId?: string | number | null;
     itemId?: string | number | null;
   }): Promise<FeedbackEvent> {
@@ -124,14 +193,29 @@ export class AdminApi {
     return (await this.listSourcesPage({ channel, take: 200 })).items;
   }
 
-  async listSourcesPage(filters: { channel?: string; take?: number; cursor?: string | null } = {}): Promise<Page<Source>> {
+  async listSourcesPage(filters: { channel?: string; take?: number; cursor?: string | null; page?: number; pageSize?: number } = {}): Promise<Page<Source>> {
     const response = await this.request<{
       count: number;
+      page?: number;
+      pageSize?: number;
+      total?: number;
+      totalPages?: number;
+      hasPrev?: boolean;
       hasNext: boolean;
       nextCursor: string | null;
       sources: Source[];
     }>(`/api/v1/internal/sources${query(filters)}`);
-    return { items: response.sources, count: response.count, hasNext: response.hasNext, nextCursor: response.nextCursor };
+    return {
+      items: response.sources,
+      count: response.count,
+      page: response.page,
+      pageSize: response.pageSize,
+      total: response.total,
+      totalPages: response.totalPages,
+      hasPrev: response.hasPrev,
+      hasNext: response.hasNext,
+      nextCursor: response.nextCursor
+    };
   }
 
   async createSource(payload: Source): Promise<Source> {
@@ -158,10 +242,15 @@ export class AdminApi {
   }
 
   async listSourceDiagnosticsPage(
-    filters: { channel?: string; take?: number; cursor?: string | null } = {}
+    filters: { channel?: string; take?: number; cursor?: string | null; page?: number; pageSize?: number } = {}
   ): Promise<Page<SourceDiagnostic>> {
     const response = await this.request<{
       count: number;
+      page?: number;
+      pageSize?: number;
+      total?: number;
+      totalPages?: number;
+      hasPrev?: boolean;
       hasNext: boolean;
       nextCursor: string | null;
       sourceDiagnostics: SourceDiagnostic[];
@@ -169,6 +258,11 @@ export class AdminApi {
     return {
       items: response.sourceDiagnostics,
       count: response.count,
+      page: response.page,
+      pageSize: response.pageSize,
+      total: response.total,
+      totalPages: response.totalPages,
+      hasPrev: response.hasPrev,
       hasNext: response.hasNext,
       nextCursor: response.nextCursor
     };
@@ -260,6 +354,13 @@ export class AdminApi {
   async listFeedbackEvents(filters: { channel?: string; feedbackType?: string; clusterId?: string } = {}): Promise<FeedbackEvent[]> {
     return (await this.request<{ feedbackEvents: FeedbackEvent[] }>(`/api/v1/internal/feedback-events${query(filters)}`))
       .feedbackEvents;
+  }
+
+  async updateFeedbackStatus(feedbackId: string, status: string): Promise<FeedbackEvent> {
+    return (await this.request<{ feedbackEvent: FeedbackEvent }>(`/api/v1/internal/feedback-events/${feedbackId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status })
+    })).feedbackEvent;
   }
 
   async createEvaluationRun(payload: Record<string, unknown>): Promise<EvaluationRun> {

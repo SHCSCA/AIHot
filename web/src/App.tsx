@@ -8,12 +8,14 @@ import {
   LayoutDashboard,
   LogOut,
   MessageSquare,
+  Moon,
   Play,
   SlidersHorizontal,
   RadioTower,
-  ShieldCheck
+  ShieldCheck,
+  Sun
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AdminApi, PublicApi, type Credentials } from "./api";
 import type { Dashboard } from "./types";
 import { DailyDigestsView } from "./views/DailyDigestsView";
@@ -73,7 +75,13 @@ export function App() {
   const [initialDashboard, setInitialDashboard] = useState<Dashboard | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [adminOpen, setAdminOpen] = useState(() => Boolean(loadCredentials()));
+  const [theme, setTheme] = useState<"dark" | "light">(() => (localStorage.getItem("publicTheme") === "light" ? "light" : "dark"));
   const publicApi = useMemo(() => new PublicApi(), []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("publicTheme", theme);
+  }, [theme]);
 
   function logout(message?: string) {
     sessionStorage.removeItem("adminCredentials");
@@ -128,6 +136,8 @@ export function App() {
           </div>
           <div className="admin-user">
             <span>当前用户：{credentials?.username}</span>
+            <button className="ghost" aria-label="深色模式" onClick={() => setTheme("dark")}><Moon size={16} />深色</button>
+            <button className="ghost" aria-label="浅色模式" onClick={() => setTheme("light")}><Sun size={16} />浅色</button>
             <button className="ghost" onClick={() => logout()}><LogOut size={16} />退出登录</button>
           </div>
         </header>

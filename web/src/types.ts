@@ -114,6 +114,8 @@ export type MainItem = {
   socialHandle?: string | null;
   publishedAt?: string | null;
   summary?: string;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
 };
 
 export type EventCluster = {
@@ -174,8 +176,42 @@ export type PublicEventDetail = {
 export type Page<T> = {
   items: T[];
   count: number;
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  totalPages?: number;
+  hasPrev?: boolean;
   hasNext: boolean;
   nextCursor: string | null;
+};
+
+export type DailyItem = {
+  eventId?: string | null;
+  title: string;
+  summary?: string | null;
+  entryReason?: string | null;
+  category?: string | null;
+  score?: number | null;
+  sourceCount?: number | null;
+  memberCount?: number | null;
+  lastSeenAt?: string | null;
+  mainItem?: MainItem | null;
+};
+
+export type DailySection = {
+  category: string;
+  label: string;
+  count: number;
+  items: DailyItem[];
+};
+
+export type DailyArchiveItem = {
+  id: string;
+  date: string;
+  title: string;
+  leadTitle?: string | null;
+  storyCount?: number;
+  generatedAt?: string | null;
 };
 
 export type PublicDaily = {
@@ -184,7 +220,11 @@ export type PublicDaily = {
   date: string;
   generatedAt: string | null;
   title: string;
-  sections: Record<string, unknown>;
+  lead?: DailyItem | null;
+  sections: DailySection[] | Record<string, unknown>;
+  archiveItem?: DailyArchiveItem | null;
+  stats?: { storyCount?: number; [key: string]: unknown };
+  sectionsJson?: Record<string, unknown>;
   windowLabel?: string;
 };
 
@@ -209,7 +249,7 @@ export type DailyDigest = {
   generatedAt: string | null;
   strategyVersion: string;
   title: string;
-  sections: Record<string, unknown>;
+  sections: DailySection[] | Record<string, unknown>;
   published: boolean;
   publishedBy: string | null;
   publishedAt: string | null;
@@ -250,6 +290,8 @@ export type FeedbackEvent = {
   feedbackType: string;
   reason: string;
   actor: string;
+  contact?: string | null;
+  status?: string;
   createdAt?: string | null;
 };
 

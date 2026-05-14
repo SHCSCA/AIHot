@@ -44,21 +44,32 @@ def generate_daily_digest(
             .order_by(EventClusterRecord.cluster_score.desc(), EventClusterRecord.last_seen_at.desc())
         ).all()
     )
+    highlights = [
+        {
+            "eventId": str(cluster.id),
+            "title": _cluster_title(session, cluster),
+            "summary": _cluster_summary(session, cluster),
+            "entryReason": _cluster_reason(session, cluster),
+            "category": _cluster_category(session, cluster),
+            "score": cluster.cluster_score,
+            "sourceCount": cluster.source_count,
+            "memberCount": cluster.member_count,
+            "lastSeenAt": cluster.last_seen_at.isoformat(),
+        }
+        for cluster in clusters
+    ]
+    section_list = _sections_for_channel(channel, highlights)
+    lead = highlights[0] if highlights else None
     sections = {
-        "highlights": [
-            {
-                "eventId": str(cluster.id),
-                "title": _cluster_title(session, cluster),
-                "summary": _cluster_summary(session, cluster),
-                "entryReason": _cluster_reason(session, cluster),
-                "category": _cluster_category(session, cluster),
-                "score": cluster.cluster_score,
-                "sourceCount": cluster.source_count,
-                "memberCount": cluster.member_count,
-                "lastSeenAt": cluster.last_seen_at.isoformat(),
-            }
-            for cluster in clusters
-        ]
+        "highlights": highlights,
+        "lead": lead,
+        "sections": section_list,
+        "archiveItem": {
+            "date": digest_date.isoformat(),
+            "leadTitle": str(lead.get("title")) if lead else "",
+            "storyCount": len(highlights),
+        },
+        "stats": {"storyCount": len(highlights), "sectionCount": len(section_list)},
     }
     existing = session.scalar(
         select(DailyDigestRecord)
@@ -137,3 +148,54 @@ def _cluster_category(session: Session, cluster: EventClusterRecord) -> str:
     if score is not None and score.category:
         return score.category
     return cluster.category
+
+
+def _sections_for_channel(channel: str, highlights: list[dict[str, object]]) -> list[dict[str, object]]:
+    grouped: dict[str, list[dict[str, object]]] = {}
+    for item in highlights:
+        grouped.setdefault(str(item.get("category") or "other"), []).append(item)
+    sections: list[dict[str, object]] = []
+    for category in _category_order(channel):
+        items = grouped.pop(category, [])
+        if items:
+            sections.append({"category": category, "label": _category_label(category), "count": len(items), "items": items})
+    for category, items in grouped.items():
+        sections.append({"category": category, "label": _category_label(category), "count": len(items), "items": items})
+    return sections
+
+
+def _category_order(channel: str) -> list[str]:
+    if channel == "amazon":
+        return [
+            "policy",
+            "account_health",
+            "fba_logistics",
+            "ads_ppc",
+            "listing_seo",
+            "fees_margin",
+            "product_research",
+            "tools",
+            "compliance_trade",
+        ]
+    return ["ai_models", "ai_products", "industry", "papers", "agent_tools", "monetization"]
+
+
+def _category_label(category: str) -> str:
+    labels = {
+        "ai_models": "AI 模型",
+        "ai_products": "AI 产品",
+        "industry": "行业动态",
+        "papers": "论文研究",
+        "agent_tools": "Agent / 工具",
+        "monetization": "商业化",
+        "policy": "平台政策",
+        "account_health": "账号健康",
+        "fba_logistics": "FBA / 物流",
+        "ads_ppc": "广告 / PPC",
+        "listing_seo": "Listing / SEO",
+        "fees_margin": "费用 / 利润",
+        "product_research": "选品研究",
+        "tools": "卖家工具",
+        "compliance_trade": "合规 / 贸易",
+    }
+    return labels.get(category, category)

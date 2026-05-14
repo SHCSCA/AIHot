@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { PublicApi } from "./api";
 import type { AdminApi } from "./api";
@@ -130,6 +130,12 @@ function apiStub(overrides: Partial<AdminApi> = {}) {
 }
 
 describe("后台产品化界面", () => {
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/");
+    localStorage.clear();
+    document.documentElement.removeAttribute("data-theme");
+  });
+
   it("shows a login page before rendering the workspace", async () => {
     sessionStorage.clear();
     const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
@@ -321,6 +327,86 @@ describe("后台产品化界面", () => {
     expect(screen.getByText("待接入")).toBeInTheDocument();
   }, 10000);
 
+  it("renders event cards with thumbnails and numbered pagination", async () => {
+    const publicApi = {
+      listEvents: vi
+        .fn()
+        .mockResolvedValueOnce({
+          items: [
+            {
+              id: "1",
+              channel: "ai",
+              title: "Claude 工具更新",
+              summary: "Claude 发布面向开发者的工具更新。",
+              category: "agent_tools",
+              score: 82,
+              sourceCount: 1,
+              memberCount: 1,
+              lastSeenAt: "2026-05-14T06:13:00Z",
+              entryReason: "推荐理由：该更新会影响开发者工作流。",
+              tags: ["Claude", "工具更新"],
+              mainItem: {
+                title: "Claude 工具更新",
+                sourceName: "Anthropic News",
+                url: "https://anthropic.com/news/tool",
+                imageUrl: "https://anthropic.com/tool.png",
+                imageAlt: "Claude 工具截图"
+              }
+            }
+          ],
+          count: 1,
+          page: 1,
+          pageSize: 20,
+          total: 31,
+          totalPages: 2,
+          hasPrev: false,
+          hasNext: true,
+          nextCursor: null
+        })
+        .mockResolvedValueOnce({
+          items: [],
+          count: 0,
+          page: 2,
+          pageSize: 20,
+          total: 31,
+          totalPages: 2,
+          hasPrev: true,
+          hasNext: false,
+          nextCursor: null
+        }),
+      listSources: vi.fn().mockResolvedValue([]),
+      getEventDetail: vi.fn(),
+      getDaily: vi.fn().mockResolvedValue(null),
+      listDailies: vi.fn().mockResolvedValue({ items: [], count: 0, page: 1, pageSize: 20, total: 0, totalPages: 1 }),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
+    } as unknown as PublicApi;
+
+    render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
+
+    expect(await screen.findByText("Claude 工具更新")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Claude 工具截图" })).toHaveAttribute("src", "https://anthropic.com/tool.png");
+    await userEvent.click(screen.getByRole("button", { name: "下一页" }));
+
+    await waitFor(() => expect(publicApi.listEvents).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, pageSize: 20 })));
+  });
+
+  it("switches between dark and light public themes", async () => {
+    const publicApi = {
+      listEvents: vi.fn().mockResolvedValue({ items: [], count: 0, page: 1, pageSize: 20, total: 0, totalPages: 1, hasNext: false, nextCursor: null }),
+      listSources: vi.fn().mockResolvedValue([]),
+      getEventDetail: vi.fn(),
+      getDaily: vi.fn().mockResolvedValue(null),
+      listDailies: vi.fn().mockResolvedValue({ items: [], count: 0, page: 1, pageSize: 20, total: 0, totalPages: 1 }),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
+    } as unknown as PublicApi;
+
+    render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
+
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    await userEvent.click(screen.getByRole("button", { name: "浅色模式" }));
+    expect(document.documentElement.dataset.theme).toBe("light");
+  });
+
   it("submits public user feedback as a quality signal", async () => {
     const publicApi = {
       listEvents: vi.fn().mockResolvedValue({ items: [], count: 0, hasNext: false, nextCursor: null }),
@@ -333,14 +419,15 @@ describe("后台产品化界面", () => {
     render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
 
     await userEvent.click(screen.getByRole("button", { name: "反馈" }));
-    fireEvent.change(screen.getByLabelText("具体说明"), { target: { value: "这条内容不够相关" } });
-    await userEvent.click(screen.getByRole("button", { name: "提交反馈" }));
+    fireEvent.change(screen.getByLabelText("想说点什么？"), { target: { value: "这条内容不够相关" } });
+    fireEvent.change(screen.getByLabelText("联系方式（选填）"), { target: { value: "wechat: demo" } });
+    await userEvent.click(screen.getByRole("button", { name: "发送反馈" }));
 
     await waitFor(() =>
       expect(publicApi.submitFeedback).toHaveBeenCalledWith({
         channel: "ai",
-        feedbackType: "false_positive",
-        clusterId: undefined,
+        feedbackType: "general",
+        contact: "wechat: demo",
         reason: "这条内容不够相关"
       })
     );
@@ -438,7 +525,7 @@ describe("后台产品化界面", () => {
     render(<SourcesView api={api} />);
 
     expect(await screen.findByText("Source A")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "加载更多信源" }));
+    await userEvent.click(screen.getByRole("button", { name: "下一页" }));
     expect(await screen.findByText("Source B")).toBeInTheDocument();
   });
 
@@ -463,7 +550,7 @@ describe("后台产品化界面", () => {
     render(<HealthView api={api} />);
 
     expect(await screen.findByText("Source A")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "加载更多健康记录" }));
+    await userEvent.click(screen.getByRole("button", { name: "下一页" }));
     expect(await screen.findByText("Source B")).toBeInTheDocument();
   });
 });

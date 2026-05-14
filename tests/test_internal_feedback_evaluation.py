@@ -56,6 +56,27 @@ def test_public_feedback_is_written_without_admin_auth_and_visible_in_admin_list
     assert listed.json()["feedbackEvents"][0]["reason"] == "这条信息和主题不够相关"
 
 
+def test_public_feedback_accepts_general_contact_and_status(tmp_path):
+    client = TestClient(app_with_admin_data(tmp_path))
+
+    created = client.post(
+        "/api/v1/public/feedback-events",
+        json={
+            "channel": "ai",
+            "feedbackType": "general",
+            "reason": "界面分页希望更清楚",
+            "contact": "user@example.com",
+        },
+    )
+    listed = client.get("/api/v1/internal/feedback-events?channel=ai", headers=auth_header())
+
+    assert created.status_code == 200
+    assert created.json()["feedbackEvent"]["feedbackType"] == "general"
+    assert created.json()["feedbackEvent"]["contact"] == "user@example.com"
+    assert created.json()["feedbackEvent"]["status"] == "unread"
+    assert listed.json()["feedbackEvents"][0]["status"] == "unread"
+
+
 def test_public_feedback_rejects_unknown_type(tmp_path):
     client = TestClient(app_with_admin_data(tmp_path))
 

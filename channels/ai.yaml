@@ -35,6 +35,21 @@ catalog_candidate_defaults: &ai_catalog_candidate
   collection_status: unavailable
   free_access: true
 sources:
+  - id: aihot_virxact_selected
+    source_type: api
+    name: AIHOT 精选聚合
+    url: https://aihot.virxact.com/api/public/items
+    language: zh
+    region: global
+    trust_level: authority
+    base_weight: 70
+    default_categories: [ai_models, ai_products, agent_tools, papers, industry]
+    crawl_interval_minutes: 60
+    parser_type: aihot_api
+    enabled: true
+    source_group: curated
+    collection_status: collectable
+    free_access: true
   - id: openai_news
     source_type: rss
     name: OpenAI News RSS

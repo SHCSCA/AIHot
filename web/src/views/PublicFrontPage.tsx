@@ -4,6 +4,7 @@ import {
   List,
   LockKeyhole,
   MessageCircle,
+  Moon,
   Newspaper,
   Plus,
   RefreshCw,
@@ -11,10 +12,12 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  Sun,
   Zap
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Credentials, PublicApi } from "../api";
+import { PaginationBar } from "../components/PaginationBar";
 import {
   categoryLabel,
   channelLabel,
@@ -24,12 +27,16 @@ import {
   sourceGroupLabel,
   sourceTypeLabel
 } from "../labels";
-import type { PublicDaily, PublicEvent, PublicEventDetail, PublicFeedLink, Source } from "../types";
+import type { DailyArchiveItem, DailySection, PublicDaily, PublicEvent, PublicEventDetail, PublicFeedLink, Source } from "../types";
 import { formatDateTime, formatMonthDay, formatTime, today } from "../utils";
 import { useAsyncData } from "../hooks";
 
 type PublicChannel = "ai" | "amazon";
 type PublicSection = "selected" | "all" | "daily" | "rss" | "sources" | "feedback";
+type Theme = "dark" | "light";
+
+const EVENT_PAGE_SIZE = 20;
+const SOURCE_PAGE_SIZE = 24;
 
 const channels: Record<PublicChannel, { title: string; heading: string; description: string; scope: string }> = {
   ai: {
@@ -84,17 +91,23 @@ export function PublicFrontPage({
   onLogin: (credentials: Credentials) => Promise<void>;
 }) {
   const [channel, setChannel] = useState<PublicChannel>("ai");
-  const [section, setSection] = useState<PublicSection>("selected");
+  const [section, setSection] = useState<PublicSection>(() => sectionFromPath(window.location.pathname));
+  const [theme, setTheme] = useState<Theme>(() => loadTheme());
   const [showLogin, setShowLogin] = useState(loginOpen);
   const [filters, setFilters] = useState({ q: "", category: "", date: "", sourceGroup: "" });
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [eventError, setEventError] = useState<string | null>(null);
   const [eventLoading, setEventLoading] = useState(false);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [hasNext, setHasNext] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pageInfo, setPageInfo] = useState({ totalPages: 1, total: 0 });
   const [eventVersion, setEventVersion] = useState(0);
   const activeMode = section === "all" ? "all" : "selected";
   const activeChannel = channels[channel];
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem("publicTheme", theme);
+  }, [theme]);
 
   useEffect(() => {
     if (section === "daily" || section === "rss" || section === "sources" || section === "feedback") return;
@@ -109,13 +122,17 @@ export function PublicFrontPage({
         q: filters.q || undefined,
         date: filters.date || undefined,
         window: filters.date ? undefined : 24,
-        take: section === "all" ? 32 : 18
+        page,
+        pageSize: EVENT_PAGE_SIZE
       })
       .then((page) => {
         if (!active) return;
         setEvents(page.items);
-        setNextCursor(page.nextCursor);
-        setHasNext(page.hasNext);
+        const resolvedPage = page.page ?? 1;
+        setPageInfo({
+          totalPages: page.totalPages ?? (page.hasNext ? resolvedPage + 1 : resolvedPage),
+          total: page.total ?? page.count
+        });
         setEventError(null);
       })
       .catch((err: unknown) => {
@@ -136,39 +153,21 @@ export function PublicFrontPage({
     filters.category,
     filters.date,
     filters.sourceGroup,
+    page,
     eventVersion
   ]);
-
-  async function loadMoreEvents() {
-    if (!nextCursor || eventLoading) return;
-    setEventLoading(true);
-    try {
-      const page = await api.listEvents({
-        channel,
-        mode: activeMode,
-        category: filters.category || undefined,
-        sourceGroup: filters.sourceGroup || undefined,
-        q: filters.q || undefined,
-        date: filters.date || undefined,
-        window: filters.date ? undefined : 24,
-        take: section === "all" ? 32 : 18,
-        cursor: nextCursor
-      });
-      setEvents((current) => [...current, ...page.items]);
-      setNextCursor(page.nextCursor);
-      setHasNext(page.hasNext);
-      setEventError(null);
-    } catch (err) {
-      setEventError(err instanceof Error ? err.message : "请求失败");
-    } finally {
-      setEventLoading(false);
-    }
-  }
 
   function switchChannel(next: PublicChannel) {
     setChannel(next);
     setFilters({ q: "", category: "", date: "", sourceGroup: "" });
+    setPage(1);
     setEventVersion((current) => current + 1);
+  }
+
+  function switchSection(next: PublicSection) {
+    setSection(next);
+    setPage(1);
+    window.history.replaceState(null, "", next === "selected" ? "/" : `/${next}`);
   }
 
   return (
@@ -187,14 +186,28 @@ export function PublicFrontPage({
         </nav>
         <nav aria-label="频道内功能" className="aihot-section-nav">
           {sectionItems.map(({ id, label, Icon }) => (
-            <button key={id} className={section === id ? "active" : ""} onClick={() => setSection(id)}>
+            <button key={id} className={section === id ? "active" : ""} onClick={() => switchSection(id)}>
               <Icon size={19} />{label}
             </button>
           ))}
         </nav>
         <div className="aihot-sidebar-bottom">
-          <button type="button" className="theme-dot active" aria-label="深色模式" />
-          <button type="button" className="theme-dot" aria-label="桌面模式" />
+          <button
+            type="button"
+            className={theme === "dark" ? "theme-dot active" : "theme-dot"}
+            aria-label="深色模式"
+            onClick={() => setTheme("dark")}
+          >
+            <Moon size={16} />
+          </button>
+          <button
+            type="button"
+            className={theme === "light" ? "theme-dot active" : "theme-dot"}
+            aria-label="浅色模式"
+            onClick={() => setTheme("light")}
+          >
+            <Sun size={16} />
+          </button>
           <button type="button" className="login-link" onClick={() => setShowLogin((current) => !current)}>
             <LockKeyhole size={16} />后台入口
           </button>
@@ -211,10 +224,13 @@ export function PublicFrontPage({
             <Search size={16} />
             <input
               value={filters.q}
-              onChange={(event) => setFilters({ ...filters, q: event.target.value })}
+              onChange={(event) => {
+                setFilters({ ...filters, q: event.target.value });
+                setPage(1);
+              }}
               placeholder="搜索标题/摘要..."
             />
-            <button onClick={() => setEventVersion((current) => current + 1)}>搜索</button>
+            <button onClick={() => { setPage(1); setEventVersion((current) => current + 1); }}>搜索</button>
           </div>
           <button className="login-trigger dark" onClick={() => setShowLogin((current) => !current)}>
             <LockKeyhole size={16} />运营登录
@@ -248,8 +264,8 @@ export function PublicFrontPage({
             <FilterBar
               channel={channel}
               filters={filters}
-              onChange={(next) => setFilters({ ...filters, ...next })}
-              onRefresh={() => setEventVersion((current) => current + 1)}
+              onChange={(next) => { setPage(1); setFilters({ ...filters, ...next }); }}
+              onRefresh={() => { setPage(1); setEventVersion((current) => current + 1); }}
             />
             <section className="aihot-timeline" aria-label="热点信息流">
               {eventError && <p className="error">{eventError}</p>}
@@ -263,11 +279,12 @@ export function PublicFrontPage({
                 />
               ))}
               {!eventLoading && events.length === 0 && <p className="hint">暂无符合条件的信息。</p>}
-              {hasNext && (
-                <button className="load-more dark" onClick={loadMoreEvents} disabled={eventLoading}>
-                  {eventLoading ? "正在加载..." : "加载更多"}
-                </button>
-              )}
+              <PaginationBar
+                page={page}
+                totalPages={pageInfo.totalPages}
+                onPageChange={setPage}
+                disabled={eventLoading}
+              />
             </section>
           </>
         )}
@@ -374,6 +391,11 @@ function PublicEventCard({ event, api, showDate }: { event: PublicEvent; api: Pu
           <h2>{event.title}</h2>
           <strong className="score-badge">精选分 {Math.round(event.score)}</strong>
         </div>
+        {event.mainItem?.imageUrl && (
+          <figure className="event-media">
+            <img src={event.mainItem.imageUrl} alt={event.mainItem.imageAlt || event.title} loading="lazy" />
+          </figure>
+        )}
         <p>{summary}</p>
         {event.tags && event.tags.length > 0 && (
           <div className="event-tags dark">
@@ -410,7 +432,27 @@ function PublicEventCard({ event, api, showDate }: { event: PublicEvent; api: Pu
 }
 
 function SourceWall({ api, channel }: { api: PublicApi; channel: PublicChannel }) {
-  const { data: sources, error, loading, reload } = useAsyncData<Source[]>(() => api.listSources({ channel }), [], [api, channel]);
+  const [page, setPage] = useState(1);
+  const { data: sourcePage, error, loading, reload } = useAsyncData(
+    async () => {
+      if (typeof api.listSourcesPage === "function") {
+        return api.listSourcesPage({ channel, page, pageSize: SOURCE_PAGE_SIZE });
+      }
+      const sources = await api.listSources({ channel });
+      return {
+        items: sources,
+        count: sources.length,
+        page: 1,
+        pageSize: SOURCE_PAGE_SIZE,
+        total: sources.length,
+        totalPages: 1,
+        hasNext: false,
+        nextCursor: null
+      };
+    },
+    { items: [] as Source[], count: 0, page: 1, pageSize: SOURCE_PAGE_SIZE, total: 0, totalPages: 1, hasNext: false, nextCursor: null },
+    [api, channel, page]
+  );
   return (
     <section className="source-wall">
       <div className="source-wall-head">
@@ -423,7 +465,7 @@ function SourceWall({ api, channel }: { api: PublicApi; channel: PublicChannel }
       {error && <p className="error">{error}</p>}
       {loading && <p className="hint">正在加载信源...</p>}
       <div className="source-wall-grid">
-        {sources.map((source) => (
+        {sourcePage.items.map((source) => (
           <article key={source.id} className="source-wall-card">
             <div className="source-card-top">
               <h3>{source.name}</h3>
@@ -438,14 +480,19 @@ function SourceWall({ api, channel }: { api: PublicApi; channel: PublicChannel }
           </article>
         ))}
       </div>
+      <PaginationBar
+        page={page}
+        totalPages={sourcePage.totalPages ?? 1}
+        onPageChange={setPage}
+        disabled={loading}
+      />
     </section>
   );
 }
 
 function PublicFeedback({ api, channel }: { api: PublicApi; channel: PublicChannel }) {
-  const [feedbackType, setFeedbackType] = useState("false_positive");
-  const [clusterId, setClusterId] = useState("");
   const [reason, setReason] = useState("");
+  const [contact, setContact] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -458,12 +505,12 @@ function PublicFeedback({ api, channel }: { api: PublicApi; channel: PublicChann
     try {
       await api.submitFeedback({
         channel,
-        feedbackType,
-        clusterId: clusterId.trim() || undefined,
+        feedbackType: "general",
+        contact: contact.trim() || undefined,
         reason: reason.trim()
       });
       setReason("");
-      setClusterId("");
+      setContact("");
       setMessage("反馈已提交，后台会把它作为质量评估样本。");
     } catch (err) {
       setMessage(err instanceof Error ? err.message : "反馈提交失败");
@@ -475,33 +522,25 @@ function PublicFeedback({ api, channel }: { api: PublicApi; channel: PublicChann
   return (
     <section className="public-feedback dark">
       <div>
-        <p className="eyebrow">{channelLabel(channel)} 用户反馈</p>
-        <h2>提交质量反馈</h2>
-        <p>反馈只作为质量信号和评估样本，不会直接改动线上评分、精选状态或日报内容。</p>
+        <p className="eyebrow">反馈</p>
+        <h2>说说你的想法</h2>
+        <p>发现 bug、想要的功能、看不顺眼的地方都可以告诉我。你的反馈会进入后台质量评估，不会直接改动线上评分。</p>
       </div>
       <div className="feedback-form">
-        <label>反馈类型
-          <select value={feedbackType} onChange={(event) => setFeedbackType(event.target.value)}>
-            <option value="false_positive">内容不相关 / 误选</option>
-            <option value="false_negative">漏掉重要信息</option>
-            <option value="category_fix">分类或标签不准</option>
-            <option value="promote">建议提升为精选</option>
-            <option value="demote">推荐价值偏低</option>
-          </select>
-        </label>
-        <label>关联事件 ID（可选）
-          <input value={clusterId} onChange={(event) => setClusterId(event.target.value)} placeholder="可从事件详情中查看" />
-        </label>
-        <label className="feedback-reason">具体说明
+        <label className="feedback-reason">想说点什么？
           <textarea
             value={reason}
             onChange={(event) => setReason(event.target.value)}
-            placeholder="例如：这条内容是旧教程，不属于最近 24 小时新增情报。"
+            placeholder="比如：某类内容不够准、日报结构想调整、页面哪里不顺手。"
+            maxLength={2000}
           />
+        </label>
+        <label>联系方式（选填）
+          <input value={contact} onChange={(event) => setContact(event.target.value)} placeholder="邮箱 / 微信 / 手机号，任意能联系到你的方式" />
         </label>
         {message && <p className={message.includes("已提交") ? "success" : "error"}>{message}</p>}
         <button className="primary" onClick={submit} disabled={submitting}>
-          {submitting ? "提交中..." : "提交反馈"}
+          {submitting ? "提交中..." : "发送反馈"}
         </button>
       </div>
     </section>
@@ -511,35 +550,57 @@ function PublicFeedback({ api, channel }: { api: PublicApi; channel: PublicChann
 function DailyReader({ api, channel }: { api: PublicApi; channel: PublicChannel }) {
   const [date, setDate] = useState(today());
   const { data: daily, error, loading, reload } = useAsyncData<PublicDaily | null>(() => api.getDaily({ channel, date }), null, [channel, date]);
-  const highlights = dailyHighlights(daily);
+  const { data: archive } = useAsyncData(
+    () => api.listDailies({ channel, page: 1, pageSize: 20 }),
+    { items: [] as DailyArchiveItem[], count: 0, page: 1, pageSize: 20, total: 0, totalPages: 1, hasNext: false, nextCursor: null },
+    [api, channel]
+  );
+  const sections = dailySections(daily);
+  const storyCount = daily?.stats?.storyCount ?? sections.reduce((sum, section) => sum + section.items.length, 0);
 
   return (
     <section className="daily-reader dark">
-      <div className="public-filters horizontal dark">
-        <label>频道<input value={channels[channel].title} readOnly /></label>
-        <label>日期<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label>
-        <button className="ghost dark" onClick={reload}>刷新日报</button>
-      </div>
+      <aside className="daily-archive">
+        <button className="latest" onClick={() => setDate(today())}>
+          最新一期<span>{today()}</span>
+        </button>
+        {archive.items.map((item) => (
+          <button key={item.id} className={date === item.date ? "active" : ""} onClick={() => setDate(item.date)}>
+            <strong>{item.date.slice(5)}</strong>
+            <span>{item.leadTitle || item.title}</span>
+          </button>
+        ))}
+      </aside>
       {error && <p className="error">{error}</p>}
       {loading && !daily && <p className="hint">正在读取日报...</p>}
       {daily ? (
         <article className="daily-document dark">
-          <p className="eyebrow">{channelLabel(daily.channel)} · {daily.date}</p>
-          <h2>{daily.title}</h2>
-          <p className="hint">{daily.windowLabel || "基于最近 24 小时精选情报自动生成"}</p>
-          {highlights.map((item, index) => (
-            <section className="daily-timeline-item" key={item.eventId || item.title}>
-              <div className="timeline-stamp compact dark">
-                {index === 0 && <span className="timeline-date">{formatMonthDay(String(item.lastSeenAt ?? daily.generatedAt))}</span>}
-                <strong>{formatTime(String(item.lastSeenAt ?? daily.generatedAt))}</strong>
-                <i aria-hidden="true" />
+          <div className="daily-cover">
+            <p className="eyebrow">VOL.{daily.date.replaceAll("-", ".")} · {storyCount} STORIES · {channelLabel(daily.channel)} DAILY</p>
+            <h2><span>AIHOT</span> 日报</h2>
+            <div>
+              <strong>{daily.date}</strong>
+              <span>{daily.windowLabel || "基于最近 24 小时精选情报自动生成"}</span>
+              <button className="ghost dark" onClick={reload}>刷新日报</button>
+            </div>
+          </div>
+          {sections.length === 0 && <p className="hint">最近 24 小时暂无可发布精选情报。</p>}
+          {sections.map((section, sectionIndex) => (
+            <section className="daily-section" key={section.category}>
+              <div className="daily-section-title">
+                <strong>{String(sectionIndex + 1).padStart(2, "0")}</strong>
+                <h3>{section.label}</h3>
+                <span>{section.count} 篇</span>
               </div>
-              <div>
-                <strong>{item.title}</strong>
-                <p>{String(item.summary ?? "待 AI 处理后生成中文摘要。")}</p>
-                <span>{categoryLabel(String(item.category ?? ""))} · 精选分 {Math.round(Number(item.score ?? 0))}</span>
-                <span>{formatReason(String(item.entryReason ?? "待 AI 处理后生成推荐理由。"))}</span>
-              </div>
+              {section.items.map((item) => (
+                <article className="daily-story" key={item.eventId || item.title}>
+                  <h4>{item.title}</h4>
+                  <p>{item.summary || "待 AI 处理后生成中文摘要。"}</p>
+                  <span>{categoryLabel(item.category)} · 精选分 {Math.round(Number(item.score ?? 0))}</span>
+                  {item.entryReason && <em>{formatReason(item.entryReason)}</em>}
+                  {item.mainItem?.url && <a href={item.mainItem.url} target="_blank" rel="noreferrer">查看原文</a>}
+                </article>
+              ))}
             </section>
           ))}
         </article>
@@ -587,10 +648,29 @@ function categoryOptions(channel: PublicChannel) {
   ];
 }
 
-function dailyHighlights(daily: PublicDaily | null) {
-  const sections = daily?.sections;
-  if (!sections || !Array.isArray(sections.highlights)) return [] as Array<Record<string, string | number | null>>;
-  return sections.highlights.filter((item): item is Record<string, string | number | null> => Boolean(item) && typeof item === "object");
+function dailySections(daily: PublicDaily | null): DailySection[] {
+  if (!daily) return [];
+  if (Array.isArray(daily.sections)) return daily.sections;
+  const legacySections = daily.sectionsJson ?? daily.sections;
+  const highlights = Array.isArray(legacySections?.highlights) ? legacySections.highlights : [];
+  const items = highlights.filter((item): item is Record<string, string | number | null> => Boolean(item) && typeof item === "object");
+  const grouped = new Map<string, DailySection>();
+  items.forEach((item) => {
+    const category = String(item.category || "industry");
+    const section = grouped.get(category) ?? { category, label: categoryLabel(category), count: 0, items: [] };
+    section.items.push({
+      eventId: item.eventId ? String(item.eventId) : null,
+      title: String(item.title || ""),
+      summary: item.summary ? String(item.summary) : null,
+      entryReason: item.entryReason ? String(item.entryReason) : null,
+      category,
+      score: Number(item.score || 0),
+      lastSeenAt: item.lastSeenAt ? String(item.lastSeenAt) : null
+    });
+    section.count = section.items.length;
+    grouped.set(category, section);
+  });
+  return [...grouped.values()];
 }
 
 function sectionTitle(section: PublicSection) {
@@ -631,4 +711,18 @@ function tagClass(tag: string) {
   if (/行动|广告|Listing|FBA|API/.test(tag)) return "tag-action";
   if (/OpenAI|GPT|Claude|Gemini|Amazon|SP-API/i.test(tag)) return "tag-keyword";
   return "tag-normal";
+}
+
+function sectionFromPath(pathname: string): PublicSection {
+  if (pathname.includes("/daily")) return "daily";
+  if (pathname.includes("/rss")) return "rss";
+  if (pathname.includes("/sources")) return "sources";
+  if (pathname.includes("/feedback")) return "feedback";
+  if (pathname.includes("/all")) return "all";
+  return "selected";
+}
+
+function loadTheme(): Theme {
+  const stored = localStorage.getItem("publicTheme");
+  return stored === "light" ? "light" : "dark";
 }

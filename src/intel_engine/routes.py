@@ -109,6 +109,8 @@ class FeedbackEventWrite(BaseModel):
     feedback_type: str = Field(alias="feedbackType")
     reason: str = ""
     actor: str = "system"
+    contact: str | None = None
+    status: str = "unread"
 
 
 class PublicFeedbackWrite(BaseModel):
@@ -119,6 +121,7 @@ class PublicFeedbackWrite(BaseModel):
     channel: str
     feedback_type: str = Field(alias="feedbackType")
     reason: str = ""
+    contact: str | None = None
 
 
 class EvaluationRunWrite(BaseModel):
@@ -157,7 +160,7 @@ class PipelineRunWrite(BaseModel):
     limit: int = Field(default=10, ge=1, le=100)
 
 
-PUBLIC_FEEDBACK_TYPES = {"false_positive", "false_negative", "promote", "demote", "category_fix"}
+PUBLIC_FEEDBACK_TYPES = {"general", "false_positive", "false_negative", "promote", "demote", "category_fix"}
 
 
 @router.get("/health")
@@ -231,6 +234,8 @@ def public_events(
     q: str | None = None,
     take: int = Query(default=20, ge=1, le=100),
     cursor: str | None = None,
+    page: int | None = Query(default=None, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100, alias="pageSize"),
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -259,6 +264,22 @@ def public_events(
                 .where(RankedItemRecord.item_id == EventClusterRecord.main_item_id)
                 .where(RankedItemRecord.selected.is_(True))
             )
+        if page is not None:
+            rows = list(session.scalars(stmt.order_by(EventClusterRecord.last_seen_at.desc(), EventClusterRecord.id.desc())).all())
+            clusters = [
+                cluster
+                for cluster in rows
+                if _is_public_cluster_ready(session, cluster, require_selected=mode == "selected")
+            ]
+            page_data = _numbered_page(clusters, page=page, page_size=page_size)
+            events = [_event_payload(session, cluster) for cluster in page_data["rows"]]
+            return {
+                **_pagination_meta(page_data, len(events)),
+                "nextCursor": None,
+                "windowLabel": PUBLIC_WINDOW_LABEL,
+                "events": events,
+            }
+
         if cursor:
             cursor_value = _decode_cursor(cursor)
             stmt = stmt.where(
@@ -279,6 +300,11 @@ def public_events(
         "count": len(events),
         "hasNext": page["hasNext"],
         "nextCursor": page["nextCursor"],
+        "page": 1,
+        "pageSize": take,
+        "total": len(events),
+        "totalPages": 1 if events else 0,
+        "hasPrev": False,
         "windowLabel": PUBLIC_WINDOW_LABEL,
         "events": events,
     }
@@ -291,6 +317,8 @@ def public_sources(
     source_group: str | None = Query(default=None, alias="sourceGroup"),
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
+    page: int | None = Query(default=None, ge=1),
+    page_size: int = Query(default=24, ge=1, le=200, alias="pageSize"),
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -299,11 +327,26 @@ def public_sources(
             stmt = stmt.where(SourceRecord.channel == channel)
         if source_group:
             stmt = stmt.where(SourceRecord.source_group == source_group)
+        if page is not None:
+            rows = list(session.scalars(stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc())).all())
+            page_data = _numbered_page(rows, page=page, page_size=page_size)
+            sources = [_source_payload(source) for source in page_data["rows"]]
+            return {**_pagination_meta(page_data, len(sources)), "nextCursor": None, "sources": sources}
         stmt = _apply_cursor(stmt, SourceRecord.updated_at, SourceRecord.id, cursor)
         stmt = stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.scalars(stmt).all()), take, lambda source: source.updated_at, lambda source: source.id)
         sources = [_source_payload(source) for source in page["rows"]]
-        return {"count": len(sources), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "sources": sources}
+        return {
+            "count": len(sources),
+            "hasNext": page["hasNext"],
+            "nextCursor": page["nextCursor"],
+            "page": 1,
+            "pageSize": take,
+            "total": len(sources),
+            "totalPages": 1 if sources else 0,
+            "hasPrev": False,
+            "sources": sources,
+        }
 
 
 @router.post("/api/v1/public/feedback-events")
@@ -327,6 +370,8 @@ def public_create_feedback_event(request: Request, payload: PublicFeedbackWrite)
             feedback_type=payload.feedback_type,
             reason=reason,
             actor="public-user",
+            contact=payload.contact,
+            status="unread",
         )
         session.add(event)
         session.commit()
@@ -360,6 +405,7 @@ def public_event_detail(request: Request, event_id: int) -> dict[str, object]:
                     "id": str(item.id),
                     "title": item.title_cn or item.title_original,
                     "url": _safe_item_url(item, source),
+                    **_item_image_payload(session, item),
                     "sourceId": item.source_id,
                     "sourceName": source.name if source else item.source_id,
                     "sourceGroup": source.source_group if source else None,
@@ -391,17 +437,28 @@ def public_daily(
         digest = session.scalar(stmt)
         if digest is None:
             return {"daily": None}
-        return {
-            "daily": {
-                "id": str(digest.id),
-                "channel": digest.channel,
-                "date": digest.digest_date.isoformat(),
-                "generatedAt": digest.generated_at.isoformat(),
-                "title": digest.title,
-                "sections": digest.sections_json,
-                "windowLabel": PUBLIC_WINDOW_LABEL,
-            }
-        }
+        return {"daily": _public_daily_payload(session, digest)}
+
+
+@router.get("/api/v1/public/dailies")
+def public_dailies(
+    request: Request,
+    channel: str,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100, alias="pageSize"),
+) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        stmt = (
+            select(DailyDigestRecord)
+            .where(DailyDigestRecord.channel == channel)
+            .where(DailyDigestRecord.published.is_(True))
+            .order_by(DailyDigestRecord.digest_date.desc(), DailyDigestRecord.generated_at.desc(), DailyDigestRecord.id.desc())
+        )
+        rows = list(session.scalars(stmt).all())
+        page_data = _numbered_page(rows, page=page, page_size=page_size)
+        items = [_daily_archive_item(digest) for digest in page_data["rows"]]
+        return {**_pagination_meta(page_data, len(items)), "items": items}
 
 
 @router.get("/feed/{channel}/events.xml")
@@ -544,12 +601,19 @@ def internal_sources(
     channel: str | None = None,
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
+    page: int | None = Query(default=None, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200, alias="pageSize"),
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         stmt = select(SourceRecord)
         if channel:
             stmt = stmt.where(SourceRecord.channel == channel)
+        if page is not None:
+            rows = list(session.scalars(stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc())).all())
+            page_data = _numbered_page(rows, page=page, page_size=page_size)
+            sources = [_source_payload(source) for source in page_data["rows"]]
+            return {**_pagination_meta(page_data, len(sources)), "nextCursor": None, "sources": sources}
         stmt = _apply_cursor(stmt, SourceRecord.updated_at, SourceRecord.id, cursor)
         stmt = stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.scalars(stmt).all()), take, lambda source: source.updated_at, lambda source: source.id)
@@ -608,6 +672,8 @@ def internal_source_diagnostics(
     channel: str | None = None,
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
+    page: int | None = Query(default=None, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200, alias="pageSize"),
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -617,6 +683,11 @@ def internal_source_diagnostics(
         )
         if channel:
             stmt = stmt.where(SourceRecord.channel == channel)
+        if page is not None:
+            rows = list(session.execute(stmt.order_by(SourceStateRecord.updated_at.desc(), SourceRecord.id.desc())).all())
+            page_data = _numbered_page(rows, page=page, page_size=page_size)
+            diagnostics = [_source_diagnostic_payload(session, source, state) for source, state in page_data["rows"]]
+            return {**_pagination_meta(page_data, len(diagnostics)), "nextCursor": None, "sourceDiagnostics": diagnostics}
         stmt = _apply_cursor(stmt, SourceStateRecord.updated_at, SourceRecord.id, cursor)
         stmt = stmt.order_by(SourceStateRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.execute(stmt).all()), take, lambda row: row[1].updated_at, lambda row: row[0].id)
@@ -635,12 +706,19 @@ def internal_jobs(
     status: str | None = None,
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
+    page: int | None = Query(default=None, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200, alias="pageSize"),
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         stmt = select(FetchJobRecord)
         if status:
             stmt = stmt.where(FetchJobRecord.status == status)
+        if page is not None:
+            rows = list(session.scalars(stmt.order_by(FetchJobRecord.created_at.desc(), FetchJobRecord.id.desc())).all())
+            page_data = _numbered_page(rows, page=page, page_size=page_size)
+            jobs = [_job_payload(job) for job in page_data["rows"]]
+            return {**_pagination_meta(page_data, len(jobs)), "nextCursor": None, "jobs": jobs}
         stmt = _apply_cursor(stmt, FetchJobRecord.created_at, FetchJobRecord.id, cursor)
         stmt = stmt.order_by(FetchJobRecord.created_at.desc(), FetchJobRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.scalars(stmt).all()), take, lambda job: job.created_at, lambda job: job.id)
@@ -719,6 +797,8 @@ def internal_feedback_events(
     cluster_id: int | None = Query(default=None, alias="clusterId"),
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
+    page: int | None = Query(default=None, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200, alias="pageSize"),
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -729,11 +809,32 @@ def internal_feedback_events(
             stmt = stmt.where(FeedbackEventRecord.feedback_type == feedback_type)
         if cluster_id is not None:
             stmt = stmt.where(FeedbackEventRecord.cluster_id == cluster_id)
+        if page is not None:
+            rows = list(session.scalars(stmt.order_by(FeedbackEventRecord.created_at.desc(), FeedbackEventRecord.id.desc())).all())
+            page_data = _numbered_page(rows, page=page, page_size=page_size)
+            events = [_feedback_payload(event) for event in page_data["rows"]]
+            return {**_pagination_meta(page_data, len(events)), "nextCursor": None, "feedbackEvents": events}
         stmt = _apply_cursor(stmt, FeedbackEventRecord.created_at, FeedbackEventRecord.id, cursor)
         stmt = stmt.order_by(FeedbackEventRecord.created_at.desc(), FeedbackEventRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.scalars(stmt).all()), take, lambda event: event.created_at, lambda event: event.id)
         events = [_feedback_payload(event) for event in page["rows"]]
         return {"count": len(events), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "feedbackEvents": events}
+
+
+@router.patch("/api/v1/internal/feedback-events/{feedback_id}", dependencies=ADMIN_DEPENDENCIES)
+def internal_patch_feedback_event(request: Request, feedback_id: int, payload: dict[str, object]) -> dict[str, object]:
+    status = payload.get("status")
+    if status not in {"unread", "read", "accepted", "ignored"}:
+        raise HTTPException(status_code=422, detail="invalid feedback status")
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        event = session.get(FeedbackEventRecord, feedback_id)
+        if event is None:
+            raise HTTPException(status_code=404, detail="feedback event not found")
+        event.status = str(status)
+        session.commit()
+        session.refresh(event)
+        return {"feedbackEvent": _feedback_payload(event)}
 
 
 @router.post("/api/v1/internal/evaluation-runs", dependencies=ADMIN_DEPENDENCIES)
@@ -753,12 +854,19 @@ def internal_evaluation_runs(
     channel: str | None = None,
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
+    page: int | None = Query(default=None, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200, alias="pageSize"),
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         stmt = select(EvaluationRunRecord)
         if channel:
             stmt = stmt.where(EvaluationRunRecord.channel == channel)
+        if page is not None:
+            rows = list(session.scalars(stmt.order_by(EvaluationRunRecord.created_at.desc(), EvaluationRunRecord.id.desc())).all())
+            page_data = _numbered_page(rows, page=page, page_size=page_size)
+            runs = [_evaluation_run_payload(run) for run in page_data["rows"]]
+            return {**_pagination_meta(page_data, len(runs)), "nextCursor": None, "evaluationRuns": runs}
         stmt = _apply_cursor(stmt, EvaluationRunRecord.created_at, EvaluationRunRecord.id, cursor)
         stmt = stmt.order_by(EvaluationRunRecord.created_at.desc(), EvaluationRunRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.scalars(stmt).all()), take, lambda run: run.created_at, lambda run: run.id)
@@ -798,6 +906,8 @@ def internal_events(
     q: str | None = None,
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
+    page: int | None = Query(default=None, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200, alias="pageSize"),
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -810,6 +920,11 @@ def internal_events(
             stmt = stmt.where(EventClusterRecord.category == category)
         if q:
             stmt = stmt.where(EventClusterRecord.canonical_title.contains(q))
+        if page is not None:
+            rows = list(session.scalars(stmt.order_by(EventClusterRecord.last_seen_at.desc(), EventClusterRecord.id.desc())).all())
+            page_data = _numbered_page(rows, page=page, page_size=page_size)
+            events = [_internal_event_payload(session, event) for event in page_data["rows"]]
+            return {**_pagination_meta(page_data, len(events)), "nextCursor": None, "events": events}
         stmt = _apply_cursor(stmt, EventClusterRecord.last_seen_at, EventClusterRecord.id, cursor)
         stmt = stmt.order_by(EventClusterRecord.last_seen_at.desc(), EventClusterRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.scalars(stmt).all()), take, lambda event: event.last_seen_at, lambda event: event.id)
@@ -855,6 +970,8 @@ def internal_daily_digests(
     digest_date: date_type | None = Query(default=None, alias="date"),
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
+    page: int | None = Query(default=None, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200, alias="pageSize"),
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -863,6 +980,11 @@ def internal_daily_digests(
             stmt = stmt.where(DailyDigestRecord.channel == channel)
         if digest_date is not None:
             stmt = stmt.where(DailyDigestRecord.digest_date == digest_date)
+        if page is not None:
+            rows = list(session.scalars(stmt.order_by(DailyDigestRecord.generated_at.desc(), DailyDigestRecord.id.desc())).all())
+            page_data = _numbered_page(rows, page=page, page_size=page_size)
+            digests = [_daily_digest_payload(digest) for digest in page_data["rows"]]
+            return {**_pagination_meta(page_data, len(digests)), "nextCursor": None, "dailyDigests": digests}
         stmt = _apply_cursor(stmt, DailyDigestRecord.generated_at, DailyDigestRecord.id, cursor)
         stmt = stmt.order_by(DailyDigestRecord.generated_at.desc(), DailyDigestRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.scalars(stmt).all()), take, lambda digest: digest.generated_at, lambda digest: digest.id)
@@ -909,9 +1031,16 @@ def internal_pipeline_runs(
     request: Request,
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
+    page: int | None = Query(default=None, ge=1),
+    page_size: int = Query(default=50, ge=1, le=200, alias="pageSize"),
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
+        if page is not None:
+            rows = list(session.scalars(select(PipelineRunRecord).order_by(PipelineRunRecord.started_at.desc(), PipelineRunRecord.id.desc())).all())
+            page_data = _numbered_page(rows, page=page, page_size=page_size)
+            runs = [_pipeline_run_payload(run) for run in page_data["rows"]]
+            return {**_pagination_meta(page_data, len(runs)), "nextCursor": None, "pipelineRuns": runs}
         stmt = _apply_cursor(select(PipelineRunRecord), PipelineRunRecord.started_at, PipelineRunRecord.id, cursor)
         stmt = stmt.order_by(PipelineRunRecord.started_at.desc(), PipelineRunRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.scalars(stmt).all()), take, lambda run: run.started_at, lambda run: run.id)
@@ -980,6 +1109,34 @@ def _page_rows(rows, take: int, sort_at, row_id) -> dict[str, object]:
         last = visible[-1]
         next_cursor = _encode_cursor(sort_at(last), row_id(last))
     return {"rows": visible, "hasNext": has_next, "nextCursor": next_cursor}
+
+
+def _numbered_page(rows: list, *, page: int, page_size: int) -> dict[str, object]:
+    total = len(rows)
+    start = (page - 1) * page_size
+    end = start + page_size
+    total_pages = (total + page_size - 1) // page_size if total else 0
+    return {
+        "rows": rows[start:end],
+        "page": page,
+        "pageSize": page_size,
+        "total": total,
+        "totalPages": total_pages,
+        "hasPrev": page > 1 and total > 0,
+        "hasNext": total_pages > page,
+    }
+
+
+def _pagination_meta(page_data: dict[str, object], count: int) -> dict[str, object]:
+    return {
+        "count": count,
+        "page": page_data["page"],
+        "pageSize": page_data["pageSize"],
+        "total": page_data["total"],
+        "totalPages": page_data["totalPages"],
+        "hasPrev": page_data["hasPrev"],
+        "hasNext": page_data["hasNext"],
+    }
 
 
 def _apply_cursor(stmt, sort_field, id_field, cursor: str | None):
@@ -1306,6 +1463,8 @@ def _feedback_payload(event: FeedbackEventRecord) -> dict[str, object]:
         "feedbackType": event.feedback_type,
         "reason": event.reason,
         "actor": event.actor,
+        "contact": event.contact,
+        "status": event.status,
         "createdAt": _iso(event.created_at),
     }
 
@@ -1338,6 +1497,158 @@ def _daily_digest_payload(digest: DailyDigestRecord) -> dict[str, object]:
         "publishedAt": _iso(digest.published_at),
         "createdAt": _iso(digest.created_at),
     }
+
+
+def _public_daily_payload(session, digest: DailyDigestRecord) -> dict[str, object]:
+    document = _daily_document(session, digest)
+    return {
+        "id": str(digest.id),
+        "channel": digest.channel,
+        "date": digest.digest_date.isoformat(),
+        "generatedAt": _iso(digest.generated_at),
+        "title": digest.title,
+        "lead": document["lead"],
+        "sections": document["sections"],
+        "archiveItem": document["archiveItem"],
+        "stats": document["stats"],
+        "sectionsJson": digest.sections_json,
+        "published": digest.published,
+        "windowLabel": PUBLIC_WINDOW_LABEL,
+    }
+
+
+def _daily_document(session, digest: DailyDigestRecord) -> dict[str, object]:
+    raw = digest.sections_json or {}
+    if isinstance(raw.get("sections"), list):
+        sections = raw["sections"]
+        lead = raw.get("lead") or _lead_from_sections(sections)
+        stats = raw.get("stats") or {"storyCount": sum(len(section.get("items", [])) for section in sections if isinstance(section, dict))}
+    else:
+        highlights = raw.get("highlights", [])
+        if not isinstance(highlights, list):
+            highlights = []
+        items = [_daily_item_from_highlight(session, item) for item in highlights if isinstance(item, dict)]
+        sections = _daily_sections_from_items(digest.channel, items)
+        lead = items[0] if items else None
+        stats = {"storyCount": len(items)}
+    archive_item = raw.get("archiveItem") if isinstance(raw.get("archiveItem"), dict) else None
+    return {
+        "lead": lead,
+        "sections": sections,
+        "stats": stats,
+        "archiveItem": archive_item or _daily_archive_item(digest, lead=lead, story_count=int(stats.get("storyCount", 0))),
+    }
+
+
+def _daily_item_from_highlight(session, item: dict[str, object]) -> dict[str, object]:
+    event_id = item.get("eventId")
+    cluster = session.get(EventClusterRecord, int(event_id)) if event_id and str(event_id).isdigit() else None
+    payload = _event_payload(session, cluster) if cluster else {}
+    return {
+        "eventId": str(event_id) if event_id is not None else None,
+        "title": str(item.get("title") or payload.get("title") or ""),
+        "summary": str(item.get("summary") or payload.get("summary") or ""),
+        "entryReason": str(item.get("entryReason") or payload.get("entryReason") or ""),
+        "category": str(item.get("category") or payload.get("category") or ""),
+        "score": item.get("score") or payload.get("score") or 0,
+        "sourceCount": item.get("sourceCount") or payload.get("sourceCount") or 0,
+        "memberCount": item.get("memberCount") or payload.get("memberCount") or 0,
+        "lastSeenAt": item.get("lastSeenAt") or payload.get("lastSeenAt"),
+        "mainItem": payload.get("mainItem"),
+    }
+
+
+def _daily_sections_from_items(channel: str, items: list[dict[str, object]]) -> list[dict[str, object]]:
+    grouped: dict[str, list[dict[str, object]]] = {}
+    for item in items:
+        grouped.setdefault(str(item.get("category") or "other"), []).append(item)
+    sections = []
+    for category in _daily_category_order(channel):
+        if category in grouped:
+            sections.append(
+                {
+                    "category": category,
+                    "label": _category_label(category),
+                    "items": grouped.pop(category),
+                    "count": len(grouped.get(category, [])),
+                }
+            )
+            sections[-1]["count"] = len(sections[-1]["items"])
+    for category, category_items in grouped.items():
+        sections.append({"category": category, "label": _category_label(category), "items": category_items, "count": len(category_items)})
+    return sections
+
+
+def _lead_from_sections(sections: list[object]) -> dict[str, object] | None:
+    for section in sections:
+        if isinstance(section, dict) and isinstance(section.get("items"), list) and section["items"]:
+            first = section["items"][0]
+            return first if isinstance(first, dict) else None
+    return None
+
+
+def _daily_archive_item(digest: DailyDigestRecord, *, lead: dict[str, object] | None = None, story_count: int | None = None) -> dict[str, object]:
+    if lead is None:
+        raw = digest.sections_json or {}
+        lead = raw.get("lead") if isinstance(raw.get("lead"), dict) else None
+        if lead is None and isinstance(raw.get("highlights"), list) and raw["highlights"]:
+            first = raw["highlights"][0]
+            lead = first if isinstance(first, dict) else None
+    if story_count is None:
+        raw = digest.sections_json or {}
+        if isinstance(raw.get("stats"), dict):
+            story_count = int(raw["stats"].get("storyCount") or 0)
+        elif isinstance(raw.get("highlights"), list):
+            story_count = len(raw["highlights"])
+        else:
+            story_count = 0
+    return {
+        "id": str(digest.id),
+        "channel": digest.channel,
+        "date": digest.digest_date.isoformat(),
+        "title": digest.title,
+        "leadTitle": str(lead.get("title")) if isinstance(lead, dict) and lead.get("title") else "",
+        "storyCount": story_count,
+        "published": digest.published,
+        "generatedAt": _iso(digest.generated_at),
+    }
+
+
+def _daily_category_order(channel: str) -> list[str]:
+    if channel == "amazon":
+        return [
+            "policy",
+            "account_health",
+            "fba_logistics",
+            "ads_ppc",
+            "listing_seo",
+            "fees_margin",
+            "product_research",
+            "tools",
+            "compliance_trade",
+        ]
+    return ["ai_models", "ai_products", "industry", "papers", "agent_tools", "monetization"]
+
+
+def _category_label(category: str) -> str:
+    labels = {
+        "ai_models": "AI 模型",
+        "ai_products": "AI 产品",
+        "industry": "行业动态",
+        "papers": "论文研究",
+        "agent_tools": "Agent / 工具",
+        "monetization": "商业化",
+        "policy": "平台政策",
+        "account_health": "账号健康",
+        "fba_logistics": "FBA / 物流",
+        "ads_ppc": "广告 / PPC",
+        "listing_seo": "Listing / SEO",
+        "fees_margin": "费用 / 利润",
+        "product_research": "选品研究",
+        "tools": "卖家工具",
+        "compliance_trade": "合规 / 贸易",
+    }
+    return labels.get(category, category)
 
 
 def _pipeline_run_payload(run: PipelineRunRecord) -> dict[str, object]:
@@ -1395,7 +1706,7 @@ def _event_payload(session, cluster: EventClusterRecord) -> dict[str, object]:
         "memberCount": cluster.member_count,
         "firstSeenAt": _iso(cluster.first_seen_at),
         "lastSeenAt": _iso(cluster.last_seen_at),
-        "mainItem": _main_item_payload(main_item, source),
+        "mainItem": _main_item_payload(session, main_item, source),
     }
 
 
@@ -1442,6 +1753,7 @@ def _cluster_member_payloads(session, event_id: int) -> list[dict[str, object]]:
                 "id": str(item.id),
                 "title": item.title_cn or item.title_original,
                 "url": _safe_item_url(item, source),
+                **_item_image_payload(session, item),
                 "sourceId": item.source_id,
                 "sourceName": source.name if source else item.source_id,
                 "sourceGroup": source.source_group if source else None,
@@ -1459,13 +1771,14 @@ def _cluster_member_payloads(session, event_id: int) -> list[dict[str, object]]:
     return members
 
 
-def _main_item_payload(item: NormalizedItemRecord | None, source: SourceRecord | None) -> dict[str, object] | None:
+def _main_item_payload(session, item: NormalizedItemRecord | None, source: SourceRecord | None) -> dict[str, object] | None:
     if item is None:
         return None
     return {
         "id": str(item.id),
         "title": item.title_cn or item.title_original,
         "url": _safe_item_url(item, source),
+        **_item_image_payload(session, item),
         "sourceId": item.source_id,
         "sourceName": source.name if source else item.source_id,
         "sourceGroup": source.source_group if source else None,
@@ -1474,6 +1787,18 @@ def _main_item_payload(item: NormalizedItemRecord | None, source: SourceRecord |
         "socialHandle": source.social_handle if source else None,
         "publishedAt": _iso(item.published_at),
         "summary": _processed_summary(item),
+    }
+
+
+def _item_image_payload(session, item: NormalizedItemRecord) -> dict[str, object]:
+    raw = session.get(RawDocumentRecord, item.raw_document_id) if session is not None else None
+    headers = raw.response_headers_json if raw is not None else {}
+    image_url = str(headers.get("x-intel-image-url") or "").strip()
+    if not image_url.startswith(("http://", "https://")):
+        image_url = ""
+    return {
+        "imageUrl": image_url or None,
+        "imageAlt": str(headers.get("x-intel-image-alt") or item.title_cn or item.title_original),
     }
 
 

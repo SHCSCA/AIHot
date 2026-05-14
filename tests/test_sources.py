@@ -103,11 +103,26 @@ def test_bundled_channel_configs_have_production_source_coverage():
 def test_bundled_enabled_sources_are_rss_first_for_hourly_production():
     configs = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}
 
+    stable_hourly_parsers = {"rss", "aihot_api", "html_list"}
     for channel_id in ("ai", "amazon"):
         enabled_sources = [source for source in configs[channel_id].sources if source.enabled]
         assert len(enabled_sources) >= 15
-        assert all(source.parser_type == "rss" for source in enabled_sources)
+        assert all(source.parser_type in stable_hourly_parsers for source in enabled_sources)
         assert all(source.url.startswith("https://") for source in enabled_sources)
+
+
+def test_amazon_hourly_sources_prioritize_precise_official_or_seller_feeds():
+    amazon = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}["amazon"]
+    sources = {source.id: source for source in amazon.sources}
+
+    assert sources["amazon_sp_api_release_notes"].enabled is True
+    assert sources["amazon_sp_api_release_notes"].parser_type == "html_list"
+    assert sources["amazon_ads_updates"].enabled is True
+    assert sources["amazon_ads_updates"].parser_type == "html_list"
+    assert sources["retail_dive"].enabled is False
+    assert sources["modern_retail"].enabled is False
+    assert sources["retail_dive"].metadata.get("collection_status") == "watch"
+    assert sources["modern_retail"].metadata.get("collection_status") == "watch"
 
 
 def test_registry_can_upsert_toggle_and_update_state(tmp_path):

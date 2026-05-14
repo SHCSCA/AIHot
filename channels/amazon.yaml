@@ -115,7 +115,9 @@ sources:
     default_categories: [product_research, compliance_trade]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: true
+    enabled: false
+    collection_status: watch
+    free_access: true
   - id: modern_retail
     source_type: rss
     name: Modern Retail RSS
@@ -129,7 +131,9 @@ sources:
     default_categories: [product_research, ads_ppc]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: true
+    enabled: false
+    collection_status: watch
+    free_access: true
   - id: search_engine_land_amazon
     source_type: rss
     name: Search Engine Land RSS
@@ -362,8 +366,8 @@ sources:
     base_weight: 95
     default_categories: [policy, tools]
     crawl_interval_minutes: 60
-    parser_type: website
-    enabled: false
+    parser_type: html_list
+    enabled: true
   - id: amazon_ads_updates
     source_type: official
     name: Amazon Ads Updates
@@ -376,8 +380,8 @@ sources:
     base_weight: 92
     default_categories: [ads_ppc]
     crawl_interval_minutes: 60
-    parser_type: website
-    enabled: false
+    parser_type: html_list
+    enabled: true
   - id: marketplace_pulse
     source_type: authority
     name: Marketplace Pulse

@@ -4,8 +4,9 @@ import type { AdminApi } from "../api";
 import { Section, TableWrap } from "../components/Section";
 import { StatusLabel } from "../components/StatusLabel";
 import { useAsyncData } from "../hooks";
-import type { DailyDigest } from "../types";
-import { channelLabel, formatDateTime, jsonLabel, today } from "../utils";
+import type { DailyDigest, DailySection } from "../types";
+import { categoryLabel } from "../labels";
+import { channelLabel, formatDateTime, today } from "../utils";
 
 export function DailyDigestsView({ api }: { api: AdminApi }) {
   const [filters, setFilters] = useState({ channel: "ai", date: today() });
@@ -27,11 +28,11 @@ export function DailyDigestsView({ api }: { api: AdminApi }) {
       <Section title="日报发布" error={error} action={<button onClick={reload}>刷新</button>}>
         <TableWrap>
           <table>
-            <thead><tr><th>标题</th><th>频道</th><th>日期</th><th>状态</th><th>发布人</th><th>预览</th></tr></thead>
+            <thead><tr><th>标题</th><th>频道</th><th>日期</th><th>状态</th><th>发布人</th><th>日报预览</th></tr></thead>
             <tbody>
               {digests.map((digest) => (
                 <tr key={digest.id}>
-                  <td><strong>{digest.title}</strong><span>{formatDateTime(digest.generatedAt)}</span></td><td>{channelLabel(digest.channel)}</td><td>{digest.date}</td><td><StatusLabel value={digest.published ? "published" : "unpublished"} /></td><td>{digest.publishedBy ?? "-"}</td><td><code>{jsonLabel(digest.sections)}</code></td>
+                  <td><strong>{digest.title}</strong><span>{formatDateTime(digest.generatedAt)}</span></td><td>{channelLabel(digest.channel)}</td><td>{digest.date}</td><td><StatusLabel value={digest.published ? "published" : "unpublished"} /></td><td>{digest.publishedBy ?? "-"}</td><td><DailyPreview digest={digest} /></td>
                 </tr>
               ))}
             </tbody>
@@ -40,4 +41,35 @@ export function DailyDigestsView({ api }: { api: AdminApi }) {
       </Section>
     </div>
   );
+}
+
+function DailyPreview({ digest }: { digest: DailyDigest }) {
+  const sections = digestSections(digest);
+  if (!sections.length) return <span className="hint">暂无分区内容</span>;
+  return (
+    <div className="admin-daily-preview">
+      {sections.slice(0, 4).map((section) => (
+        <span key={section.category}>
+          {categoryLabel(section.category)} · {section.count} 篇
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function digestSections(digest: DailyDigest): DailySection[] {
+  const raw = digest.sections as Record<string, unknown>;
+  if (Array.isArray(raw?.sections)) return raw.sections as DailySection[];
+  if (Array.isArray(digest.sections)) return digest.sections as DailySection[];
+  const highlights = Array.isArray(raw?.highlights) ? raw.highlights : [];
+  const grouped = new Map<string, DailySection>();
+  highlights.forEach((entry) => {
+    if (!entry || typeof entry !== "object") return;
+    const item = entry as Record<string, unknown>;
+    const category = String(item.category || "industry");
+    const section = grouped.get(category) ?? { category, label: categoryLabel(category), count: 0, items: [] };
+    section.count += 1;
+    grouped.set(category, section);
+  });
+  return [...grouped.values()];
 }

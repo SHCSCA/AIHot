@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { AdminApi } from "../api";
 import { MetricCard, MetricGrid } from "../components/MetricCard";
+import { PaginationBar } from "../components/PaginationBar";
 import { Section, TableWrap } from "../components/Section";
 import { collectionStatusLabel, diagnosticStatusLabel, sourceGroupLabel } from "../labels";
 import type { SourceDiagnostic } from "../types";
@@ -10,20 +11,20 @@ export function HealthView({ api }: { api: AdminApi }) {
   const [diagnostics, setDiagnostics] = useState<SourceDiagnostic[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [hasNext, setHasNext] = useState(false);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    void loadFirstPage();
-  }, [api]);
+    void loadPage(page);
+  }, [api, page]);
 
-  async function loadFirstPage() {
+  async function loadPage(pageNumber = 1) {
     setLoading(true);
     try {
-      const page = await api.listSourceDiagnosticsPage({ take: 50 });
-      setDiagnostics(page.items);
-      setHasNext(page.hasNext);
-      setNextCursor(page.nextCursor);
+      const diagnosticPage = await api.listSourceDiagnosticsPage({ page: pageNumber, pageSize: 50 });
+      setDiagnostics(diagnosticPage.items);
+      const resolvedPage = diagnosticPage.page ?? pageNumber;
+      setTotalPages(diagnosticPage.totalPages ?? (diagnosticPage.hasNext ? resolvedPage + 1 : resolvedPage));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "健康监控加载失败");
@@ -32,21 +33,6 @@ export function HealthView({ api }: { api: AdminApi }) {
     }
   }
 
-  async function loadMore() {
-    if (!nextCursor || loading) return;
-    setLoading(true);
-    try {
-      const page = await api.listSourceDiagnosticsPage({ take: 50, cursor: nextCursor });
-      setDiagnostics((current) => [...current, ...page.items]);
-      setHasNext(page.hasNext);
-      setNextCursor(page.nextCursor);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "健康监控加载失败");
-    } finally {
-      setLoading(false);
-    }
-  }
   const average = diagnostics.length
     ? Math.round(diagnostics.reduce((total, source) => total + source.healthScore, 0) / diagnostics.length)
     : 0;
@@ -61,7 +47,7 @@ export function HealthView({ api }: { api: AdminApi }) {
         <MetricCard label="需处理信源" value={warnings} tone={warnings ? "warn" : "good"} />
         <MetricCard label="缺少发布时间" value={missingDate} tone={missingDate ? "bad" : "good"} />
       </MetricGrid>
-      <Section title="健康监控" error={error} action={<button onClick={loadFirstPage}>刷新</button>}>
+      <Section title="健康监控" error={error} action={<button onClick={() => loadPage(page)}>刷新</button>}>
         <TableWrap>
           <table>
             <thead>
@@ -123,7 +109,7 @@ export function HealthView({ api }: { api: AdminApi }) {
             </tbody>
           </table>
         </TableWrap>
-        {hasNext && <button className="load-more" onClick={loadMore} disabled={loading}>{loading ? "正在加载..." : "加载更多健康记录"}</button>}
+        <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} disabled={loading} />
       </Section>
     </div>
   );

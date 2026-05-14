@@ -6,7 +6,7 @@ import httpx
 from sqlalchemy import select
 
 from intel_engine.db import create_engine_from_settings, init_schema, sessionmaker_for_engine
-from intel_engine.fetchers import HttpArticleAdapter, RssFetchAdapter
+from intel_engine.fetchers import AihotApiAdapter, HtmlListAdapter, HttpArticleAdapter, RssFetchAdapter
 from intel_engine.models import FetchJobRecord, FetchRunRecord, RawDocumentRecord
 from intel_engine.raw_store import RawStore
 from intel_engine.scheduler import claim_fetch_jobs, schedule_due_sources
@@ -58,7 +58,7 @@ def test_rss_adapter_fetches_entries_as_raw_documents():
           <title>OpenAI ships update</title>
           <link>https://example.com/article?utm_source=x</link>
           <pubDate>Tue, 12 May 2026 08:00:00 GMT</pubDate>
-          <description>Model update summary.</description>
+          <description><![CDATA[<p>Model update summary.</p><img src="https://example.com/card.png" alt="Card image" />]]></description>
         </item>
       </channel>
     </rss>
@@ -75,6 +75,8 @@ def test_rss_adapter_fetches_entries_as_raw_documents():
     assert len(result.documents) == 1
     assert result.documents[0].canonical_url == "https://example.com/article"
     assert result.documents[0].body_text == "Model update summary."
+    assert result.documents[0].response_headers_json["x-intel-image-url"] == "https://example.com/card.png"
+    assert result.documents[0].response_headers_json["x-intel-image-alt"] == "Card image"
     assert result.documents[0].content_hash
 
 
@@ -160,7 +162,7 @@ def test_rss_adapter_caps_accepted_documents_per_source_run():
 def test_http_article_adapter_extracts_article_text():
     html = """
     <html>
-      <head><title>Launch Notes</title><meta name="description" content="Short summary"></head>
+      <head><title>Launch Notes</title><meta property="og:image" content="https://example.com/launch.png"></head>
       <body><article><h1>Launch Notes</h1><p>Important model release details.</p></article></body>
     </html>
     """
@@ -175,6 +177,86 @@ def test_http_article_adapter_extracts_article_text():
     assert len(result.documents) == 1
     assert "Important model release details" in result.documents[0].body_text
     assert result.documents[0].body_html == html
+    assert result.documents[0].response_headers_json["x-intel-image-url"] == "https://example.com/launch.png"
+
+
+def test_aihot_api_adapter_uses_user_agent_and_maps_items():
+    now = datetime(2026, 5, 14, 12, 0, tzinfo=timezone.utc)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert "aihot-intel-engine/0.1" in request.headers["user-agent"]
+        assert request.url.params["mode"] == "selected"
+        assert request.url.params["take"] == "100"
+        assert "since" in request.url.params
+        return httpx.Response(
+            200,
+            json={
+                "items": [
+                    {
+                        "id": "item-1",
+                        "title": "AIHOT 中文标题",
+                        "summary": "AIHOT 中文摘要",
+                        "url": "https://x.com/example/status/1",
+                        "source": "X：Example",
+                        "publishedAt": "2026-05-14T01:00:00Z",
+                        "category": "ai-models",
+                    }
+                ]
+            },
+        )
+
+    source = _source_record("aihot_virxact_selected", "aihot_api")
+    source.url = "https://aihot.virxact.com/api/public/items"
+    result = AihotApiAdapter(now=now).fetch(source, client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+    assert result.status == "succeeded"
+    assert len(result.documents) == 1
+    assert result.documents[0].canonical_url == "https://x.com/example/status/1"
+    assert result.documents[0].response_headers_json["x-intel-category"] == "ai_models"
+    assert result.documents[0].response_headers_json["x-intel-source"] == "X：Example"
+    assert "AIHOT 中文摘要" in result.documents[0].body_text
+
+
+def test_html_list_adapter_extracts_recent_article_cards_with_images():
+    now = datetime(2026, 5, 14, 12, 0, tzinfo=timezone.utc)
+    html = """
+    <html>
+      <body>
+        <article>
+          <a href="/updates/ads-budget-rules">Amazon Ads adds new budget rules</a>
+          <time datetime="2026-05-14T02:30:00Z">May 14, 2026</time>
+          <p>Amazon Ads introduced a seller-facing budget control change.</p>
+          <img src="/images/ads-budget.png" alt="Budget rule" />
+        </article>
+        <article>
+          <a href="/updates/old-change">Old Amazon change</a>
+          <time datetime="2026-05-12T02:30:00Z">May 12, 2026</time>
+          <p>Old summary.</p>
+        </article>
+      </body>
+    </html>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=html, headers={"content-type": "text/html"})
+
+    source = _source_record("amazon_ads_updates", "html_list")
+    source.channel = "amazon"
+    source.url = "https://advertising.amazon.com/resources/whats-new"
+    result = HtmlListAdapter(now=now).fetch(source, client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+    assert result.status == "succeeded"
+    assert [document.url for document in result.documents] == [
+        "https://advertising.amazon.com/updates/ads-budget-rules"
+    ]
+    assert result.documents[0].response_headers_json["x-intel-title"] == "Amazon Ads adds new budget rules"
+    assert result.documents[0].response_headers_json["x-intel-published-at"] == "2026-05-14T02:30:00+00:00"
+    assert result.documents[0].response_headers_json["x-intel-image-url"] == (
+        "https://advertising.amazon.com/images/ads-budget.png"
+    )
+    assert result.metadata_json["candidate_items"] == 2
+    assert result.metadata_json["accepted_items"] == 1
+    assert result.metadata_json["skipped_old_items"] == 1
 
 
 def test_raw_store_saves_fetch_run_and_deduplicates_documents(tmp_path):
@@ -226,17 +308,17 @@ def _source_record(source_id: str, adapter: str):
     return SourceRecord(
         id=source_id,
         channel="ai",
-        source_type="rss" if adapter == "rss" else "html",
+        source_type="rss" if adapter == "rss" else "api" if adapter == "aihot_api" else "html",
         tier="T1",
         name="Example",
-        url="https://example.com/feed.xml" if adapter == "rss" else "https://example.com/article",
+        url="https://example.com/feed.xml" if adapter == "rss" else "https://example.com/api" if adapter == "aihot_api" else "https://example.com/article",
         language="en",
         region="global",
         marketplace=None,
         authority_weight=90,
         noise_level=0.1,
         fetch_adapter=adapter,
-        parser_type="rss" if adapter == "rss" else "website",
+        parser_type="rss" if adapter == "rss" else "api" if adapter == "aihot_api" else adapter,
         default_categories=["ai_models"],
         fetch_interval_minutes=60,
         enabled=True,

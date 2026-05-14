@@ -251,6 +251,51 @@ def test_public_events_uses_cursor_pagination_without_duplicates(tmp_path):
     assert second["events"][0]["id"] != first["events"][0]["id"]
 
 
+def test_public_events_support_numbered_pagination_metadata(tmp_path):
+    app = _app_with_event(tmp_path)
+    SessionLocal = app.state.production_sessionmaker
+    with SessionLocal() as session:
+        base = datetime(2026, 5, 11, 10, 0, tzinfo=timezone.utc)
+        _add_public_event(session, event_id_suffix="2", observed_at=base + timedelta(hours=1), title="第二条事件")
+        _add_public_event(session, event_id_suffix="3", observed_at=base + timedelta(hours=2), title="第三条事件")
+        session.commit()
+    client = TestClient(app)
+
+    first = client.get("/api/v1/public/events?channel=ai&date=2026-05-11&page=1&pageSize=2").json()
+    second = client.get("/api/v1/public/events?channel=ai&date=2026-05-11&page=2&pageSize=2").json()
+
+    assert first["page"] == 1
+    assert first["pageSize"] == 2
+    assert first["total"] == 3
+    assert first["totalPages"] == 2
+    assert first["hasPrev"] is False
+    assert first["hasNext"] is True
+    assert [event["title"] for event in first["events"]] == ["第三条事件", "第二条事件"]
+    assert second["hasPrev"] is True
+    assert second["hasNext"] is False
+    assert [event["title"] for event in second["events"]] == ["OpenAI 发布 GPT-5"]
+
+
+def test_public_events_expose_safe_image_metadata(tmp_path):
+    app = _app_with_event(tmp_path)
+    SessionLocal = app.state.production_sessionmaker
+    with SessionLocal() as session:
+        raw = session.get(RawDocumentRecord, 1)
+        raw.response_headers_json = {
+            **raw.response_headers_json,
+            "x-intel-image-url": "https://openai.com/news/gpt-5/card.png",
+            "x-intel-image-alt": "OpenAI 发布 GPT-5",
+        }
+        session.commit()
+    client = TestClient(app)
+
+    response = client.get("/api/v1/public/events?channel=ai&date=2026-05-11")
+
+    main_item = response.json()["events"][0]["mainItem"]
+    assert main_item["imageUrl"] == "https://openai.com/news/gpt-5/card.png"
+    assert main_item["imageAlt"] == "OpenAI 发布 GPT-5"
+
+
 def test_public_event_detail_returns_members(tmp_path):
     client = TestClient(_app_with_event(tmp_path))
 
@@ -270,7 +315,8 @@ def test_public_daily_endpoint_returns_published_digest(tmp_path):
     assert response.status_code == 200
     payload = response.json()
     assert payload["daily"]["title"] == "AI 日报"
-    assert payload["daily"]["sections"]["highlights"][0]["title"] == "OpenAI 发布 GPT-5"
+    assert payload["daily"]["sections"][0]["items"][0]["title"] == "OpenAI 发布 GPT-5"
+    assert payload["daily"]["sectionsJson"]["highlights"][0]["title"] == "OpenAI 发布 GPT-5"
 
 
 def test_build_events_feed_uses_public_event_fields_only():

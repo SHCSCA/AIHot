@@ -51,6 +51,10 @@ def _tier(source: SourceConfig) -> str:
 def _fetch_adapter(source: SourceConfig) -> str:
     parser_type = source.parser_type.lower()
     mapped_type = _source_type(source)
+    if parser_type == "aihot_api":
+        return "aihot_api"
+    if parser_type == "html_list":
+        return "html_list"
     if parser_type in {"rss", "atom"} or mapped_type == "rss":
         return "rss"
     if mapped_type == "github":

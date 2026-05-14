@@ -63,7 +63,11 @@ export function statusLabel(value?: string | null) {
     mostly_duplicates: "重复内容偏多",
     pending_api: "待接入",
     rate_limited: "限流",
-    unavailable: "不可用"
+    unavailable: "不可用",
+    watch: "观察源",
+    unread: "未处理",
+    read: "已读",
+    ignored: "已忽略"
   });
 }
 
@@ -91,7 +95,8 @@ export function feedbackTypeLabel(value?: string | null) {
     false_negative: "漏选",
     promote: "提权",
     demote: "降权",
-    category_fix: "分类修正"
+    category_fix: "分类修正",
+    general: "一般反馈"
   });
 }
 
@@ -116,7 +121,8 @@ export function sourceGroupLabel(value?: string | null) {
     media: "资讯",
     social: "推文",
     community: "社区",
-    vendor: "服务商"
+    vendor: "服务商",
+    curated: "精选聚合"
   });
 }
 
@@ -125,7 +131,8 @@ export function collectionStatusLabel(value?: string | null) {
     collectable: "可抓取",
     pending_api: "待接入",
     rate_limited: "限流",
-    unavailable: "不可用"
+    unavailable: "不可用",
+    watch: "观察源"
   });
 }
 
@@ -133,6 +140,8 @@ export function fetchAdapterLabel(value?: string | null) {
   return lookup(value, {
     rss: "RSS 抓取",
     http_article: "网页抓取",
+    html_list: "列表抓取",
+    aihot_api: "AIHOT 接口",
     api: "接口抓取"
   });
 }

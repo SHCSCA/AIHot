@@ -403,8 +403,12 @@ class FeedbackEventRecord(Base):
     __tablename__ = "feedback_events"
     __table_args__ = (
         CheckConstraint(
-            "feedback_type in ('false_positive', 'false_negative', 'promote', 'demote', 'category_fix')",
+            "feedback_type in ('general', 'false_positive', 'false_negative', 'promote', 'demote', 'category_fix')",
             name="ck_feedback_events_feedback_type",
+        ),
+        CheckConstraint(
+            "status in ('unread', 'read', 'accepted', 'ignored')",
+            name="ck_feedback_events_status",
         ),
         Index("ix_feedback_events_channel_created", "channel", "created_at"),
     )
@@ -416,6 +420,8 @@ class FeedbackEventRecord(Base):
     feedback_type: Mapped[str] = mapped_column(String(32), nullable=False)
     reason: Mapped[str] = mapped_column(Text, default="", nullable=False)
     actor: Mapped[str] = mapped_column(String(128), default="system", nullable=False)
+    contact: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), default="unread", nullable=False)
     created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
 
 
