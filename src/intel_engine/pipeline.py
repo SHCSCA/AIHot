@@ -370,6 +370,7 @@ def _upsert_screening_result(
         .limit(1)
     )
     result = _screen_raw_document(raw_document, source, now=now, screening_provider=screening_provider)
+    result = _apply_screening_guardrails(result, raw_document, source)
     published_at = _parse_datetime(raw_document.response_headers_json.get("x-intel-published-at"))
     validation = validate_screening_result(
         result,
@@ -451,6 +452,93 @@ def _failed_screening_result(reason_code: str, reason_cn: str) -> ScreeningResul
         reason_code=reason_code,
         reason_cn=reason_cn,
         raw_json={"provider": "system", "model": "screening-failure"},
+    )
+
+
+AMAZON_LOW_INFORMATION_REASON_CODES = {
+    "low_info",
+    "low_info_generic",
+    "low_information_value",
+    "tutorial_rejection",
+    "evergreen_tutorial",
+}
+
+AMAZON_SELLER_CONTEXT_TERMS = (
+    "amazon seller",
+    "seller central",
+    "selling partner",
+    "sp-api",
+    "fba",
+    "fulfillment by amazon",
+    "amazon ads",
+    "ppc",
+)
+
+AMAZON_OPERATIONAL_TERMS = (
+    "account health",
+    "advertising",
+    "campaign",
+    "fee",
+    "fulfillment center",
+    "inbound",
+    "inventory",
+    "listing",
+    "lost",
+    "missing",
+    "placement",
+    "reimbursement",
+    "return",
+    "storage",
+)
+
+
+def _apply_screening_guardrails(
+    result: ScreeningResult,
+    raw_document: RawDocumentRecord,
+    source: SourceRecord,
+) -> ScreeningResult:
+    if source.channel != "amazon" or result.screen_status == "accepted":
+        return result
+    if result.reason_code.lower() not in AMAZON_LOW_INFORMATION_REASON_CODES:
+        return result
+
+    text = " ".join(
+        [
+            str(raw_document.response_headers_json.get("x-intel-title") or ""),
+            raw_document.body_text or "",
+            raw_document.canonical_url or "",
+        ]
+    ).lower()
+    has_seller_context = any(term in text for term in AMAZON_SELLER_CONTEXT_TERMS)
+    has_operational_signal = any(term in text for term in AMAZON_OPERATIONAL_TERMS)
+    if not (has_seller_context and has_operational_signal):
+        return result
+
+    tags = [tag for tag in result.tags if tag]
+    for tag in ("FBA", "库存赔付", "卖家运营"):
+        if tag not in tags:
+            tags.append(tag)
+        if len(tags) >= 3:
+            break
+
+    raw_json = {
+        **dict(result.raw_json),
+        "guardrail": "amazon_seller_ops_signal",
+        "original_screen_status": result.screen_status,
+        "original_screen_bucket": result.screen_bucket,
+        "original_reason_code": result.reason_code,
+    }
+    return result.model_copy(
+        update={
+            "screen_status": "accepted",
+            "screen_bucket": "related",
+            "relevance_score": max(result.relevance_score, 72),
+            "confidence_score": max(result.confidence_score, 72),
+            "tags": tags[:5],
+            "reason_code": "seller_ops_signal",
+            "reason_cn": "内容包含 Amazon 卖家运营信号，涉及 FBA、库存、赔付、广告、费用或工具等可执行事项，按卖家价值规则修正为入库。",
+            "raw_json": raw_json,
+        }
     )
 
 

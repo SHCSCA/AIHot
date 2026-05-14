@@ -20,6 +20,7 @@ from intel_engine.models import (
     SourceStateRecord,
 )
 from intel_engine.pipeline import (
+    _apply_screening_guardrails,
     _fake_score,
     _model_payload,
     _normalize_raw_document,
@@ -118,6 +119,73 @@ def _stable_screening_provider() -> FakeScreeningProvider:
             raw_json={"provider": "fake", "model": "fake-screening"},
         )
     )
+
+
+def test_amazon_screening_guardrail_accepts_fba_missing_inventory_signal():
+    now = datetime(2026, 5, 14, 10, 0, tzinfo=timezone.utc)
+    source = SourceRecord(
+        id="ecommercebytes",
+        channel="amazon",
+        source_type="rss",
+        tier="T3",
+        name="EcommerceBytes RSS",
+        url="https://www.ecommercebytes.com/feed/",
+        language="en",
+        region="global",
+        marketplace="global",
+        authority_weight=72,
+        noise_level=0.35,
+        fetch_adapter="rss",
+        parser_type="rss",
+        default_categories=["policy", "fees_margin", "tools"],
+        fetch_interval_minutes=60,
+        enabled=True,
+        visibility="public",
+        source_group="media",
+        collection_status="collectable",
+        free_access=True,
+    )
+    raw_document = RawDocumentRecord(
+        fetch_run_id=1,
+        source_id=source.id,
+        url="https://www.ecommercebytes.com/2026/05/13/the-amazon-fba-perk-you-may-not-know-about/",
+        canonical_url="https://www.ecommercebytes.com/2026/05/13/the-amazon-fba-perk-you-may-not-know-about/",
+        content_type="application/rss+xml",
+        body_text=(
+            "Amazon offers a perk to sellers who use its FBA fulfillment services when products go missing "
+            "upon arrival at Amazon fulfillment centers."
+        ),
+        body_html=None,
+        response_headers_json={
+            "x-intel-title": "The Amazon FBA Perk You May Not Know About",
+            "x-intel-published-at": now.isoformat(),
+        },
+        content_hash="amazon-fba-perk",
+        fetched_at=now,
+    )
+    rejected = ScreeningResult(
+        screen_status="rejected",
+        screen_bucket="irrelevant",
+        relevance_score=20,
+        confidence_score=70,
+        category="fba_logistics",
+        title_cn="你可能不知道的亚马逊FBA福利",
+        summary_cn="文章介绍亚马逊FBA入仓后商品丢失时卖家可能使用的权益。",
+        tags=["FBA", "库存"],
+        reason_code="low_info_generic",
+        reason_cn="内容为一般性FBA福利介绍，信息增量低。",
+        raw_json={"provider": "deepseek", "model": "deepseek-v4-flash"},
+    )
+
+    corrected = _apply_screening_guardrails(rejected, raw_document, source)
+
+    assert corrected.screen_status == "accepted"
+    assert corrected.screen_bucket == "related"
+    assert corrected.relevance_score >= 72
+    assert corrected.confidence_score >= 72
+    assert corrected.reason_code == "seller_ops_signal"
+    assert "库存" in corrected.reason_cn
+    assert corrected.raw_json["guardrail"] == "amazon_seller_ops_signal"
 
 
 def test_pipeline_once_produces_public_event_and_isolates_failed_source(tmp_path):

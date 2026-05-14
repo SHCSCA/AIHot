@@ -259,6 +259,42 @@ def test_html_list_adapter_extracts_recent_article_cards_with_images():
     assert result.metadata_json["skipped_old_items"] == 1
 
 
+def test_html_list_adapter_extracts_sp_api_release_note_sections():
+    now = datetime(2026, 5, 14, 10, 0, tzinfo=timezone.utc)
+    escaped_release_notes = (
+        "&lt;h2&gt;May 14, 2026&lt;/h2&gt;"
+        "&lt;h4&gt;Listings Items API updates product type definitions&lt;/h4&gt;"
+        "&lt;p&gt;Amazon updated Selling Partner API behavior for listing feeds and seller tooling.&lt;/p&gt;"
+        "&lt;h2&gt;May 10, 2026&lt;/h2&gt;"
+        "&lt;h4&gt;Older SP-API change&lt;/h4&gt;"
+        "&lt;p&gt;Old change outside the 24 hour window.&lt;/p&gt;"
+    )
+    page = f"""<article class="rm-Article">
+      <div dehydrated="{escaped_release_notes}"></div>
+    </article>"""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=page, headers={"content-type": "text/html; charset=utf-8"})
+
+    source = _source_record("amazon_sp_api_release_notes", "html_list")
+    source.channel = "amazon"
+    source.url = "https://developer-docs.amazon.com/sp-api/docs/sp-api-release-notes"
+    result = HtmlListAdapter(now=now).fetch(source, client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+    assert result.status == "succeeded"
+    assert [document.url for document in result.documents] == [
+        "https://developer-docs.amazon.com/sp-api/docs/sp-api-release-notes#may-14-2026"
+    ]
+    assert result.documents[0].response_headers_json["x-intel-title"] == (
+        "Listings Items API updates product type definitions"
+    )
+    assert result.documents[0].response_headers_json["x-intel-published-at"] == "2026-05-14T00:00:00+00:00"
+    assert "Selling Partner API behavior" in result.documents[0].body_text
+    assert result.metadata_json["candidate_items"] == 2
+    assert result.metadata_json["accepted_items"] == 1
+    assert result.metadata_json["skipped_old_items"] == 1
+
+
 def test_raw_store_saves_fetch_run_and_deduplicates_documents(tmp_path):
     now = datetime(2026, 5, 11, 10, 0, tzinfo=timezone.utc)
     SessionLocal = _session_factory(tmp_path)

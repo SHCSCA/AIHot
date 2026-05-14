@@ -98,6 +98,8 @@ class RssFetchAdapter:
             summary_html = getattr(entry, "summary", "") or getattr(entry, "description", "")
             body_text = collapse_whitespace(html.unescape(TAG_RE.sub(" ", summary_html)))
             canonical_url = canonicalize_url(url)
+            if source.id == "amazon_sp_api_release_notes" and "#" in url:
+                canonical_url = url
             document_headers = {**headers, "x-intel-title": title}
             document_headers["x-intel-published-at"] = published_at.isoformat()
             image = _rss_entry_image(entry, summary_html, url)
@@ -204,7 +206,7 @@ class HtmlListAdapter:
         skipped_missing_date = 0
         skipped_invalid_original_url = 0
         skipped_over_limit = 0
-        for block in _html_list_blocks(response.text):
+        for block in _html_list_blocks_for_source(source, response.text, str(response.url)):
             title_url = _html_block_anchor(block, str(response.url))
             if title_url is None:
                 continue
@@ -480,6 +482,43 @@ def _html_list_blocks(document: str) -> list[str]:
     ]
 
 
+def _html_list_blocks_for_source(source: SourceRecord, document: str, base_url: str) -> list[str]:
+    if source.id == "amazon_sp_api_release_notes":
+        release_blocks = _amazon_sp_api_release_blocks(document, base_url)
+        if release_blocks:
+            return release_blocks
+    return _html_list_blocks(document)
+
+
+def _amazon_sp_api_release_blocks(document: str, base_url: str) -> list[str]:
+    expanded = html.unescape(document)
+    headings = list(re.finditer(r"<h2\b[^>]*>(.*?)</h2>", expanded, flags=re.IGNORECASE | re.DOTALL))
+    blocks: list[str] = []
+    for index, heading in enumerate(headings):
+        date_label = collapse_whitespace(html.unescape(TAG_RE.sub(" ", heading.group(1))))
+        published_at = _human_date_datetime(date_label) or _rfc_datetime(date_label)
+        if published_at is None:
+            continue
+        section_end = headings[index + 1].start() if index + 1 < len(headings) else min(len(expanded), heading.end() + 4000)
+        section = expanded[heading.end() : section_end]
+        title_match = re.search(r"<h[34]\b[^>]*>(.*?)</h[34]>", section, flags=re.IGNORECASE | re.DOTALL)
+        if title_match:
+            title = collapse_whitespace(html.unescape(TAG_RE.sub(" ", title_match.group(1))))
+        else:
+            title = f"SP-API Release Notes: {date_label}"
+        summary = _html_block_summary(section) or title
+        slug = re.sub(r"[^a-z0-9]+", "-", date_label.lower()).strip("-")
+        url = f"{base_url.split('#', 1)[0]}#{slug}"
+        blocks.append(
+            "<article>"
+            f'<a href="{html.escape(url, quote=True)}">{html.escape(title)}</a>'
+            f'<time datetime="{published_at.isoformat()}">{html.escape(date_label)}</time>'
+            f"<p>{html.escape(summary)}</p>"
+            "</article>"
+        )
+    return blocks
+
+
 def _html_block_anchor(block: str, base_url: str) -> tuple[str, str] | None:
     match = re.search(r"<a\b[^>]+href=[\"']([^\"']+)[\"'][^>]*>(.*?)</a>", block, flags=re.IGNORECASE | re.DOTALL)
     if not match:
@@ -510,7 +549,7 @@ def _html_block_datetime(block: str) -> datetime | None:
                 return parsed
     text = collapse_whitespace(html.unescape(TAG_RE.sub(" ", block)))
     for match in re.finditer(r"\b[A-Z][a-z]{2,8}\s+\d{1,2},\s+\d{4}\b", text):
-        parsed = _rfc_datetime(match.group(0))
+        parsed = _human_date_datetime(match.group(0)) or _rfc_datetime(match.group(0))
         if parsed is not None:
             return parsed
     return None
@@ -550,6 +589,15 @@ def _iso_datetime(value: str) -> datetime | None:
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc)
+
+
+def _human_date_datetime(value: str) -> datetime | None:
+    for fmt in ("%B %d, %Y", "%b %d, %Y"):
+        try:
+            return datetime.strptime(value, fmt).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+    return None
 
 
 def _rfc_datetime(value: str) -> datetime | None:
