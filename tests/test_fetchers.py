@@ -6,7 +6,7 @@ import httpx
 from sqlalchemy import select
 
 from intel_engine.db import create_engine_from_settings, init_schema, sessionmaker_for_engine
-from intel_engine.fetchers import AihotApiAdapter, HtmlListAdapter, HttpArticleAdapter, RssFetchAdapter
+from intel_engine.fetchers import AihotApiAdapter, FetchedDocument, FetchResult, HtmlListAdapter, HttpArticleAdapter, RssFetchAdapter
 from intel_engine.models import FetchJobRecord, FetchRunRecord, RawDocumentRecord
 from intel_engine.raw_store import RawStore
 from intel_engine.scheduler import claim_fetch_jobs, schedule_due_sources
@@ -299,6 +299,40 @@ def test_raw_store_saves_fetch_run_and_deduplicates_documents(tmp_path):
     assert second.documents_inserted == 0
     assert second.duplicates == 1
     assert len(runs) == 2
+    assert len(documents) == 1
+
+
+def test_raw_store_deduplicates_documents_inside_same_fetch_result(tmp_path):
+    now = datetime(2026, 5, 14, 10, 0, tzinfo=timezone.utc)
+    SessionLocal = _session_factory(tmp_path)
+    document = FetchedDocument(
+        source_id="example_feed",
+        url="https://example.com/article",
+        canonical_url="https://example.com/article",
+        content_type="application/json",
+        body_text="同一批次内重复出现的内容",
+        body_html=None,
+        response_headers_json={},
+        content_hash="duplicate-batch-hash",
+        fetched_at=now,
+    )
+    result = FetchResult(
+        status="succeeded",
+        http_status=200,
+        content_type="application/json",
+        bytes_received=1024,
+        documents=(document, document),
+    )
+
+    with SessionLocal() as session:
+        _add_source(session)
+        schedule_due_sources(session, now=now)
+        job = claim_fetch_jobs(session, worker_id="worker-a", limit=1, now=now)[0]
+        saved = RawStore(session).save_fetch_result(job, result, now=now)
+        documents = session.scalars(select(RawDocumentRecord)).all()
+
+    assert saved.documents_inserted == 1
+    assert saved.duplicates == 1
     assert len(documents) == 1
 
 
