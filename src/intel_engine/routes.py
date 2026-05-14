@@ -289,6 +289,8 @@ def public_sources(
     request: Request,
     channel: str | None = None,
     source_group: str | None = Query(default=None, alias="sourceGroup"),
+    take: int = Query(default=50, ge=1, le=200),
+    cursor: str | None = None,
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -297,9 +299,11 @@ def public_sources(
             stmt = stmt.where(SourceRecord.channel == channel)
         if source_group:
             stmt = stmt.where(SourceRecord.source_group == source_group)
-        stmt = stmt.order_by(SourceRecord.channel, SourceRecord.contributor_no, SourceRecord.authority_weight.desc())
-        sources = session.scalars(stmt).all()
-        return {"sources": [_source_payload(source) for source in sources]}
+        stmt = _apply_cursor(stmt, SourceRecord.updated_at, SourceRecord.id, cursor)
+        stmt = stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
+        page = _page_rows(list(session.scalars(stmt).all()), take, lambda source: source.updated_at, lambda source: source.id)
+        sources = [_source_payload(source) for source in page["rows"]]
+        return {"count": len(sources), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "sources": sources}
 
 
 @router.post("/api/v1/public/feedback-events")
@@ -514,12 +518,43 @@ def internal_dashboard(request: Request) -> dict[str, object]:
         }
 
 
-@router.get("/api/v1/internal/sources", dependencies=ADMIN_DEPENDENCIES)
-def internal_sources(request: Request, channel: str | None = None) -> dict[str, object]:
+@router.get("/api/v1/internal/quality-dashboard", dependencies=ADMIN_DEPENDENCIES)
+def internal_quality_dashboard(
+    request: Request,
+    window: int = Query(default=24, ge=1, le=720),
+) -> dict[str, object]:
+    generated_at = datetime.now(timezone.utc)
+    started_at = generated_at - timedelta(hours=window)
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        registry = SourceRegistry(session)
-        return {"sources": [_source_payload(source) for source in registry.list_sources(channel=channel)]}
+        channels = session.scalars(select(SourceRecord.channel).distinct().order_by(SourceRecord.channel)).all()
+        return {
+            "windowHours": window,
+            "generatedAt": generated_at.isoformat(),
+            "channels": [
+                _quality_channel_payload(session, channel=channel, started_at=started_at)
+                for channel in channels
+            ],
+        }
+
+
+@router.get("/api/v1/internal/sources", dependencies=ADMIN_DEPENDENCIES)
+def internal_sources(
+    request: Request,
+    channel: str | None = None,
+    take: int = Query(default=50, ge=1, le=200),
+    cursor: str | None = None,
+) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        stmt = select(SourceRecord)
+        if channel:
+            stmt = stmt.where(SourceRecord.channel == channel)
+        stmt = _apply_cursor(stmt, SourceRecord.updated_at, SourceRecord.id, cursor)
+        stmt = stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
+        page = _page_rows(list(session.scalars(stmt).all()), take, lambda source: source.updated_at, lambda source: source.id)
+        sources = [_source_payload(source) for source in page["rows"]]
+        return {"count": len(sources), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "sources": sources}
 
 
 @router.post("/api/v1/internal/sources", dependencies=ADMIN_DEPENDENCIES)
@@ -549,19 +584,31 @@ def internal_patch_source(request: Request, source_id: str, payload: SourcePatch
 
 
 @router.get("/api/v1/internal/source-states", dependencies=ADMIN_DEPENDENCIES)
-def internal_source_states(request: Request, channel: str | None = None) -> dict[str, object]:
+def internal_source_states(
+    request: Request,
+    channel: str | None = None,
+    take: int = Query(default=50, ge=1, le=200),
+    cursor: str | None = None,
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         stmt = select(SourceStateRecord, SourceRecord).join(SourceRecord, SourceRecord.id == SourceStateRecord.source_id)
         if channel:
             stmt = stmt.where(SourceRecord.channel == channel)
-        stmt = stmt.order_by(SourceRecord.channel, SourceRecord.id)
-        states = [_source_state_payload(state, source) for state, source in session.execute(stmt).all()]
-        return {"sourceStates": states}
+        stmt = _apply_cursor(stmt, SourceStateRecord.updated_at, SourceRecord.id, cursor)
+        stmt = stmt.order_by(SourceStateRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
+        page = _page_rows(list(session.execute(stmt).all()), take, lambda row: row[0].updated_at, lambda row: row[1].id)
+        states = [_source_state_payload(state, source) for state, source in page["rows"]]
+        return {"count": len(states), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "sourceStates": states}
 
 
 @router.get("/api/v1/internal/source-diagnostics", dependencies=ADMIN_DEPENDENCIES)
-def internal_source_diagnostics(request: Request, channel: str | None = None) -> dict[str, object]:
+def internal_source_diagnostics(
+    request: Request,
+    channel: str | None = None,
+    take: int = Query(default=50, ge=1, le=200),
+    cursor: str | None = None,
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         stmt = select(SourceRecord, SourceStateRecord).join(
@@ -570,9 +617,16 @@ def internal_source_diagnostics(request: Request, channel: str | None = None) ->
         )
         if channel:
             stmt = stmt.where(SourceRecord.channel == channel)
-        stmt = stmt.order_by(SourceRecord.channel, SourceRecord.id)
-        diagnostics = [_source_diagnostic_payload(session, source, state) for source, state in session.execute(stmt).all()]
-        return {"sourceDiagnostics": diagnostics}
+        stmt = _apply_cursor(stmt, SourceStateRecord.updated_at, SourceRecord.id, cursor)
+        stmt = stmt.order_by(SourceStateRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
+        page = _page_rows(list(session.execute(stmt).all()), take, lambda row: row[1].updated_at, lambda row: row[0].id)
+        diagnostics = [_source_diagnostic_payload(session, source, state) for source, state in page["rows"]]
+        return {
+            "count": len(diagnostics),
+            "hasNext": page["hasNext"],
+            "nextCursor": page["nextCursor"],
+            "sourceDiagnostics": diagnostics,
+        }
 
 
 @router.get("/api/v1/internal/jobs", dependencies=ADMIN_DEPENDENCIES)
@@ -943,7 +997,7 @@ def _apply_cursor(stmt, sort_field, id_field, cursor: str | None):
     )
 
 
-def _encode_cursor(sort_at: datetime, row_id: int) -> str:
+def _encode_cursor(sort_at: datetime, row_id: int | str) -> str:
     payload = {"sortAt": sort_at.isoformat(), "id": row_id}
     return base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode("utf-8")).decode("ascii")
 
@@ -952,9 +1006,11 @@ def _decode_cursor(value: str) -> dict[str, object]:
     try:
         payload = json.loads(base64.urlsafe_b64decode(value.encode("ascii")).decode("utf-8"))
         sort_at = datetime.fromisoformat(str(payload["sortAt"]))
-        row_id = int(payload["id"])
+        row_id = payload["id"]
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
         raise HTTPException(status_code=422, detail="invalid cursor") from exc
+    if not isinstance(row_id, (int, str)):
+        raise HTTPException(status_code=422, detail="invalid cursor")
     if sort_at.tzinfo is None:
         sort_at = sort_at.replace(tzinfo=timezone.utc)
     return {"sortAt": sort_at, "id": row_id}
@@ -1544,6 +1600,296 @@ def _set_daily_digest_published(request: Request, digest_id: int, *, published: 
         session.commit()
         session.refresh(digest)
         return {"dailyDigest": _daily_digest_payload(digest)}
+
+
+def _quality_channel_payload(session, *, channel: str, started_at: datetime) -> dict[str, object]:
+    metrics = _quality_metrics(session, channel=channel, started_at=started_at)
+    return {
+        "channel": channel,
+        "metrics": metrics,
+        "conversion": {
+            "fetchSuccessRate": _ratio(metrics["successfulFetchRuns"], metrics["fetchRuns"]),
+            "screenAcceptRate": _ratio(metrics["acceptedScreenings"], metrics["screenedItems"]),
+            "selectedRate": _ratio(metrics["selectedItems"], metrics["scoredItems"]),
+            "approvedRate": _ratio(metrics["approvedEvents"], metrics["eventClusters"]),
+        },
+        "bottlenecks": _quality_bottlenecks(metrics),
+        "rejectionReasons": _quality_rejection_reasons(session, channel=channel, started_at=started_at),
+        "categoryBreakdown": _quality_category_breakdown(session, channel=channel, started_at=started_at),
+        "sourceContributions": _quality_source_contributions(session, channel=channel, started_at=started_at),
+    }
+
+
+def _quality_metrics(session, *, channel: str, started_at: datetime) -> dict[str, int]:
+    return {
+        "sourceCount": _count(session, select(func.count()).select_from(SourceRecord).where(SourceRecord.channel == channel)),
+        "enabledSourceCount": _count(
+            session,
+            select(func.count()).select_from(SourceRecord).where(SourceRecord.channel == channel, SourceRecord.enabled.is_(True)),
+        ),
+        "fetchRuns": _count(
+            session,
+            select(func.count())
+            .select_from(FetchRunRecord)
+            .join(SourceRecord, SourceRecord.id == FetchRunRecord.source_id)
+            .where(SourceRecord.channel == channel, FetchRunRecord.started_at >= started_at),
+        ),
+        "successfulFetchRuns": _count(
+            session,
+            select(func.count())
+            .select_from(FetchRunRecord)
+            .join(SourceRecord, SourceRecord.id == FetchRunRecord.source_id)
+            .where(
+                SourceRecord.channel == channel,
+                FetchRunRecord.started_at >= started_at,
+                FetchRunRecord.status == "succeeded",
+            ),
+        ),
+        "rawDocuments": _count(
+            session,
+            select(func.count())
+            .select_from(RawDocumentRecord)
+            .join(SourceRecord, SourceRecord.id == RawDocumentRecord.source_id)
+            .where(SourceRecord.channel == channel, RawDocumentRecord.fetched_at >= started_at),
+        ),
+        "screenedItems": _count(
+            session,
+            _screening_count_stmt(channel=channel, started_at=started_at),
+        ),
+        "acceptedScreenings": _count(
+            session,
+            _screening_count_stmt(channel=channel, started_at=started_at).where(
+                RawScreeningResultRecord.screen_status == "accepted"
+            ),
+        ),
+        "rejectedScreenings": _count(
+            session,
+            _screening_count_stmt(channel=channel, started_at=started_at).where(
+                RawScreeningResultRecord.screen_status == "rejected"
+            ),
+        ),
+        "normalizedItems": _count(
+            session,
+            select(func.count())
+            .select_from(NormalizedItemRecord)
+            .where(NormalizedItemRecord.channel == channel, NormalizedItemRecord.fetched_at >= started_at),
+        ),
+        "scoredItems": _count(
+            session,
+            select(func.count())
+            .select_from(ModelScoreRecord)
+            .join(NormalizedItemRecord, NormalizedItemRecord.id == ModelScoreRecord.item_id)
+            .where(NormalizedItemRecord.channel == channel, ModelScoreRecord.created_at >= started_at),
+        ),
+        "rankedItems": _count(
+            session,
+            select(func.count())
+            .select_from(RankedItemRecord)
+            .join(NormalizedItemRecord, NormalizedItemRecord.id == RankedItemRecord.item_id)
+            .where(NormalizedItemRecord.channel == channel, RankedItemRecord.created_at >= started_at),
+        ),
+        "selectedItems": _count(
+            session,
+            select(func.count())
+            .select_from(RankedItemRecord)
+            .join(NormalizedItemRecord, NormalizedItemRecord.id == RankedItemRecord.item_id)
+            .where(
+                NormalizedItemRecord.channel == channel,
+                RankedItemRecord.created_at >= started_at,
+                RankedItemRecord.selected.is_(True),
+            ),
+        ),
+        "eventClusters": _count(
+            session,
+            select(func.count())
+            .select_from(EventClusterRecord)
+            .where(EventClusterRecord.channel == channel, EventClusterRecord.last_seen_at >= started_at),
+        ),
+        "approvedEvents": _count(
+            session,
+            select(func.count())
+            .select_from(EventClusterRecord)
+            .where(
+                EventClusterRecord.channel == channel,
+                EventClusterRecord.last_seen_at >= started_at,
+                EventClusterRecord.review_status == "approved",
+            ),
+        ),
+        "publicSelectedEvents": _count(
+            session,
+            select(func.count())
+            .select_from(EventClusterRecord)
+            .where(
+                EventClusterRecord.channel == channel,
+                EventClusterRecord.last_seen_at >= started_at,
+                EventClusterRecord.review_status == "approved",
+            )
+            .where(
+                exists()
+                .where(RankedItemRecord.item_id == EventClusterRecord.main_item_id)
+                .where(RankedItemRecord.selected.is_(True))
+            ),
+        ),
+    }
+
+
+def _screening_count_stmt(*, channel: str, started_at: datetime):
+    return (
+        select(func.count())
+        .select_from(RawScreeningResultRecord)
+        .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+        .join(SourceRecord, SourceRecord.id == RawDocumentRecord.source_id)
+        .where(SourceRecord.channel == channel, RawScreeningResultRecord.created_at >= started_at)
+    )
+
+
+def _quality_rejection_reasons(session, *, channel: str, started_at: datetime) -> list[dict[str, object]]:
+    rows = session.execute(
+        select(
+            RawScreeningResultRecord.reason_code,
+            RawScreeningResultRecord.screen_bucket,
+            func.max(RawScreeningResultRecord.reason_cn),
+            func.count(),
+        )
+        .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+        .join(SourceRecord, SourceRecord.id == RawDocumentRecord.source_id)
+        .where(
+            SourceRecord.channel == channel,
+            RawScreeningResultRecord.created_at >= started_at,
+            RawScreeningResultRecord.screen_status == "rejected",
+        )
+        .group_by(RawScreeningResultRecord.reason_code, RawScreeningResultRecord.screen_bucket)
+        .order_by(func.count().desc(), RawScreeningResultRecord.reason_code)
+        .limit(10)
+    ).all()
+    return [
+        {"reasonCode": reason_code, "bucket": bucket, "reason": reason or "", "count": count}
+        for reason_code, bucket, reason, count in rows
+    ]
+
+
+def _quality_category_breakdown(session, *, channel: str, started_at: datetime) -> list[dict[str, object]]:
+    categories: dict[str, dict[str, object]] = {}
+    scored_rows = session.execute(
+        select(ModelScoreRecord.category, func.count())
+        .join(NormalizedItemRecord, NormalizedItemRecord.id == ModelScoreRecord.item_id)
+        .where(NormalizedItemRecord.channel == channel, ModelScoreRecord.created_at >= started_at)
+        .group_by(ModelScoreRecord.category)
+    ).all()
+    for category, scored_count in scored_rows:
+        categories[str(category)] = {
+            "category": str(category),
+            "scoredItems": scored_count,
+            "selectedItems": 0,
+            "approvedEvents": 0,
+        }
+    selected_rows = session.execute(
+        select(ModelScoreRecord.category, func.count())
+        .join(NormalizedItemRecord, NormalizedItemRecord.id == ModelScoreRecord.item_id)
+        .join(RankedItemRecord, RankedItemRecord.item_id == NormalizedItemRecord.id)
+        .where(
+            NormalizedItemRecord.channel == channel,
+            RankedItemRecord.created_at >= started_at,
+            RankedItemRecord.selected.is_(True),
+        )
+        .group_by(ModelScoreRecord.category)
+    ).all()
+    for category, selected_count in selected_rows:
+        row = categories.setdefault(
+            str(category),
+            {"category": str(category), "scoredItems": 0, "selectedItems": 0, "approvedEvents": 0},
+        )
+        row["selectedItems"] = selected_count
+    approved_rows = session.execute(
+        select(EventClusterRecord.category, func.count())
+        .where(
+            EventClusterRecord.channel == channel,
+            EventClusterRecord.last_seen_at >= started_at,
+            EventClusterRecord.review_status == "approved",
+        )
+        .group_by(EventClusterRecord.category)
+    ).all()
+    for category, approved_count in approved_rows:
+        row = categories.setdefault(
+            str(category),
+            {"category": str(category), "scoredItems": 0, "selectedItems": 0, "approvedEvents": 0},
+        )
+        row["approvedEvents"] = approved_count
+    return sorted(categories.values(), key=lambda item: (-int(item["scoredItems"]), str(item["category"])))
+
+
+def _quality_source_contributions(session, *, channel: str, started_at: datetime) -> list[dict[str, object]]:
+    sources = session.execute(
+        select(SourceRecord, SourceStateRecord)
+        .join(SourceStateRecord, SourceStateRecord.source_id == SourceRecord.id)
+        .where(SourceRecord.channel == channel, SourceRecord.enabled.is_(True))
+        .order_by(SourceRecord.authority_weight.desc(), SourceRecord.id)
+    ).all()
+    rows = []
+    for source, state in sources:
+        raw_count = _count(
+            session,
+            select(func.count())
+            .select_from(RawDocumentRecord)
+            .where(RawDocumentRecord.source_id == source.id, RawDocumentRecord.fetched_at >= started_at),
+        )
+        accepted_count = _count(
+            session,
+            select(func.count())
+            .select_from(RawScreeningResultRecord)
+            .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+            .where(
+                RawDocumentRecord.source_id == source.id,
+                RawScreeningResultRecord.created_at >= started_at,
+                RawScreeningResultRecord.screen_status == "accepted",
+            ),
+        )
+        selected_count = _count(
+            session,
+            select(func.count())
+            .select_from(RankedItemRecord)
+            .join(NormalizedItemRecord, NormalizedItemRecord.id == RankedItemRecord.item_id)
+            .where(
+                NormalizedItemRecord.source_id == source.id,
+                RankedItemRecord.created_at >= started_at,
+                RankedItemRecord.selected.is_(True),
+            ),
+        )
+        rows.append(
+            {
+                "sourceId": source.id,
+                "sourceName": source.name,
+                "sourceGroup": source.source_group,
+                "collectionStatus": source.collection_status,
+                "tier": source.tier,
+                "healthScore": state.health_score,
+                "errorStreak": state.error_streak,
+                "rawDocuments": raw_count,
+                "acceptedScreenings": accepted_count,
+                "selectedItems": selected_count,
+            }
+        )
+    return sorted(rows, key=lambda item: (-int(item["rawDocuments"]), -int(item["acceptedScreenings"]), item["sourceId"]))[:12]
+
+
+def _quality_bottlenecks(metrics: dict[str, int]) -> list[str]:
+    if metrics["fetchRuns"] == 0:
+        return ["最近窗口内没有抓取运行，先检查小时级定时任务和启用信源。"]
+    if metrics["rawDocuments"] == 0:
+        return ["抓取运行存在，但没有当天原始条目，优先扩充当天高频更新信源。"]
+    if metrics["acceptedScreenings"] == 0:
+        return ["已有原始条目，但 AI 初筛没有通过项，优先检查频道相关性规则和信源匹配度。"]
+    if metrics["selectedItems"] == 0:
+        return ["已有 AI 初筛通过项，但没有精选，优先校准精筛分数、置信度和精选阈值。"]
+    if metrics["approvedEvents"] < metrics["eventClusters"]:
+        return ["已有事件簇，但自动评审未全部通过，优先检查中文字段、推荐理由和 provider 约束。"]
+    return ["抓取、初筛、精筛、精选和自动发布链路均有产出，继续扩充高质量信源。"]
+
+
+def _ratio(numerator: int, denominator: int) -> float:
+    if denominator <= 0:
+        return 0.0
+    return round(numerator / denominator, 4)
 
 
 def _count(session, stmt) -> int:

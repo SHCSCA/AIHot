@@ -9,6 +9,7 @@ import {
   LogOut,
   MessageSquare,
   Play,
+  SlidersHorizontal,
   RadioTower,
   ShieldCheck
 } from "lucide-react";
@@ -24,6 +25,7 @@ import { HealthView } from "./views/HealthView";
 import { JobsView } from "./views/JobsView";
 import { PipelineRunsView } from "./views/PipelineRunsView";
 import { PublicFrontPage } from "./views/PublicFrontPage";
+import { QualityView } from "./views/QualityView";
 import { SourcesView } from "./views/SourcesView";
 import { StrategiesView } from "./views/StrategiesView";
 import "./styles.css";
@@ -35,6 +37,7 @@ type View =
   | "sources"
   | "health"
   | "jobs"
+  | "quality"
   | "events"
   | "daily"
   | "pipeline"
@@ -54,6 +57,7 @@ const navItems: ViewMeta[] = [
   { id: "dashboard", label: "工作台", title: "工作台", description: "查看生产运营核心指标、失败任务和待审核事件。", icon: LayoutDashboard },
   { id: "sources", label: "信源管理", title: "信源管理", description: "维护 AI 与 Amazon 情报信源、采集方式、权威等级和启停状态。", icon: RadioTower },
   { id: "health", label: "健康监控", title: "健康监控", description: "跟踪信源健康分、错误次数、重复率、噪声率和下一次抓取。", icon: Activity },
+  { id: "quality", label: "质量校准", title: "质量校准", description: "查看最近 24 小时抓取、初筛、精筛、精选和发布漏斗，定位内容质量瓶颈。", icon: SlidersHorizontal },
   { id: "jobs", label: "任务队列", title: "任务队列", description: "查看抓取任务状态、失败原因，并对失败任务发起重试。", icon: ClipboardList },
   { id: "events", label: "事件审核", title: "事件审核", description: "审核事件簇，查看成员来源，并提交人工反馈。", icon: ShieldCheck },
   { id: "daily", label: "日报发布", title: "日报发布", description: "生成、预览、发布和取消发布每日情报摘要。", icon: CalendarDays },
@@ -131,6 +135,7 @@ export function App() {
           {view === "dashboard" && <DashboardView api={api} initialDashboard={initialDashboard} />}
           {view === "sources" && <SourcesView api={api} />}
           {view === "health" && <HealthView api={api} />}
+          {view === "quality" && <QualityView api={api} />}
           {view === "jobs" && <JobsView api={api} />}
           {view === "events" && <EventsReviewView api={api} />}
           {view === "daily" && <DailyDigestsView api={api} />}

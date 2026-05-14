@@ -1,16 +1,52 @@
+import { useEffect, useState } from "react";
 import type { AdminApi } from "../api";
 import { MetricCard, MetricGrid } from "../components/MetricCard";
 import { Section, TableWrap } from "../components/Section";
-import { useAsyncData } from "../hooks";
 import { collectionStatusLabel, diagnosticStatusLabel, sourceGroupLabel } from "../labels";
 import type { SourceDiagnostic } from "../types";
 import { channelLabel, formatDateTime, formatPercent } from "../utils";
 
 export function HealthView({ api }: { api: AdminApi }) {
-  const { data: diagnostics, reload, error } = useAsyncData(
-    () => api.listSourceDiagnostics(),
-    [] as SourceDiagnostic[]
-  );
+  const [diagnostics, setDiagnostics] = useState<SourceDiagnostic[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [hasNext, setHasNext] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+
+  useEffect(() => {
+    void loadFirstPage();
+  }, [api]);
+
+  async function loadFirstPage() {
+    setLoading(true);
+    try {
+      const page = await api.listSourceDiagnosticsPage({ take: 50 });
+      setDiagnostics(page.items);
+      setHasNext(page.hasNext);
+      setNextCursor(page.nextCursor);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "健康监控加载失败");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadMore() {
+    if (!nextCursor || loading) return;
+    setLoading(true);
+    try {
+      const page = await api.listSourceDiagnosticsPage({ take: 50, cursor: nextCursor });
+      setDiagnostics((current) => [...current, ...page.items]);
+      setHasNext(page.hasNext);
+      setNextCursor(page.nextCursor);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "健康监控加载失败");
+    } finally {
+      setLoading(false);
+    }
+  }
   const average = diagnostics.length
     ? Math.round(diagnostics.reduce((total, source) => total + source.healthScore, 0) / diagnostics.length)
     : 0;
@@ -25,7 +61,7 @@ export function HealthView({ api }: { api: AdminApi }) {
         <MetricCard label="需处理信源" value={warnings} tone={warnings ? "warn" : "good"} />
         <MetricCard label="缺少发布时间" value={missingDate} tone={missingDate ? "bad" : "good"} />
       </MetricGrid>
-      <Section title="健康监控" error={error} action={<button onClick={reload}>刷新</button>}>
+      <Section title="健康监控" error={error} action={<button onClick={loadFirstPage}>刷新</button>}>
         <TableWrap>
           <table>
             <thead>
@@ -87,6 +123,7 @@ export function HealthView({ api }: { api: AdminApi }) {
             </tbody>
           </table>
         </TableWrap>
+        {hasNext && <button className="load-more" onClick={loadMore} disabled={loading}>{loading ? "正在加载..." : "加载更多健康记录"}</button>}
       </Section>
     </div>
   );

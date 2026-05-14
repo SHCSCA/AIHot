@@ -1,10 +1,9 @@
 import { Power, PowerOff } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AdminApi } from "../api";
 import { MetricCard, MetricGrid } from "../components/MetricCard";
 import { Section, TableWrap } from "../components/Section";
 import { StatusLabel } from "../components/StatusLabel";
-import { useAsyncData } from "../hooks";
 import { collectionStatusLabel, sourceGroupLabel, sourceTypeLabel } from "../labels";
 import type { Source } from "../types";
 import { adapterLabel, channelLabel, visibilityLabel } from "../utils";
@@ -35,21 +34,60 @@ const newSource: Source = {
 };
 
 export function SourcesView({ api }: { api: AdminApi }) {
-  const { data: sources, reload, error } = useAsyncData(() => api.listSources(), [] as Source[]);
+  const [sources, setSources] = useState<Source[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [hasNext, setHasNext] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<Source | null>(null);
   const [form, setForm] = useState<Source>(newSource);
   const filtered = sources.filter((source) => `${source.name} ${source.id}`.toLowerCase().includes(query.toLowerCase()));
 
+  useEffect(() => {
+    void loadFirstPage();
+  }, [api]);
+
+  async function loadFirstPage() {
+    setLoading(true);
+    try {
+      const page = await api.listSourcesPage({ take: 50 });
+      setSources(page.items);
+      setHasNext(page.hasNext);
+      setNextCursor(page.nextCursor);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "信源加载失败");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadMore() {
+    if (!nextCursor || loading) return;
+    setLoading(true);
+    try {
+      const page = await api.listSourcesPage({ take: 50, cursor: nextCursor });
+      setSources((current) => [...current, ...page.items]);
+      setHasNext(page.hasNext);
+      setNextCursor(page.nextCursor);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "信源加载失败");
+    } finally {
+      setLoading(false);
+    }
+  }
+
   async function toggle(source: Source) {
     await api.patchSource(source.id, { enabled: !source.enabled });
-    reload();
+    await loadFirstPage();
   }
 
   async function submit() {
     await api.createSource(form);
     setForm(newSource);
-    reload();
+    await loadFirstPage();
   }
 
   return (
@@ -87,6 +125,7 @@ export function SourcesView({ api }: { api: AdminApi }) {
               </tbody>
             </table>
           </TableWrap>
+          {hasNext && <button className="load-more" onClick={loadMore} disabled={loading}>{loading ? "正在加载..." : "加载更多信源"}</button>}
         </Section>
         <Section title="信源墙视图" description="公开前台展示的信源贡献卡片，包含编号、来源类型、接入状态和免费可读状态。">
           <div className="admin-source-wall">

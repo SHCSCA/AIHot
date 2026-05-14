@@ -16,7 +16,7 @@ describe("AdminApi", () => {
     await new AdminApi({ username: "admin", password: "secret" }).listSources();
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/v1/internal/sources",
+      "/api/v1/internal/sources?take=200",
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: "Basic YWRtaW46c2VjcmV0" })
       })
@@ -55,12 +55,19 @@ describe("AdminApi", () => {
     const api = new AdminApi({ username: "admin", password: "secret" });
 
     await api.getDashboard();
+    await api.getQualityDashboard({ window: 24 });
     await api.listEvents({ reviewStatus: "pending" });
     await api.generateDailyDigest({ channel: "ai", date: "2026-05-11", strategyVersion: "ai-default-v1" });
     await api.createPipelineRun({ workerId: "manual-worker", limit: 5 });
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/v1/internal/dashboard",
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: "Basic YWRtaW46c2VjcmV0" })
+      })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/internal/quality-dashboard?window=24",
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: "Basic YWRtaW46c2VjcmV0" })
       })

@@ -93,8 +93,8 @@ def test_seed_maps_yaml_source_to_production_source(tmp_path):
 def test_bundled_channel_configs_have_production_source_coverage():
     configs = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}
 
-    assert len(configs["ai"].sources) >= 20
-    assert len(configs["amazon"].sources) >= 20
+    assert len(configs["ai"].sources) >= 100
+    assert len(configs["amazon"].sources) >= 100
     assert {source.trust_level for source in configs["ai"].sources}.issuperset({"official", "authority", "expert", "media"})
     assert {source.trust_level for source in configs["amazon"].sources}.issuperset({"official", "authority", "expert", "media"})
     assert all(60 <= source.base_weight <= 100 for config in configs.values() for source in config.sources)

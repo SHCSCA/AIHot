@@ -8,6 +8,7 @@ import type {
   Job,
   PipelineRun,
   Page,
+  QualityDashboard,
   PublicDaily,
   PublicEvent,
   PublicEventDetail,
@@ -115,8 +116,22 @@ export class AdminApi {
     return this.request<Dashboard>("/api/v1/internal/dashboard");
   }
 
+  async getQualityDashboard(filters: { window?: number } = {}): Promise<QualityDashboard> {
+    return this.request<QualityDashboard>(`/api/v1/internal/quality-dashboard${query(filters)}`);
+  }
+
   async listSources(channel?: string): Promise<Source[]> {
-    return (await this.request<{ sources: Source[] }>(`/api/v1/internal/sources${query({ channel })}`)).sources;
+    return (await this.listSourcesPage({ channel, take: 200 })).items;
+  }
+
+  async listSourcesPage(filters: { channel?: string; take?: number; cursor?: string | null } = {}): Promise<Page<Source>> {
+    const response = await this.request<{
+      count: number;
+      hasNext: boolean;
+      nextCursor: string | null;
+      sources: Source[];
+    }>(`/api/v1/internal/sources${query(filters)}`);
+    return { items: response.sources, count: response.count, hasNext: response.hasNext, nextCursor: response.nextCursor };
   }
 
   async createSource(payload: Source): Promise<Source> {
@@ -139,9 +154,24 @@ export class AdminApi {
   }
 
   async listSourceDiagnostics(channel?: string): Promise<SourceDiagnostic[]> {
-    return (await this.request<{ sourceDiagnostics: SourceDiagnostic[] }>(
-      `/api/v1/internal/source-diagnostics${query({ channel })}`
-    )).sourceDiagnostics;
+    return (await this.listSourceDiagnosticsPage({ channel, take: 200 })).items;
+  }
+
+  async listSourceDiagnosticsPage(
+    filters: { channel?: string; take?: number; cursor?: string | null } = {}
+  ): Promise<Page<SourceDiagnostic>> {
+    const response = await this.request<{
+      count: number;
+      hasNext: boolean;
+      nextCursor: string | null;
+      sourceDiagnostics: SourceDiagnostic[];
+    }>(`/api/v1/internal/source-diagnostics${query(filters)}`);
+    return {
+      items: response.sourceDiagnostics,
+      count: response.count,
+      hasNext: response.hasNext,
+      nextCursor: response.nextCursor
+    };
   }
 
   async listJobs(filters: { status?: string } = {}): Promise<Job[]> {

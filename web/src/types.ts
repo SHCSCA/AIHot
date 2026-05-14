@@ -283,3 +283,51 @@ export type Dashboard = {
   pendingReviewEvents: EventCluster[];
   recentPipelineRuns: PipelineRun[];
 };
+
+export type QualityDashboard = {
+  windowHours: number;
+  generatedAt: string;
+  channels: ChannelQuality[];
+};
+
+export type ChannelQuality = {
+  channel: string;
+  metrics: {
+    sourceCount: number;
+    enabledSourceCount: number;
+    fetchRuns: number;
+    successfulFetchRuns: number;
+    rawDocuments: number;
+    screenedItems: number;
+    acceptedScreenings: number;
+    rejectedScreenings: number;
+    normalizedItems: number;
+    scoredItems: number;
+    rankedItems: number;
+    selectedItems: number;
+    eventClusters: number;
+    approvedEvents: number;
+    publicSelectedEvents: number;
+  };
+  conversion: {
+    fetchSuccessRate: number;
+    screenAcceptRate: number;
+    selectedRate: number;
+    approvedRate: number;
+  };
+  bottlenecks: string[];
+  rejectionReasons: Array<{ reasonCode: string; bucket: string; reason: string; count: number }>;
+  categoryBreakdown: Array<{ category: string; scoredItems: number; selectedItems: number; approvedEvents: number }>;
+  sourceContributions: Array<{
+    sourceId: string;
+    sourceName: string;
+    sourceGroup: string;
+    collectionStatus: string;
+    tier: string;
+    healthScore: number;
+    errorStreak: number;
+    rawDocuments: number;
+    acceptedScreenings: number;
+    selectedItems: number;
+  }>;
+};

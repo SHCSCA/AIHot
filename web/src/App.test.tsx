@@ -7,26 +7,31 @@ import { SourcesView } from "./App";
 describe("SourcesView", () => {
   it("renders sources and toggles enabled state", async () => {
     const api = {
-      listSources: vi.fn().mockResolvedValue([
-        {
-          id: "openai_news",
-          channel: "ai",
-          sourceType: "html",
-          tier: "T1",
-          name: "OpenAI News",
-          url: "https://openai.com/news/",
-          language: "en",
-          region: "global",
-          authorityWeight: 95,
-          noiseLevel: 0.05,
-          fetchAdapter: "http_article",
-          parserType: "website",
-          defaultCategories: ["ai_models"],
-          fetchIntervalMinutes: 360,
-          enabled: true,
-          visibility: "public"
-        }
-      ]),
+      listSourcesPage: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "openai_news",
+            channel: "ai",
+            sourceType: "html",
+            tier: "T1",
+            name: "OpenAI News",
+            url: "https://openai.com/news/",
+            language: "en",
+            region: "global",
+            authorityWeight: 95,
+            noiseLevel: 0.05,
+            fetchAdapter: "http_article",
+            parserType: "website",
+            defaultCategories: ["ai_models"],
+            fetchIntervalMinutes: 360,
+            enabled: true,
+            visibility: "public"
+          }
+        ],
+        count: 1,
+        hasNext: false,
+        nextCursor: null
+      }),
       patchSource: vi.fn().mockResolvedValue({ id: "openai_news", enabled: false })
     } as unknown as AdminApi;
 
