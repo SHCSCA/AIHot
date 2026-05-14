@@ -209,71 +209,74 @@ def process_fetch_job(
     source = _get_source(session, job.source_id)
     try:
         result = get_fetch_adapter(source.fetch_adapter, now=resolved_now).fetch(source, client=client)
-    except Exception as exc:  # noqa: BLE001 - isolate one bad source from the worker batch.
-        mark_job_failed(session, job.id, error_message=str(exc), now=resolved_now)
-        return PipelineStats(failed=1)
-    raw_result = RawStore(session).save_fetch_result(job, result, now=resolved_now)
+        raw_result = RawStore(session).save_fetch_result(job, result, now=resolved_now)
 
-    if result.status != "succeeded":
-        mark_job_failed(session, job.id, error_message=result.error_message or "fetch failed", now=resolved_now)
+        if result.status != "succeeded":
+            mark_job_failed(session, job.id, error_message=result.error_message or "fetch failed", now=resolved_now)
+            return PipelineStats(
+                failed=1,
+                raw_documents_inserted=raw_result.documents_inserted,
+                duplicates=raw_result.duplicates,
+            )
+
+        raw_documents = list(
+            session.scalars(
+                select(RawDocumentRecord).where(RawDocumentRecord.fetch_run_id == raw_result.fetch_run_id)
+            ).all()
+        )
+        normalized_count = 0
+        ranked_count = 0
+        for raw_document in raw_documents:
+            strategy = _ensure_active_strategy(session, source.channel)
+            screening = _upsert_screening_result(
+                session,
+                raw_document,
+                source,
+                strategy,
+                now=resolved_now,
+                screening_provider=screening_provider,
+            )
+            item = _normalize_raw_document(session, source, raw_document, screening=screening)
+            if item is None:
+                continue
+            normalized_count += 1
+            prefilter = _upsert_prefilter(session, item, strategy)
+            model_score = _upsert_model_score(session, item, source, strategy, llm_provider=llm_provider)
+            score_validation = validate_model_score(model_score, channel=source.channel)
+            if not score_validation.accepted:
+                continue
+            _upsert_ranked_item(
+                session,
+                item,
+                source,
+                strategy,
+                prefilter,
+                model_score,
+                screening=screening,
+                observed_at=resolved_now,
+            )
+            ranked_count += 1
+
+        clusters_created = _persist_ranked_clusters(session, channel=source.channel)
+        mark_job_succeeded(
+            session,
+            job.id,
+            now=resolved_now,
+            item_count=len(result.documents),
+            avg_latency_ms=None,
+        )
         return PipelineStats(
-            failed=1,
+            succeeded=1,
             raw_documents_inserted=raw_result.documents_inserted,
             duplicates=raw_result.duplicates,
+            normalized_items=normalized_count,
+            ranked_items=ranked_count,
+            clusters=clusters_created,
         )
-
-    raw_documents = list(
-        session.scalars(select(RawDocumentRecord).where(RawDocumentRecord.fetch_run_id == raw_result.fetch_run_id)).all()
-    )
-    normalized_count = 0
-    ranked_count = 0
-    for raw_document in raw_documents:
-        strategy = _ensure_active_strategy(session, source.channel)
-        screening = _upsert_screening_result(
-            session,
-            raw_document,
-            source,
-            strategy,
-            now=resolved_now,
-            screening_provider=screening_provider,
-        )
-        item = _normalize_raw_document(session, source, raw_document, screening=screening)
-        if item is None:
-            continue
-        normalized_count += 1
-        prefilter = _upsert_prefilter(session, item, strategy)
-        model_score = _upsert_model_score(session, item, source, strategy, llm_provider=llm_provider)
-        score_validation = validate_model_score(model_score, channel=source.channel)
-        if not score_validation.accepted:
-            continue
-        _upsert_ranked_item(
-            session,
-            item,
-            source,
-            strategy,
-            prefilter,
-            model_score,
-            screening=screening,
-            observed_at=resolved_now,
-        )
-        ranked_count += 1
-
-    clusters_created = _persist_ranked_clusters(session, channel=source.channel)
-    mark_job_succeeded(
-        session,
-        job.id,
-        now=resolved_now,
-        item_count=len(result.documents),
-        avg_latency_ms=None,
-    )
-    return PipelineStats(
-        succeeded=1,
-        raw_documents_inserted=raw_result.documents_inserted,
-        duplicates=raw_result.duplicates,
-        normalized_items=normalized_count,
-        ranked_items=ranked_count,
-        clusters=clusters_created,
-    )
+    except Exception as exc:  # noqa: BLE001 - keep one bad source/model result from stopping the worker.
+        session.rollback()
+        mark_job_failed(session, job_id, error_message=str(exc), now=resolved_now)
+        return PipelineStats(failed=1)
 
 
 def _normalize_raw_document(

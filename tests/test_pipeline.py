@@ -215,7 +215,7 @@ def test_worker_marks_adapter_exception_failed_without_stopping_other_jobs(tmp_p
     assert cluster_count == 1
 
 
-def test_worker_claims_jobs_incrementally_when_processing_crashes(tmp_path):
+def test_worker_marks_processing_exception_failed_and_continues(tmp_path):
     now = datetime(2026, 5, 12, 8, 0, tzinfo=timezone.utc)
     SessionLocal = _session_factory(tmp_path)
     with SessionLocal() as session:
@@ -236,24 +236,25 @@ def test_worker_claims_jobs_incrementally_when_processing_crashes(tmp_path):
             headers={"content-type": "application/rss+xml"},
         )
 
-    try:
-        run_worker_once(
-            SessionLocal,
-            worker_id="worker-a",
-            limit=2,
-            now=now,
-            client=httpx.Client(transport=httpx.MockTransport(handler)),
-            llm_provider=CrashingProvider(),
-            screening_provider=_stable_screening_provider(),
-        )
-    except RuntimeError:
-        pass
+    stats = run_worker_once(
+        SessionLocal,
+        worker_id="worker-a",
+        limit=2,
+        now=now,
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+        llm_provider=CrashingProvider(),
+        screening_provider=_stable_screening_provider(),
+    )
 
     with SessionLocal() as session:
-        jobs = {job.source_id: job.status for job in session.scalars(select(FetchJobRecord)).all()}
+        jobs = {job.source_id: job for job in session.scalars(select(FetchJobRecord)).all()}
 
-    assert jobs["first_feed"] == "running"
-    assert jobs["second_feed"] == "pending"
+    assert stats.claimed == 2
+    assert stats.failed == 2
+    assert jobs["first_feed"].status == "pending"
+    assert jobs["second_feed"].status == "pending"
+    assert jobs["first_feed"].last_error == "model crash"
+    assert jobs["second_feed"].last_error == "model crash"
 
 
 def test_worker_is_idempotent_for_duplicate_documents(tmp_path):
