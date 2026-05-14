@@ -463,6 +463,23 @@ AMAZON_LOW_INFORMATION_REASON_CODES = {
     "evergreen_tutorial",
 }
 
+AMAZON_GUARDRAIL_REASON_CODES = AMAZON_LOW_INFORMATION_REASON_CODES | {
+    "schema_invalid",
+    "low_confidence",
+}
+
+AMAZON_SCREENING_CATEGORIES = {
+    "policy",
+    "account_health",
+    "fba_logistics",
+    "ads_ppc",
+    "listing_seo",
+    "fees_margin",
+    "product_research",
+    "tools",
+    "compliance_trade",
+}
+
 AMAZON_SELLER_CONTEXT_TERMS = (
     "amazon seller",
     "seller central",
@@ -501,11 +518,8 @@ def _apply_screening_guardrails(
         return result
     if result.screen_status == "accepted" and result.relevance_score >= 70 and result.confidence_score >= 70:
         return result
-    if (
-        result.reason_code.lower() not in AMAZON_LOW_INFORMATION_REASON_CODES
-        and result.relevance_score >= 70
-        and result.confidence_score >= 70
-    ):
+    reason_code = result.reason_code.lower()
+    if reason_code not in AMAZON_GUARDRAIL_REASON_CODES and result.screen_status != "accepted":
         return result
 
     text = " ".join(
@@ -538,6 +552,7 @@ def _apply_screening_guardrails(
         update={
             "screen_status": "accepted",
             "screen_bucket": "related",
+            "category": result.category if result.category in AMAZON_SCREENING_CATEGORIES else _amazon_guardrail_category(text),
             "relevance_score": max(result.relevance_score, 72),
             "confidence_score": max(result.confidence_score, 72),
             "tags": tags[:5],
@@ -546,6 +561,22 @@ def _apply_screening_guardrails(
             "raw_json": raw_json,
         }
     )
+
+
+def _amazon_guardrail_category(text: str) -> str:
+    if any(term in text for term in ("fba", "fulfillment", "inventory", "inbound", "storage", "placement")):
+        return "fba_logistics"
+    if any(term in text for term in ("advertising", "campaign", "ppc", "amazon ads", "dsp")):
+        return "ads_ppc"
+    if any(term in text for term in ("fee", "reimbursement", "margin", "payment", "commission")):
+        return "fees_margin"
+    if any(term in text for term in ("account health", "suspension", "appeal", "brand registry")):
+        return "account_health"
+    if any(term in text for term in ("listing", "review", "keyword", "a+", "search")):
+        return "listing_seo"
+    if any(term in text for term in ("sp-api", "api", "seller central", "tool")):
+        return "tools"
+    return "policy"
 
 
 def _screening_payload(raw_document: RawDocumentRecord, source: SourceRecord, *, now: datetime) -> dict[str, object]:
