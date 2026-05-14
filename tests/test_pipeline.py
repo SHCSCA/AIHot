@@ -188,6 +188,64 @@ def test_amazon_screening_guardrail_accepts_fba_missing_inventory_signal():
     assert corrected.raw_json["guardrail"] == "amazon_seller_ops_signal"
 
 
+def test_amazon_screening_guardrail_rescues_low_confidence_seller_signal():
+    now = datetime(2026, 5, 14, 10, 0, tzinfo=timezone.utc)
+    source = SourceRecord(
+        id="ecommercebytes",
+        channel="amazon",
+        source_type="rss",
+        tier="T3",
+        name="EcommerceBytes RSS",
+        url="https://www.ecommercebytes.com/feed/",
+        language="en",
+        region="global",
+        marketplace="global",
+        authority_weight=72,
+        noise_level=0.35,
+        fetch_adapter="rss",
+        parser_type="rss",
+        default_categories=["fba_logistics"],
+        fetch_interval_minutes=60,
+        enabled=True,
+        visibility="public",
+        source_group="media",
+        collection_status="collectable",
+        free_access=True,
+    )
+    raw_document = RawDocumentRecord(
+        fetch_run_id=1,
+        source_id=source.id,
+        url="https://www.ecommercebytes.com/2026/05/13/the-amazon-fba-perk-you-may-not-know-about/",
+        canonical_url="https://www.ecommercebytes.com/2026/05/13/the-amazon-fba-perk-you-may-not-know-about/",
+        content_type="application/rss+xml",
+        body_text="FBA sellers can reconcile missing inventory after products arrive at Amazon fulfillment centers.",
+        body_html=None,
+        response_headers_json={"x-intel-title": "The Amazon FBA Perk You May Not Know About"},
+        content_hash="amazon-fba-low-confidence",
+        fetched_at=now,
+    )
+    low_confidence = ScreeningResult(
+        screen_status="accepted",
+        screen_bucket="related",
+        relevance_score=65,
+        confidence_score=55,
+        category="fba_logistics",
+        title_cn="亚马逊FBA入仓丢件权益提醒",
+        summary_cn="内容涉及FBA卖家在货件入仓后发生库存丢失时的处理方式。",
+        tags=["FBA", "库存"],
+        reason_code="accepted",
+        reason_cn="模型认为相关但置信度不足。",
+        raw_json={"provider": "deepseek", "model": "deepseek-v4-flash"},
+    )
+
+    corrected = _apply_screening_guardrails(low_confidence, raw_document, source)
+
+    assert corrected.screen_status == "accepted"
+    assert corrected.relevance_score >= 72
+    assert corrected.confidence_score >= 72
+    assert corrected.reason_code == "seller_ops_signal"
+
+
 def test_pipeline_once_produces_public_event_and_isolates_failed_source(tmp_path):
     now = datetime(2026, 5, 12, 8, 0, tzinfo=timezone.utc)
     SessionLocal = _session_factory(tmp_path)

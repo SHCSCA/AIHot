@@ -497,9 +497,15 @@ def _apply_screening_guardrails(
     raw_document: RawDocumentRecord,
     source: SourceRecord,
 ) -> ScreeningResult:
-    if source.channel != "amazon" or result.screen_status == "accepted":
+    if source.channel != "amazon":
         return result
-    if result.reason_code.lower() not in AMAZON_LOW_INFORMATION_REASON_CODES:
+    if result.screen_status == "accepted" and result.relevance_score >= 70 and result.confidence_score >= 70:
+        return result
+    if (
+        result.reason_code.lower() not in AMAZON_LOW_INFORMATION_REASON_CODES
+        and result.relevance_score >= 70
+        and result.confidence_score >= 70
+    ):
         return result
 
     text = " ".join(
