@@ -68,7 +68,7 @@ class SourceRecord(TimestampMixin, Base):
             name="ck_sources_source_type",
         ),
         CheckConstraint(
-            "fetch_adapter in ('rss', 'http_article', 'github', 'api', 'playwright')",
+            "fetch_adapter in ('rss', 'http_article', 'github', 'api', 'playwright', 'aihot_api', 'html_list')",
             name="ck_sources_fetch_adapter",
         ),
         CheckConstraint("visibility in ('public', 'internal', 'hidden')", name="ck_sources_visibility"),

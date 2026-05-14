@@ -111,6 +111,21 @@ def test_bundled_enabled_sources_are_rss_first_for_hourly_production():
         assert all(source.url.startswith("https://") for source in enabled_sources)
 
 
+def test_seed_supports_curated_api_and_html_list_adapters(tmp_path):
+    SessionLocal = _session_factory(tmp_path)
+
+    with SessionLocal() as session:
+        seed_sources_from_channel_configs(session, CHANNELS_DIR)
+        aihot = session.scalar(select(SourceRecord).where(SourceRecord.id == "aihot_virxact_selected"))
+        amazon_ads = session.scalar(select(SourceRecord).where(SourceRecord.id == "amazon_ads_updates"))
+
+    assert aihot is not None
+    assert aihot.fetch_adapter == "aihot_api"
+    assert aihot.source_group == "curated"
+    assert amazon_ads is not None
+    assert amazon_ads.fetch_adapter == "html_list"
+
+
 def test_amazon_hourly_sources_prioritize_precise_official_or_seller_feeds():
     amazon = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}["amazon"]
     sources = {source.id: source for source in amazon.sources}
