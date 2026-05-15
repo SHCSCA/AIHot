@@ -3736,8 +3736,8 @@ tr:hover td {
   background: var(--ui-surface-2);
 }
 
-.role-matrix article strong,
-.role-matrix article span {
+.role-matrix article > div:first-child strong,
+.role-matrix article > div:first-child span {
   display: block;
 }
 
@@ -3754,19 +3754,26 @@ tr:hover td {
   gap: 7px;
 }
 
-.permission-chips span,
+.role-matrix .permission-chips span,
 .status-good,
 .status-warn {
   display: inline-flex;
   min-height: 26px;
   align-items: center;
+  justify-content: center;
   border-radius: 999px;
   padding: 3px 9px;
   font-size: 12px;
   font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
-.permission-chips span {
+.role-matrix .permission-chips span {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: 100%;
+  margin: 0;
   border: 1px solid var(--ui-border);
   background: var(--ui-surface);
   color: var(--ui-muted);
