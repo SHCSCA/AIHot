@@ -22,6 +22,7 @@ import { PipelineRunsView } from "./views/PipelineRunsView";
 import { PublicFrontPage } from "./views/PublicFrontPage";
 import { QualityView } from "./views/QualityView";
 import { SourcesView } from "./views/SourcesView";
+import { AuditLogsView, RolesView, UsersView } from "./views/AdminAccessView";
 
 function apiStub(overrides: Partial<AdminApi> = {}) {
   return {
@@ -153,6 +154,50 @@ function apiStub(overrides: Partial<AdminApi> = {}) {
     runEvaluationRun: vi.fn(),
     listFeedbackEvents: vi.fn().mockResolvedValue([]),
     createFeedback: vi.fn(),
+    listUsers: vi.fn().mockResolvedValue([
+      {
+        id: "1",
+        username: "ops",
+        displayName: "运营同学",
+        email: "ops@example.com",
+        status: "active",
+        roles: ["operator"],
+        lastLoginAt: "2026-05-13T09:00:00Z"
+      }
+    ]),
+    createUser: vi.fn().mockResolvedValue({ user: { id: "2", username: "new-ops", roles: ["operator"] } }),
+    listRoles: vi.fn().mockResolvedValue({
+      roles: [
+        {
+          id: "guest",
+          name: "游客",
+          description: "未登录公共访问者",
+          locked: true,
+          permissions: ["feedback.create", "public.read"]
+        },
+        {
+          id: "admin",
+          name: "管理员",
+          description: "系统管理员",
+          locked: true,
+          permissions: ["daily.publish", "daily.read", "roles.manage", "system.manage", "users.manage"]
+        }
+      ],
+      permissions: []
+    }),
+    listAuditLogs: vi.fn().mockResolvedValue([
+      {
+        id: "1",
+        actorUserId: "1",
+        actorUsername: "admin",
+        action: "daily.publish",
+        targetType: "daily_digest",
+        targetId: "daily-1",
+        result: "success",
+        metadata: {},
+        createdAt: "2026-05-13T09:00:00Z"
+      }
+    ]),
     ...overrides
   } as unknown as AdminApi;
 }
@@ -254,6 +299,7 @@ describe("后台产品化界面", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /工作台/ })[0]);
     expect(await screen.findByRole("heading", { name: "工作台" })).toBeInTheDocument();
     expect(screen.getByText("7")).toBeInTheDocument();
+    expect(screen.getByText("管理员")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/v1/internal/dashboard?channel=ai",
       expect.objectContaining({
@@ -667,6 +713,58 @@ describe("后台产品化界面", () => {
     expect(screen.getAllByText("待审核事件").length).toBeGreaterThan(0);
   });
 
+  it("maps dashboard channel codes to Chinese labels", async () => {
+    const api = apiStub({
+      getDashboard: vi.fn().mockResolvedValue({
+        metrics: { sourceCount: 1 },
+        recentFailedJobs: [],
+        pendingReviewEvents: [
+          {
+            id: "event-1",
+            channel: "ai",
+            title: "OpenAI 发布模型",
+            category: "ai_models",
+            score: 88,
+            sourceCount: 1,
+            memberCount: 1,
+            firstSeenAt: null,
+            lastSeenAt: null,
+            mainItem: null,
+            reviewStatus: "pending"
+          }
+        ],
+        recentPipelineRuns: []
+      })
+    });
+
+    render(<DashboardView api={api} />);
+
+    expect(await screen.findByText("OpenAI 发布模型")).toBeInTheDocument();
+    expect(screen.getAllByText("AI 热点").length).toBeGreaterThan(0);
+    expect(screen.queryByText("ai")).not.toBeInTheDocument();
+  });
+
+  it("renders users, roles, permissions and audit logs with Chinese labels", async () => {
+    const api = apiStub();
+
+    const { rerender } = render(<UsersView api={api} />);
+    expect(await screen.findByText("运营同学")).toBeInTheDocument();
+    expect(screen.getAllByText("运营").length).toBeGreaterThan(0);
+    expect(screen.queryByText("operator")).not.toBeInTheDocument();
+
+    rerender(<RolesView api={api} />);
+    expect(await screen.findByText("生成/发布日报")).toBeInTheDocument();
+    expect(screen.getByText("管理角色权限")).toBeInTheDocument();
+    expect(screen.queryByText("daily.publish")).not.toBeInTheDocument();
+    expect(screen.queryByText("roles.manage")).not.toBeInTheDocument();
+
+    rerender(<AuditLogsView api={api} />);
+    expect(await screen.findByText("发布日报")).toBeInTheDocument();
+    expect(screen.getByText("日报 daily-1")).toBeInTheDocument();
+    expect(screen.getByText("成功")).toBeInTheDocument();
+    expect(screen.queryByText("daily_digest daily-1")).not.toBeInTheDocument();
+  });
+
   it("keeps event review as AI review monitoring rather than manual approval", async () => {
     const api = apiStub();
     render(<EventsReviewView api={api} />);
@@ -710,10 +808,13 @@ describe("后台产品化界面", () => {
     expect(within(funnel).getByText("原始条目")).toBeInTheDocument();
     expect(within(funnel).getByText("58")).toBeInTheDocument();
     expect(screen.getByText("已有 AI 初筛通过项，但没有精选，优先校准精筛分数、置信度和精选阈值。")).toBeInTheDocument();
+    expect(screen.getByText("无效内容")).toBeInTheDocument();
+    expect(screen.queryByText("invalid")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "拒绝样本" }));
     expect(await screen.findByText("旧教程内容")).toBeInTheDocument();
     expect(screen.getByText("这是一条没有新增事实的旧教程。")).toBeInTheDocument();
     expect(screen.getByText("置信度不足")).toBeInTheDocument();
+    expect(screen.getByText(/低置信度 · 无效内容/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "信源贡献" }));
     expect(screen.getByText("Simon Willison Blog")).toBeInTheDocument();
   });
@@ -797,7 +898,7 @@ describe("后台产品化界面", () => {
           });
         }
         return Promise.resolve({
-          items: [{ sourceId: "source_a", sourceName: "Source A", channel: "ai", tier: "T2", enabled: true, diagnosticStatus: "usable", diagnosticLabel: "可用", healthScore: 90, errorStreak: 0, duplicateRatio: 0, noiseRatio: 0, nextFetchAt: null, lastSuccessAt: null, lastErrorAt: null, backoffUntil: null, rawCount24h: 0, lastRun: null, lastJob: null, screening: { accepted24h: 0, rejected24h: 0, latestStatus: null, latestBucket: null, latestReasonCode: null, latestReason: null, latestAt: null } }],
+          items: [{ sourceId: "source_a", sourceName: "Source A", channel: "ai", tier: "T2", enabled: true, diagnosticStatus: "usable", diagnosticLabel: "可用", healthScore: 90, errorStreak: 0, duplicateRatio: 0, noiseRatio: 0, nextFetchAt: null, lastSuccessAt: null, lastErrorAt: null, backoffUntil: null, rawCount24h: 0, lastRun: null, lastJob: null, screening: { accepted24h: 0, rejected24h: 1, latestStatus: "rejected", latestBucket: "invalid", latestReasonCode: "low_confidence", latestReason: null, latestAt: null } }],
           count: 1,
           page,
           pageSize,
@@ -814,6 +915,7 @@ describe("后台产品化界面", () => {
 
     expect(await screen.findByText("Source A")).toBeInTheDocument();
     expect(screen.getByText("87")).toBeInTheDocument();
+    expect(screen.getByText(/低置信度/)).toBeInTheDocument();
     expect(api.listSourceDiagnosticsPage).toHaveBeenCalledWith(expect.objectContaining({ channel: "ai", pageSize: 50 }));
     fireEvent.change(screen.getByLabelText("健康状态"), { target: { value: "usable" } });
     await waitFor(() => expect(api.listSourceDiagnosticsPage).toHaveBeenCalledWith(expect.objectContaining({ diagnosticStatus: "usable" })));

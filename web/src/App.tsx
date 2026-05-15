@@ -45,6 +45,7 @@ import { PublicFrontPage, type PublicChannel, type PublicSection } from "./views
 import { QualityView } from "./views/QualityView";
 import { SourcesView } from "./views/SourcesView";
 import { StrategiesView } from "./views/StrategiesView";
+import { roleLabel } from "./labels";
 import "./styles.css";
 
 export { SourcesView } from "./views/SourcesView";
@@ -284,7 +285,7 @@ export function App() {
               />
             </label>
             {sessionLoading && <span className="session-chip">同步身份...</span>}
-            {session.authenticated && <span className="session-chip">{session.roles.join(" / ")}</span>}
+            {session.authenticated && <span className="session-chip">{session.roles.map(roleLabel).join(" / ")}</span>}
             {!session.authenticated && <button className="ghost" onClick={() => setLoginOpen(true)}><LockKeyhole size={16} />运营登录</button>}
           </div>
         </header>

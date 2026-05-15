@@ -4,6 +4,7 @@ import { useAsyncData } from "../hooks";
 import type { AuditLog, Permission, Role, UserAccount } from "../types";
 import { formatDateTime } from "../utils";
 import { Section, TableWrap } from "../components/Section";
+import { auditActionLabel, auditResultLabel, auditTargetLabel, permissionLabel, roleLabel } from "../labels";
 
 export function UsersView({ api }: { api: AdminApi }) {
   const { data: users, error, loading, reload } = useAsyncData<UserAccount[]>(() => api.listUsers(), []);
@@ -40,7 +41,7 @@ export function UsersView({ api }: { api: AdminApi }) {
               {users.map((user) => (
                 <tr key={user.id}>
                   <td><strong>{user.displayName}</strong><span>{user.username} · {user.email || "未填写邮箱"}</span></td>
-                  <td>{user.roles.join(", ")}</td>
+                  <td>{user.roles.map(roleLabel).join("、")}</td>
                   <td><span className={user.status === "active" ? "status-good" : "status-warn"}>{user.status === "active" ? "启用" : "停用"}</span></td>
                   <td>{formatDateTime(user.lastLoginAt)}</td>
                 </tr>
@@ -55,15 +56,16 @@ export function UsersView({ api }: { api: AdminApi }) {
 
 export function RolesView({ api }: { api: AdminApi }) {
   const { data, error, loading, reload } = useAsyncData<{ roles: Role[]; permissions: Permission[] }>(() => api.listRoles(), { roles: [], permissions: [] });
+  const permissionNames = new Map(data.permissions.map((permission) => [permission.id, permission.name]));
   return (
     <div className="view-stack">
       <Section title="角色权限" description="首版固定游客、运营和管理员三类角色，按权限矩阵展示能力。" error={error} action={<button onClick={reload}>{loading ? "刷新中..." : "刷新"}</button>}>
         <div className="role-matrix">
           {data.roles.map((role) => (
             <article key={role.id}>
-              <div><strong>{role.name}</strong><span>{role.description}</span></div>
+              <div><strong>{role.name && role.name !== role.id ? role.name : roleLabel(role.id)}</strong><span>{role.description}</span></div>
               <div className="permission-chips">
-                {role.permissions.map((permission) => <span key={permission}>{permission}</span>)}
+                {role.permissions.map((permission) => <span key={permission}>{permissionNames.get(permission) ?? permissionLabel(permission)}</span>)}
               </div>
             </article>
           ))}
@@ -86,9 +88,9 @@ export function AuditLogsView({ api }: { api: AdminApi }) {
                 <tr key={log.id}>
                   <td>{formatDateTime(log.createdAt)}</td>
                   <td>{log.actorUsername}</td>
-                  <td>{log.action}</td>
-                  <td>{log.targetType} {log.targetId}</td>
-                  <td>{log.result}</td>
+                  <td>{auditActionLabel(log.action)}</td>
+                  <td>{auditTargetLabel(log.targetType, log.targetId)}</td>
+                  <td>{auditResultLabel(log.result)}</td>
                 </tr>
               ))}
             </tbody>

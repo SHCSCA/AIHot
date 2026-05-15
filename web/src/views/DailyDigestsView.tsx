@@ -6,7 +6,7 @@ import { Section, TableWrap } from "../components/Section";
 import { StatusLabel } from "../components/StatusLabel";
 import { useAsyncData } from "../hooks";
 import type { DailyDigest, DailySection } from "../types";
-import { categoryLabel } from "../labels";
+import { actorLabel, categoryLabel } from "../labels";
 import { channelLabel, formatDateTime, today } from "../utils";
 
 export function DailyDigestsView({ api }: { api: AdminApi }) {
@@ -34,7 +34,7 @@ export function DailyDigestsView({ api }: { api: AdminApi }) {
             <tbody>
               {digests.map((digest) => (
                 <tr key={digest.id}>
-                  <td><strong>{digest.title}</strong><span>{formatDateTime(digest.generatedAt)}</span></td><td>{channelLabel(digest.channel)}</td><td>{digest.date}</td><td><StatusLabel value={digest.published ? "published" : "unpublished"} /></td><td>{digest.publishedBy ?? "-"}</td><td><DailyPreview digest={digest} /></td>
+                  <td><strong>{digest.title}</strong><span>{formatDateTime(digest.generatedAt)}</span></td><td>{channelLabel(digest.channel)}</td><td>{digest.date}</td><td><StatusLabel value={digest.published ? "published" : "unpublished"} /></td><td>{actorLabel(digest.publishedBy)}</td><td><DailyPreview digest={digest} /></td>
                 </tr>
               ))}
             </tbody>

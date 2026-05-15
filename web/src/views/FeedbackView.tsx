@@ -4,6 +4,7 @@ import { AdminChannelCards, usePersistedAdminChannel } from "../components/Admin
 import { Section, TableWrap } from "../components/Section";
 import { StatusLabel } from "../components/StatusLabel";
 import { useAsyncData } from "../hooks";
+import { actorLabel } from "../labels";
 import type { FeedbackEvent } from "../types";
 import { channelLabel, feedbackLabel, formatDateTime } from "../utils";
 
@@ -33,7 +34,7 @@ export function FeedbackView({ api }: { api: AdminApi }) {
         <TableWrap>
           <table>
             <thead><tr><th>ID</th><th>频道</th><th>事件</th><th>类型</th><th>用户说明</th><th>联系方式</th><th>状态</th><th>来源</th><th>时间</th><th>处理</th></tr></thead>
-            <tbody>{events.map((event) => <tr key={event.id}><td>{event.id}</td><td>{channelLabel(event.channel)}</td><td>{event.clusterId ?? "-"}</td><td>{feedbackLabel(event.feedbackType)}</td><td>{event.reason}</td><td>{event.contact ?? "-"}</td><td><StatusLabel value={event.status ?? "unread"} /></td><td>{event.actor === "public-user" ? "前台用户" : event.actor}</td><td>{formatDateTime(event.createdAt)}</td><td><select value={event.status ?? "unread"} onChange={(change) => updateStatus(event, change.target.value)}><option value="unread">未处理</option><option value="read">已读</option><option value="accepted">已采纳</option><option value="ignored">已忽略</option></select></td></tr>)}</tbody>
+            <tbody>{events.map((event) => <tr key={event.id}><td>{event.id}</td><td>{channelLabel(event.channel)}</td><td>{event.clusterId ?? "-"}</td><td>{feedbackLabel(event.feedbackType)}</td><td>{event.reason}</td><td>{event.contact ?? "-"}</td><td><StatusLabel value={event.status ?? "unread"} /></td><td>{actorLabel(event.actor)}</td><td>{formatDateTime(event.createdAt)}</td><td><select value={event.status ?? "unread"} onChange={(change) => updateStatus(event, change.target.value)}><option value="unread">未处理</option><option value="read">已读</option><option value="accepted">已采纳</option><option value="ignored">已忽略</option></select></td></tr>)}</tbody>
           </table>
         </TableWrap>
       </Section>

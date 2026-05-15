@@ -5,7 +5,7 @@ import { AdminChannelCards, type AdminChannel, usePersistedAdminChannel } from "
 import { MetricCard, MetricGrid } from "../components/MetricCard";
 import { PaginationBar } from "../components/PaginationBar";
 import { Section, TableWrap } from "../components/Section";
-import { collectionStatusLabel, diagnosticStatusLabel, sourceGroupLabel } from "../labels";
+import { collectionStatusLabel, diagnosticStatusLabel, screenReasonCodeLabel, sourceGroupLabel } from "../labels";
 import type { Page, SourceDiagnostic } from "../types";
 import { channelLabel, formatDateTime, formatPercent } from "../utils";
 
@@ -152,7 +152,7 @@ export function HealthView({ api }: { api: AdminApi }) {
                   </td>
                   <td>
                     <strong>{source.screening.accepted24h} 通过</strong>
-                    <span>{source.screening.rejected24h} 拒绝 · {source.screening.latestReasonCode ?? "无原因"}</span>
+                    <span>{source.screening.rejected24h} 拒绝 · {source.screening.latestReasonCode ? screenReasonCodeLabel(source.screening.latestReasonCode) : "无原因"}</span>
                   </td>
                   <td>{formatDateTime(source.lastRun?.startedAt ?? source.lastSuccessAt)}</td>
                   <td>{formatDateTime(source.nextFetchAt)}</td>

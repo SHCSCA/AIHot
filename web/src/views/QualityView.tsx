@@ -3,7 +3,7 @@ import { AdminChannelCards, type AdminChannel, usePersistedAdminChannel } from "
 import { MetricCard, MetricGrid } from "../components/MetricCard";
 import { Section, TableWrap } from "../components/Section";
 import { useAsyncData } from "../hooks";
-import { categoryLabel, collectionStatusLabel, sourceGroupLabel } from "../labels";
+import { categoryLabel, collectionStatusLabel, screenBucketLabel, screenReasonCodeLabel, sourceGroupLabel } from "../labels";
 import type { ChannelQuality, QualityDashboard } from "../types";
 import { channelLabel, formatDateTime, formatPercent } from "../utils";
 import { useState } from "react";
@@ -97,8 +97,8 @@ function QualityFunnel({ channel }: { channel: ChannelQuality }) {
             <tbody>
               {channel.rejectionReasons.map((reason) => (
                 <tr key={`${reason.reasonCode}-${reason.bucket}`}>
-                  <td><strong>{reason.reason || reason.reasonCode}</strong><span>{reason.reasonCode}</span></td>
-                  <td>{reason.bucket}</td>
+                  <td><strong>{reason.reason || screenReasonCodeLabel(reason.reasonCode)}</strong><span>{screenReasonCodeLabel(reason.reasonCode)}</span></td>
+                  <td>{screenBucketLabel(reason.bucket)}</td>
                   <td>{reason.count}</td>
                 </tr>
               ))}
@@ -140,7 +140,7 @@ function QualityRejections({ channel }: { channel: ChannelQuality }) {
                 <span>{sample.summary || "暂无文章描述。"}</span>
                 {sample.url && <a href={sample.url} target="_blank" rel="noreferrer">查看原文</a>}
               </td>
-              <td><strong>{sample.reason || sample.reasonCode}</strong><span>{sample.reasonCode} · {sample.bucket} · 置信度 {Math.round(sample.confidenceScore)}</span></td>
+              <td><strong>{sample.reason || screenReasonCodeLabel(sample.reasonCode)}</strong><span>{screenReasonCodeLabel(sample.reasonCode)} · {screenBucketLabel(sample.bucket)} · 置信度 {Math.round(sample.confidenceScore)}</span></td>
               <td><strong>{sample.sourceName}</strong><span>{sample.sourceId} · {sourceGroupLabel(sample.sourceGroup)}</span></td>
               <td>{categoryLabel(sample.category)}</td>
               <td>{formatDateTime(sample.createdAt)}</td>
