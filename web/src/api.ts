@@ -525,7 +525,7 @@ export class AdminApi {
     });
     if (!response.ok) {
       if (response.status === 401) this.onUnauthorized?.();
-      throw new ApiError(`请求失败：HTTP ${response.status}`, response.status);
+      throw new ApiError(await errorMessage(response, "后台接口"), response.status);
     }
     if (!responseContentType(response).includes("application/json")) {
       throw new ApiError("请求失败：后台接口没有返回 JSON 数据", response.status);
@@ -545,4 +545,20 @@ function query(values: Record<string, QueryValue>) {
 
 function responseContentType(response: Response) {
   return response.headers?.get?.("content-type") ?? "application/json";
+}
+
+async function errorMessage(response: Response, context: string) {
+  if (!responseContentType(response).includes("application/json")) {
+    return `请求失败：HTTP ${response.status}`;
+  }
+  const payload = await response.json().catch(() => null) as { detail?: unknown; message?: string } | null;
+  if (payload) {
+    if (typeof payload.detail === "string") return payload.detail;
+    if (payload.detail && typeof payload.detail === "object") {
+      const detail = payload.detail as { message?: unknown };
+      if (typeof detail.message === "string" && detail.message) return detail.message;
+    }
+    if (typeof payload.message === "string" && payload.message) return payload.message;
+  }
+  return `请求失败：${context} HTTP ${response.status}`;
 }

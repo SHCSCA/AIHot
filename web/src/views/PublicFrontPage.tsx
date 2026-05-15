@@ -326,7 +326,13 @@ export function PublicFrontPage({
                   showDate={index === 0 || formatMonthDay(events[index - 1]?.lastSeenAt) !== formatMonthDay(event.lastSeenAt)}
                 />
               ))}
-              {!eventLoading && events.length === 0 && <p className="hint">暂无符合条件的信息。</p>}
+              {!eventLoading && events.length === 0 && (
+                <p className="hint">
+                  {channel === "amazon"
+                    ? "Amazon 情报最近 24 小时暂无通过质量筛选的公开事件，可切换日期或查看信源墙。"
+                    : "暂无符合条件的信息。"}
+                </p>
+              )}
               <PaginationBar
                 page={page}
                 totalPages={pageInfo.totalPages}
@@ -363,7 +369,8 @@ function FilterBar({
   const categories = categoryOptions(channel);
   return (
     <section className="aihot-filter-panel">
-      <div className="segmented-row source-tabs" aria-label="信源类型筛选">
+      <div className="segmented-row combined-filter-tabs" aria-label="信源和分类筛选">
+        <span className="filter-group-label">信源</span>
         {sourceGroups.map((option) => (
           <button
             key={option.value || "all"}
@@ -373,8 +380,8 @@ function FilterBar({
             {option.label}
           </button>
         ))}
-      </div>
-      <div className="segmented-row category-tabs" aria-label="分类筛选">
+        <span className="filter-divider" aria-hidden="true" />
+        <span className="filter-group-label">分类</span>
         <button className={!filters.category ? "active" : ""} onClick={() => onChange({ category: "" })}>全部分类</button>
         {categories.map((option) => (
           <button

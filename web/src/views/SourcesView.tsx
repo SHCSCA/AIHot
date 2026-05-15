@@ -68,6 +68,8 @@ export function SourcesView({ api }: { api: AdminApi }) {
   const [wallPage, setWallPage] = useState(1);
   const [selected, setSelected] = useState<Source | null>(null);
   const [form, setForm] = useState<Source>({ ...newSource, channel });
+  const [formMessage, setFormMessage] = useState<{ tone: "info" | "success" | "error"; text: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     setPage(1);
@@ -112,12 +114,26 @@ export function SourcesView({ api }: { api: AdminApi }) {
   }
 
   async function submit() {
-    await api.createSource(form);
-    setForm({ ...newSource, channel });
-    setPage(1);
-    setWallPage(1);
-    await loadTable(1);
-    await loadWall(1);
+    const payload = { ...form, id: form.id.trim(), name: form.name.trim(), url: form.url.trim() };
+    if (!payload.id || !payload.name || !payload.url) {
+      setFormMessage({ tone: "error", text: "信源 ID、名称和 URL 不能为空。" });
+      return;
+    }
+    setSubmitting(true);
+    setFormMessage({ tone: "info", text: "正在测试信源连通性..." });
+    try {
+      await api.createSource(payload);
+      setForm({ ...newSource, channel });
+      setFormMessage({ tone: "success", text: "信源已保存，连通性测试通过。" });
+      setPage(1);
+      setWallPage(1);
+      await loadTable(1);
+      await loadWall(1);
+    } catch (err) {
+      setFormMessage({ tone: "error", text: err instanceof Error ? err.message : "信源保存失败。" });
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   const metrics = sourcePage.metrics ?? {};
@@ -146,9 +162,9 @@ export function SourcesView({ api }: { api: AdminApi }) {
             <table>
               <thead><tr><th>信源</th><th>频道</th><th>类型</th><th>等级</th><th>采集方式</th><th>间隔</th><th>可见性</th><th>状态</th><th>操作</th></tr></thead>
               <tbody>
-                {sourcePage.items.map((source) => (
-                  <tr key={source.id} onClick={() => setSelected(source)}>
-                    <td><strong>{source.name}</strong><span>{source.id}</span></td>
+                {sourcePage.items.map((source, index) => (
+                  <tr key={source.id || `empty-${index}`} onClick={() => setSelected(source)}>
+                    <td><strong>{sourceDisplayName(source)}</strong><span>{sourceDisplayId(source)}</span></td>
                     <td>{channelLabel(source.channel)}</td>
                     <td><strong>{sourceGroupLabel(source.sourceGroup)}</strong><span>{sourceTypeLabel(source.sourceType)} · {collectionStatusLabel(source.collectionStatus)}</span></td>
                     <td>{source.tier}</td>
@@ -171,9 +187,9 @@ export function SourcesView({ api }: { api: AdminApi }) {
         </Section>
         <Section title="信源墙视图" description="公开前台展示的信源贡献卡片，固定 6 条一页，跟随当前频道和筛选条件。">
           <div className="admin-source-wall">
-            {wallPageData.items.map((source) => (
-              <article key={source.id}>
-                <div><strong>{source.name}</strong><span>{formatContributorNo(source.contributorNo)}</span></div>
+            {wallPageData.items.map((source, index) => (
+              <article key={source.id || `wall-empty-${index}`}>
+                <div><strong>{sourceDisplayName(source)}</strong><span>{formatContributorNo(source.contributorNo)}</span></div>
                 <p>{source.socialHandle ? `${source.socialHandle} · ` : ""}{sourceGroupLabel(source.sourceGroup)} · {sourceTypeLabel(source.sourceType)}</p>
                 <span>{source.tier}</span>
                 <span>{collectionStatusLabel(source.collectionStatus)}</span>
@@ -184,8 +200,8 @@ export function SourcesView({ api }: { api: AdminApi }) {
           <PaginationBar page={wallPage} totalPages={wallPageData.totalPages ?? 1} onPageChange={setWallPage} disabled={loading} />
         </Section>
       </div>
-      <Section title="新增/编辑信源" description={selected ? `当前查看：${selected.name}` : `新增信源会写入 ${channelLabel(channel)}。`}>
-        {selected && <p className="hint">URL：{selected.url}</p>}
+      <Section title="新增信源" description={selected ? `当前查看：${sourceDisplayName(selected)}` : `新增信源会写入 ${channelLabel(channel)}，保存前会检测重复并抓取一次。`}>
+        {selected && <p className="hint">URL：{selected.url || "缺少 URL"}</p>}
         <div className="form-grid">
           <label>信源 ID<input value={form.id} onChange={(event) => setForm({ ...form, id: event.target.value })} /></label>
           <label>名称<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
@@ -198,7 +214,8 @@ export function SourcesView({ api }: { api: AdminApi }) {
           <label>贡献编号<input value={form.contributorNo ?? ""} onChange={(event) => setForm({ ...form, contributorNo: event.target.value })} /></label>
           <label>社媒账号<input value={form.socialHandle ?? ""} onChange={(event) => setForm({ ...form, socialHandle: event.target.value })} /></label>
         </div>
-        <button className="primary" onClick={submit}>保存信源</button>
+        {formMessage && <p className={`form-message ${formMessage.tone}`}>{formMessage.text}</p>}
+        <button className="primary" onClick={submit} disabled={submitting}>{submitting ? "测试中..." : "保存并测试信源"}</button>
       </Section>
     </div>
   );
@@ -230,4 +247,12 @@ function formatContributorNo(value?: string | null) {
   const parts = value.split("-");
   if (parts.length === 2) return `${parts[0]} · ${parts[1]}`;
   return value;
+}
+
+function sourceDisplayName(source: Source) {
+  return source.name?.trim() || "未命名信源";
+}
+
+function sourceDisplayId(source: Source) {
+  return source.id?.trim() || "缺少信源 ID";
 }

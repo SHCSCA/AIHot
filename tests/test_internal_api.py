@@ -10,10 +10,16 @@ from intel_engine.models import FetchJobRecord, FetchRunRecord, RawDocumentRecor
 
 
 def _app(tmp_path):
-    return create_app(
+    app = create_app(
         db_path=tmp_path / "legacy.sqlite3",
         production_database_url=f"sqlite+pysqlite:///{tmp_path / 'production.sqlite3'}",
     )
+    app.state.source_connectivity_validator = lambda payload: {
+        "ok": True,
+        "message": "连通性测试通过。",
+        "documentCount": 1,
+    }
+    return app
 
 
 def _auth_header() -> dict[str, str]:
@@ -60,6 +66,52 @@ def test_internal_sources_can_create_list_and_patch(tmp_path):
     assert created.json()["source"]["id"] == "openai_news"
     assert listed.json()["sources"][0]["tier"] == "T1"
     assert patched.json()["source"]["enabled"] is False
+
+
+def test_internal_sources_reject_blank_required_fields(tmp_path):
+    app = _app(tmp_path)
+    client = TestClient(app)
+    payload = {**_source_payload(), "id": " ", "name": "", "url": " "}
+
+    created = client.post("/api/v1/internal/sources", json=payload, headers=_auth_header())
+
+    assert created.status_code == 422
+    assert "信源 ID" in created.json()["detail"]["message"]
+
+
+def test_internal_sources_reject_duplicate_id_or_url(tmp_path):
+    app = _app(tmp_path)
+    client = TestClient(app)
+    payload = _source_payload()
+
+    assert client.post("/api/v1/internal/sources", json=payload, headers=_auth_header()).status_code == 200
+    same_id = client.post("/api/v1/internal/sources", json={**payload, "name": "Other"}, headers=_auth_header())
+    same_url = client.post(
+        "/api/v1/internal/sources",
+        json={**payload, "id": "openai_news_copy", "url": "https://openai.com/news"},
+        headers=_auth_header(),
+    )
+
+    assert same_id.status_code == 409
+    assert same_id.json()["detail"]["code"] == "source_exists"
+    assert same_url.status_code == 409
+    assert same_url.json()["detail"]["code"] == "source_url_exists"
+
+
+def test_internal_sources_require_connectivity_before_save(tmp_path):
+    app = _app(tmp_path)
+    app.state.source_connectivity_validator = lambda payload: {
+        "ok": False,
+        "message": "连通性测试失败：HTTP 404",
+        "documentCount": 0,
+    }
+    client = TestClient(app)
+
+    created = client.post("/api/v1/internal/sources", json=_source_payload(), headers=_auth_header())
+
+    assert created.status_code == 422
+    assert created.json()["detail"]["code"] == "source_connectivity_failed"
+    assert "HTTP 404" in created.json()["detail"]["message"]
 
 
 def test_internal_source_states_and_jobs_are_listed(tmp_path):

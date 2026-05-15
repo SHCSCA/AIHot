@@ -5,6 +5,7 @@ import json
 from datetime import date as date_type
 from datetime import datetime, timedelta, timezone
 
+import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import and_, delete, exists, func, or_, select
@@ -26,6 +27,7 @@ from intel_engine.auth import (
 from intel_engine.channel_config import load_channel_configs
 from intel_engine.daily import generate_daily_digest
 from intel_engine.evaluation import activate_strategy_version, run_evaluation
+from intel_engine.fetchers import get_fetch_adapter
 from intel_engine.models import (
     ClusterMemberRecord,
     DailyDigestRecord,
@@ -52,6 +54,7 @@ from intel_engine.models import (
     UserRecord,
     UserRoleRecord,
 )
+from intel_engine.normalizer import canonicalize_url
 from intel_engine.pipeline import run_pipeline_once
 from intel_engine.quality import is_publishable_original_url, operational_day_bounds_utc
 from intel_engine.review import PUBLIC_WINDOW_LABEL, ROLLING_WINDOW_HOURS, public_cluster_ready
@@ -875,8 +878,12 @@ def internal_sources(
 
 @router.post("/api/v1/internal/sources", dependencies=SOURCES_WRITE)
 def internal_create_source(request: Request, payload: SourceWrite) -> dict[str, object]:
+    payload = _clean_source_payload(payload)
+    _ensure_source_required_fields(payload)
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
+        _ensure_source_not_duplicate(session, payload)
+        _ensure_source_connectivity(request, payload)
         registry = SourceRegistry(session)
         result = registry.upsert_source(_source_upsert(payload))
         source = registry.get_source(result.source_id)
@@ -1476,6 +1483,116 @@ def _source_list_metrics(sources: list[SourceRecord]) -> dict[str, int]:
             if source.source_group == "social" and source.collection_status != "collectable"
         ),
     }
+
+
+def _clean_source_payload(payload: SourceWrite) -> SourceWrite:
+    return payload.model_copy(update={"id": payload.id.strip(), "name": payload.name.strip(), "url": payload.url.strip()})
+
+
+def _ensure_source_required_fields(payload: SourceWrite) -> None:
+    missing: list[str] = []
+    if not payload.id:
+        missing.append("信源 ID")
+    if not payload.name:
+        missing.append("名称")
+    if not payload.url:
+        missing.append("URL")
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_source",
+                "message": f"{'、'.join(missing)}不能为空。",
+            },
+        )
+
+
+def _ensure_source_not_duplicate(session, payload: SourceWrite) -> None:
+    if session.get(SourceRecord, payload.id) is not None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "code": "source_exists",
+                "message": f"信源已存在：ID「{payload.id}」已被使用。",
+            },
+        )
+
+    normalized_url = canonicalize_url(payload.url).lower()
+    for source in session.scalars(select(SourceRecord)).all():
+        if canonicalize_url(source.url).lower() == normalized_url:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "source_url_exists",
+                    "message": f"信源已存在：URL 已被「{source.name or source.id}」使用。",
+                },
+            )
+
+
+def _ensure_source_connectivity(request: Request, payload: SourceWrite) -> None:
+    validator = getattr(request.app.state, "source_connectivity_validator", None)
+    if validator is not None:
+        result = validator(payload)
+        ok = bool(result.get("ok")) if isinstance(result, dict) else bool(result)
+        if ok:
+            return
+        message = str(result.get("message") if isinstance(result, dict) else "连通性测试失败。")
+        _raise_source_connectivity_error(message)
+
+    source = SourceRecord(
+        id=payload.id,
+        channel=payload.channel,
+        source_type=payload.source_type,
+        tier=payload.tier,
+        name=payload.name,
+        url=payload.url,
+        language=payload.language,
+        region=payload.region,
+        marketplace=payload.marketplace,
+        authority_weight=payload.authority_weight,
+        noise_level=payload.noise_level,
+        fetch_adapter=payload.fetch_adapter,
+        parser_type=payload.parser_type,
+        default_categories=list(payload.default_categories),
+        fetch_interval_minutes=payload.fetch_interval_minutes,
+        enabled=payload.enabled,
+        visibility=payload.visibility,
+        source_group=payload.source_group,
+        contributor_no=payload.contributor_no,
+        social_handle=payload.social_handle,
+        collection_status=payload.collection_status,
+        free_access=payload.free_access,
+        notes=payload.notes,
+    )
+    try:
+        adapter = get_fetch_adapter(payload.fetch_adapter)
+        with httpx.Client(
+            timeout=15,
+            follow_redirects=True,
+            headers={"User-Agent": "AIHOT Source Validator/1.0"},
+        ) as client:
+            result = adapter.fetch(source, client=client)
+    except KeyError as exc:
+        _raise_source_connectivity_error(f"不支持的采集方式：{payload.fetch_adapter}。")
+    except httpx.HTTPError as exc:
+        _raise_source_connectivity_error(f"连通性测试失败：{exc}")
+    except Exception as exc:
+        _raise_source_connectivity_error(f"连通性测试失败：{exc}")
+
+    if result.status != "succeeded":
+        _raise_source_connectivity_error(result.error_message or f"连通性测试失败：HTTP {result.http_status or '未知'}")
+    if not result.documents:
+        _raise_source_connectivity_error("连通性测试通过，但没有抓取到可用内容。请检查采集方式、页面结构或 RSS 是否有最近内容。")
+
+
+def _raise_source_connectivity_error(message: str):
+    raise HTTPException(
+        status_code=422,
+        detail={
+            "code": "source_connectivity_failed",
+            "message": message or "连通性测试失败，信源未保存。",
+        },
+    )
 
 
 def _filter_diagnostics(diagnostics: list[dict[str, object]], diagnostic_status: str | None) -> list[dict[str, object]]:

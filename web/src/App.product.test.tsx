@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import { PublicApi } from "./api";
 import type { AdminApi } from "./api";
+import { ApiError } from "./api";
 import {
   categoryLabel,
   channelLabel,
@@ -579,6 +580,24 @@ describe("后台产品化界面", () => {
     await waitFor(() => expect(publicApi.listEvents).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, pageSize: 20 })));
   });
 
+  it("keeps public source and category filters in a single horizontal row", async () => {
+    const publicApi = {
+      listEvents: vi.fn().mockResolvedValue({ items: [], count: 0, page: 1, pageSize: 20, total: 0, totalPages: 1, hasNext: false, nextCursor: null }),
+      listSources: vi.fn().mockResolvedValue([]),
+      getEventDetail: vi.fn(),
+      getDaily: vi.fn().mockResolvedValue(null),
+      listDailies: vi.fn().mockResolvedValue({ items: [], count: 0, page: 1, pageSize: 20, total: 0, totalPages: 1 }),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
+    } as unknown as PublicApi;
+
+    render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
+
+    const row = screen.getByLabelText("信源和分类筛选");
+    expect(within(row).getByRole("button", { name: "官方/一手" })).toBeInTheDocument();
+    expect(within(row).getByRole("button", { name: "模型/论文" })).toBeInTheDocument();
+    expect(screen.queryByLabelText("分类筛选")).not.toBeInTheDocument();
+  });
+
   it("renders magazine style daily reader with archive and section document", async () => {
     const publicApi = {
       listEvents: vi.fn().mockResolvedValue({ items: [], count: 0, page: 1, pageSize: 20, total: 0, totalPages: 1, hasNext: false, nextCursor: null }),
@@ -857,7 +876,7 @@ describe("后台产品化界面", () => {
           });
         }
         return Promise.resolve({
-          items: [{ id: "source_a", name: "Source A", channel: "ai", sourceType: "rss", sourceGroup: "media", collectionStatus: "collectable", tier: "T2", fetchAdapter: "rss", fetchIntervalMinutes: 60, visibility: "public", enabled: true, authorityWeight: 80, noiseLevel: 0.1, parserType: "rss", defaultCategories: [], language: "en", region: "global", url: "https://example.com/a.xml", freeAccess: true }],
+          items: [{ id: "", name: "", channel: "ai", sourceType: "rss", sourceGroup: "media", collectionStatus: "collectable", tier: "T2", fetchAdapter: "rss", fetchIntervalMinutes: 60, visibility: "public", enabled: true, authorityWeight: 80, noiseLevel: 0.1, parserType: "rss", defaultCategories: [], language: "en", region: "global", url: "", freeAccess: true }],
           count: 1,
           page,
           pageSize,
@@ -872,13 +891,40 @@ describe("后台产品化界面", () => {
 
     render(<SourcesView api={api} />);
 
-    expect(await screen.findByText("Source A")).toBeInTheDocument();
+    expect(await screen.findByText("未命名信源")).toBeInTheDocument();
+    expect(screen.getByText("缺少信源 ID")).toBeInTheDocument();
     expect(screen.getByText("203")).toBeInTheDocument();
     expect(screen.getByText("Wall Source")).toBeInTheDocument();
     expect(api.listSourcesPage).toHaveBeenCalledWith(expect.objectContaining({ channel: "ai", pageSize: 50 }));
     expect(api.listSourcesPage).toHaveBeenCalledWith(expect.objectContaining({ channel: "ai", pageSize: 6 }));
     await userEvent.click(screen.getAllByRole("button", { name: "下一页" })[0]);
     expect(await screen.findByText("Source B")).toBeInTheDocument();
+  });
+
+  it("shows source save validation errors from duplicate or unreachable sources", async () => {
+    const api = apiStub({
+      listSourcesPage: vi.fn().mockResolvedValue({
+        items: [],
+        count: 0,
+        page: 1,
+        pageSize: 50,
+        total: 0,
+        totalPages: 1,
+        hasNext: false,
+        nextCursor: null,
+        metrics: { sourceCount: 0, enabledSourceCount: 0, highAuthorityCount: 0, pendingSocialCount: 0 }
+      }),
+      createSource: vi.fn().mockRejectedValue(new ApiError("信源已存在：当前 ID 已被使用。", 409))
+    });
+
+    render(<SourcesView api={api} />);
+
+    fireEvent.change(screen.getByLabelText("信源 ID"), { target: { value: "openai_news" } });
+    fireEvent.change(screen.getByLabelText("名称"), { target: { value: "OpenAI News" } });
+    fireEvent.change(screen.getByLabelText("URL"), { target: { value: "https://openai.com/news/" } });
+    await userEvent.click(screen.getByRole("button", { name: "保存并测试信源" }));
+
+    expect(await screen.findByText("信源已存在：当前 ID 已被使用。")).toBeInTheDocument();
   });
 
   it("loads source diagnostic pages in the health view", async () => {
