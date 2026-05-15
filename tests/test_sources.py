@@ -132,15 +132,27 @@ def test_amazon_hourly_sources_prioritize_precise_official_or_seller_feeds():
 
     assert sources["amazon_sp_api_release_notes"].enabled is True
     assert sources["amazon_sp_api_release_notes"].parser_type == "html_list"
-    assert sources["amazon_ads_updates"].enabled is True
+    assert sources["amazon_ads_updates"].enabled is False
+    assert sources["amazon_ads_updates"].metadata.get("collection_status") == "watch"
     assert sources["amazon_ads_updates"].parser_type == "html_list"
-    for precise_feed in ("junglescout_blog", "helium10_blog", "sellerapp_blog", "pacvue_blog", "ad_badger_blog", "datahawk_blog"):
+    for precise_feed in (
+        "marketplace_pulse",
+        "junglescout_blog",
+        "pacvue_blog",
+        "ad_badger_blog",
+        "datahawk_blog",
+        "amazon_shipping_blog",
+        "sellerboard_blog",
+        "repricercom_blog",
+        "supplykick_blog",
+    ):
         assert sources[precise_feed].enabled is True
         assert sources[precise_feed].parser_type == "rss"
-    assert sources["retail_dive"].enabled is False
-    assert sources["modern_retail"].enabled is False
-    assert sources["retail_dive"].metadata.get("collection_status") == "watch"
-    assert sources["modern_retail"].metadata.get("collection_status") == "watch"
+    assert sources["datahawk_blog"].url == "https://datahawk.co/feed/"
+    assert sources["helium10_blog"].enabled is False
+    assert sources["sellerapp_blog"].enabled is False
+    assert sources["helium10_blog"].metadata.get("collection_status") == "unavailable"
+    assert sources["sellerapp_blog"].metadata.get("collection_status") == "unavailable"
 
 
 def test_registry_can_upsert_toggle_and_update_state(tmp_path):

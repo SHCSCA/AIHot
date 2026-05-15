@@ -71,8 +71,8 @@ sources:
     default_categories: [product_research, fees_margin, listing_seo]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: false
-    collection_status: rate_limited
+    enabled: true
+    collection_status: collectable
     free_access: true
   - id: practical_ecommerce_amazon
     source_type: rss
@@ -115,8 +115,8 @@ sources:
     default_categories: [product_research, compliance_trade]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: false
-    collection_status: watch
+    enabled: true
+    collection_status: collectable
     free_access: true
   - id: modern_retail
     source_type: rss
@@ -131,8 +131,8 @@ sources:
     default_categories: [product_research, ads_ppc]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: false
-    collection_status: watch
+    enabled: true
+    collection_status: collectable
     free_access: true
   - id: search_engine_land_amazon
     source_type: rss
@@ -147,8 +147,8 @@ sources:
     default_categories: [ads_ppc, listing_seo]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: false
-    collection_status: rate_limited
+    enabled: true
+    collection_status: collectable
     free_access: true
   - id: fulltimefba_blog
     source_type: rss
@@ -205,8 +205,8 @@ sources:
     default_categories: [account_health, compliance_trade]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: false
-    collection_status: rate_limited
+    enabled: true
+    collection_status: collectable
     free_access: true
   - id: sellerplex_amazon
     source_type: rss
@@ -263,8 +263,8 @@ sources:
     default_categories: [ads_ppc, product_research, tools]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: false
-    collection_status: rate_limited
+    enabled: true
+    collection_status: collectable
     free_access: true
   - id: my_amazon_guy
     source_type: rss
@@ -293,8 +293,8 @@ sources:
     default_categories: [ads_ppc, listing_seo, tools]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: false
-    collection_status: rate_limited
+    enabled: true
+    collection_status: collectable
     free_access: true
   - id: channelengine_marketplace
     source_type: rss
@@ -337,8 +337,8 @@ sources:
     default_categories: [product_research, fees_margin]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: false
-    collection_status: rate_limited
+    enabled: true
+    collection_status: collectable
     free_access: true
   - id: smartscout_blog
     source_type: rss
@@ -381,11 +381,12 @@ sources:
     default_categories: [ads_ppc]
     crawl_interval_minutes: 60
     parser_type: html_list
-    enabled: true
+    enabled: false
+    collection_status: watch
   - id: marketplace_pulse
-    source_type: authority
+    source_type: rss
     name: Marketplace Pulse
-    url: https://www.marketplacepulse.com/articles
+    url: https://www.marketplacepulse.com/articles/recent.atom
     language: en
     region: global
     marketplace: global
@@ -394,8 +395,9 @@ sources:
     base_weight: 82
     default_categories: [product_research, fees_margin]
     crawl_interval_minutes: 60
-    parser_type: website
-    enabled: false
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - id: junglescout_blog
     source_type: rss
     name: Jungle Scout Blog
@@ -479,7 +481,8 @@ sources:
     default_categories: [product_research, listing_seo, ads_ppc, tools]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: true
+    enabled: false
+    collection_status: unavailable
   - id: sellerapp_blog
     source_type: rss
     name: SellerApp Blog
@@ -493,7 +496,8 @@ sources:
     default_categories: [ads_ppc, listing_seo, product_research, tools]
     crawl_interval_minutes: 60
     parser_type: rss
-    enabled: true
+    enabled: false
+    collection_status: unavailable
   - id: carbon6_blog
     source_type: authority
     name: Carbon6 Blog
@@ -677,11 +681,15 @@ sources:
   - <<: *amazon_catalog_candidate
     id: amazon_shipping_blog
     name: Amazon Shipping Blog
-    url: https://shipping.amazon.com/blog
+    url: https://shipping.amazon.com/insights-and-news.rss
+    source_type: rss
     trust_level: official
     base_weight: 84
     seller_area: logistics
     default_categories: [fba_logistics, fees_margin]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: amazon_pay_blog_candidate
     name: Amazon Pay Blog
@@ -790,6 +798,9 @@ sources:
     base_weight: 76
     seller_area: ads
     default_categories: [ads_ppc, tools]
+    parser_type: html_list
+    enabled: false
+    collection_status: watch
   - <<: *amazon_catalog_candidate
     id: quartile_blog
     name: Quartile Blog
@@ -798,6 +809,9 @@ sources:
     base_weight: 74
     seller_area: ads
     default_categories: [ads_ppc, tools]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: ad_badger_blog
     name: Ad Badger Blog
@@ -829,11 +843,15 @@ sources:
   - <<: *amazon_catalog_candidate
     id: sellermetrics_blog
     name: SellerMetrics Blog
-    url: https://sellermetrics.app/blog/
+    url: https://sellermetrics.app/feed/
+    source_type: rss
     trust_level: authority
     base_weight: 72
     seller_area: ads
     default_categories: [ads_ppc, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: feedvisor_blog
     name: Feedvisor Blog
@@ -845,7 +863,7 @@ sources:
   - <<: *amazon_catalog_candidate
     id: datahawk_blog
     name: DataHawk Blog
-    url: https://datahawk.co/blog/feed/
+    url: https://datahawk.co/feed/
     source_type: rss
     trust_level: authority
     base_weight: 72
@@ -862,6 +880,9 @@ sources:
     base_weight: 72
     seller_area: product_research
     default_categories: [product_research, listing_seo]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: viral_launch_blog
     name: Viral Launch Blog
@@ -878,6 +899,9 @@ sources:
     base_weight: 70
     seller_area: tools
     default_categories: [tools, listing_seo]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: managebystats_blog
     name: ManageByStats Blog
@@ -889,11 +913,15 @@ sources:
   - <<: *amazon_catalog_candidate
     id: sellerboard_blog
     name: Sellerboard Blog
-    url: https://sellerboard.com/blog/
+    url: https://blog.sellerboard.com/feed/
+    source_type: rss
     trust_level: authority
     base_weight: 72
     seller_area: fees_margin
     default_categories: [fees_margin, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: keepa_blog
     name: Keepa
@@ -905,19 +933,27 @@ sources:
   - <<: *amazon_catalog_candidate
     id: shipbob_amazon
     name: ShipBob Amazon Fulfillment
-    url: https://www.shipbob.com/blog/
+    url: https://www.shipbob.com/feed/
+    source_type: rss
     trust_level: authority
     base_weight: 72
     seller_area: logistics
     default_categories: [fba_logistics, fees_margin]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: shipstation_blog
     name: ShipStation Blog
-    url: https://www.shipstation.com/blog/
+    url: https://www.shipstation.com/feed/
+    source_type: rss
     trust_level: authority
     base_weight: 70
     seller_area: logistics
     default_categories: [fba_logistics, fees_margin]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: flexport_blog
     name: Flexport Blog
@@ -926,22 +962,33 @@ sources:
     base_weight: 72
     seller_area: logistics
     default_categories: [fba_logistics, compliance_trade]
+    parser_type: html_list
+    enabled: false
+    collection_status: watch
   - <<: *amazon_catalog_candidate
     id: freightos_blog
     name: Freightos Blog
-    url: https://www.freightos.com/freight-blog/
+    url: https://www.freightos.com/feed/
+    source_type: rss
     trust_level: authority
     base_weight: 70
     seller_area: logistics
     default_categories: [fba_logistics, compliance_trade, fees_margin]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: taxjar_blog
     name: TaxJar Blog
-    url: https://www.taxjar.com/blog
+    url: https://www.taxjar.com/feed
+    source_type: rss
     trust_level: authority
     base_weight: 72
     seller_area: tax
     default_categories: [compliance_trade, fees_margin]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: avalara_marketplace
     name: Avalara Marketplace Tax
@@ -966,14 +1013,21 @@ sources:
     base_weight: 74
     seller_area: ads
     default_categories: [ads_ppc, product_research, tools]
+    parser_type: html_list
+    enabled: false
+    collection_status: watch
   - <<: *amazon_catalog_candidate
     id: channeladvisor_blog
     name: Rithum ChannelAdvisor Blog
-    url: https://www.rithum.com/blog/
+    url: https://www.rithum.com/feed/
+    source_type: rss
     trust_level: authority
     base_weight: 72
     seller_area: marketplaces
     default_categories: [tools, product_research, listing_seo]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: linnworks_blog
     name: Linnworks Blog
@@ -985,11 +1039,15 @@ sources:
   - <<: *amazon_catalog_candidate
     id: repricercom_blog
     name: Repricer.com Blog
-    url: https://www.repricer.com/blog/
+    url: https://www.repricer.com/blog/feed/
+    source_type: rss
     trust_level: authority
     base_weight: 72
     seller_area: pricing
     default_categories: [fees_margin, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: sellercloud_blog
     name: Sellercloud Blog
@@ -998,6 +1056,9 @@ sources:
     base_weight: 72
     seller_area: tools
     default_categories: [tools, fba_logistics]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: webretailer_blog
     name: Webretailer
@@ -1006,6 +1067,9 @@ sources:
     base_weight: 68
     seller_area: marketplaces
     default_categories: [tools, product_research, fba_logistics]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: ecommercefuel_forum
     name: EcommerceFuel Forum
@@ -1059,11 +1123,15 @@ sources:
   - <<: *amazon_catalog_candidate
     id: epinium_blog
     name: Epinium Blog
-    url: https://epinium.com/blog/
+    url: https://epinium.com/en/feed/
+    source_type: rss
     trust_level: authority
     base_weight: 70
     seller_area: listing_seo
     default_categories: [listing_seo, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: buybox_experts_blog
     name: Buy Box Experts Blog
@@ -1088,6 +1156,9 @@ sources:
     base_weight: 70
     seller_area: ads
     default_categories: [ads_ppc, listing_seo]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: amz_advisers_blog
     name: AMZ Advisers Blog
@@ -1099,11 +1170,15 @@ sources:
   - <<: *amazon_catalog_candidate
     id: supplykick_blog
     name: SupplyKick Blog
-    url: https://www.supplykick.com/blog/
+    url: https://www.supplykick.com/blog/rss.xml
+    source_type: rss
     trust_level: authority
     base_weight: 70
     seller_area: operations
     default_categories: [fba_logistics, listing_seo, account_health]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: repricerexpress_candidate
     name: RepricerExpress Blog
