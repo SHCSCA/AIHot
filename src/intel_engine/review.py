@@ -124,8 +124,7 @@ def adjusted_selected_threshold(
     source_count: int,
     risk_flags: list[str],
 ) -> float:
-    threshold = 78.0 if channel == "amazon" else 80.0
-    threshold = max(threshold, base_threshold)
+    threshold = base_threshold
     threshold += {"T1": -3.0, "T1.5": -1.0, "T2": 0.0, "T3": 5.0}.get(source_tier, 5.0)
     if screen_bucket == "related":
         threshold += 4.0

@@ -29,6 +29,7 @@ from intel_engine.pipeline import (
     run_pipeline_once,
     run_worker_once,
 )
+from intel_engine.review import adjusted_selected_threshold
 from intel_engine.settings import Settings
 from intel_engine.sources import SourceRegistry, SourceUpsert
 
@@ -317,6 +318,31 @@ def test_default_strategy_uses_channel_config_selected_threshold(tmp_path):
 
     assert ai_strategy.thresholds_json["selected"] == 75
     assert amazon_strategy.thresholds_json["selected"] == 72
+
+
+def test_adjusted_selected_threshold_honors_channel_base_threshold():
+    assert (
+        adjusted_selected_threshold(
+            channel="amazon",
+            base_threshold=72,
+            source_tier="T2",
+            screen_bucket="core",
+            source_count=1,
+            risk_flags=[],
+        )
+        == 72
+    )
+    assert (
+        adjusted_selected_threshold(
+            channel="ai",
+            base_threshold=75,
+            source_tier="T1",
+            screen_bucket="core",
+            source_count=1,
+            risk_flags=[],
+        )
+        == 72
+    )
 
 
 def test_pipeline_once_produces_public_event_and_isolates_failed_source(tmp_path):
