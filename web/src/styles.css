@@ -3751,6 +3751,8 @@ tr:hover td {
 .permission-chips {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start;
+  align-content: flex-start;
   gap: 7px;
 }
 
