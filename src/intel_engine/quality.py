@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
@@ -37,12 +37,22 @@ def is_same_operational_day(published_at: datetime | None, now: datetime) -> boo
     ).date()
 
 
+def is_within_recent_hours(published_at: datetime | None, now: datetime, *, hours: int = 24) -> bool:
+    if published_at is None:
+        return False
+    age = _aware(now) - _aware(published_at)
+    return timedelta(0) <= age <= timedelta(hours=hours)
+
+
 def is_publishable_original_url(item_url: str | None, source_url: str) -> bool:
     if not item_url:
         return False
+    raw_item_parts = urlparse(item_url)
+    raw_source_parts = urlparse(source_url)
     item = canonicalize_url(item_url)
     source = canonicalize_url(source_url)
-    if item == source:
+    is_same_page_section = item == source and bool(raw_item_parts.fragment) and not raw_source_parts.fragment
+    if item == source and not is_same_page_section:
         return False
 
     item_parts = urlparse(item)
@@ -58,7 +68,7 @@ def is_publishable_original_url(item_url: str | None, source_url: str) -> bool:
     source_parts = urlparse(source)
     if item_parts.scheme == source_parts.scheme and item_parts.netloc == source_parts.netloc:
         source_path = source_parts.path.rstrip("/").lower()
-        if source_path and path == source_path:
+        if source_path and path == source_path and not is_same_page_section:
             return False
 
     return True

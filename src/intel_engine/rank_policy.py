@@ -78,14 +78,14 @@ class RankPolicy:
         duplicate_penalty = _clamp(item.duplicate_penalty)
 
         final_score = (
-            source_weight * 0.18
+            source_weight * 0.16
             + category_weight * 0.08
             + freshness_weight * 0.08
-            + item.model_score.relevance_score * 0.18
-            + item.model_score.impact_score * 0.20
-            + item.model_score.novelty_score * 0.10
-            + item.model_score.actionability_score * 0.12
-            + item.model_score.credibility_score * 0.06
+            + item.model_score.relevance_score * 0.20
+            + item.model_score.impact_score * 0.22
+            + item.model_score.novelty_score * 0.12
+            + item.model_score.actionability_score * 0.10
+            + item.model_score.credibility_score * 0.04
             - duplicate_penalty
         )
         final_score = round(_clamp(final_score), 2)

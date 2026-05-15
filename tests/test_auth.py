@@ -39,7 +39,18 @@ def test_internal_api_accepts_correct_basic_auth(tmp_path, monkeypatch):
     response = client.get("/api/v1/internal/sources", headers=_auth_header())
 
     assert response.status_code == 200
-    assert response.json() == {"sources": []}
+    assert response.json() == {
+        "count": 0,
+        "hasNext": False,
+        "metrics": {
+            "enabledSourceCount": 0,
+            "highAuthorityCount": 0,
+            "pendingSocialCount": 0,
+            "sourceCount": 0,
+        },
+        "nextCursor": None,
+        "sources": [],
+    }
 
 
 def test_admin_shell_serves_login_app_without_basic_auth_when_web_dist_exists(tmp_path, monkeypatch):

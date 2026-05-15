@@ -35,3 +35,19 @@ def test_daily_digest_can_generate_publish_and_unpublish(tmp_path):
     assert published.json()["dailyDigest"]["publishedBy"] == "operator"
     assert public_visible.json()["daily"]["title"] == "AI 日报"
     assert listed.json()["dailyDigests"][0]["id"] == digest_id
+
+
+def test_public_daily_returns_section_document_and_archive(tmp_path):
+    client = TestClient(app_with_admin_data(tmp_path))
+
+    daily = client.get("/api/v1/public/daily?channel=ai&date=2026-05-11")
+    archive = client.get("/api/v1/public/dailies?channel=ai&page=1&pageSize=10")
+
+    payload = daily.json()["daily"]
+    assert payload["stats"]["storyCount"] == 1
+    assert payload["lead"]["title"] == "OpenAI 发布 GPT-5"
+    assert payload["sections"][0]["label"] == "AI 模型"
+    assert payload["sections"][0]["items"][0]["entryReason"] == "DeepSeek 认为这是高权威模型发布，值得关注。"
+    assert payload["sectionsJson"]["highlights"][0]["title"] == "OpenAI 发布 GPT-5"
+    assert archive.json()["total"] == 1
+    assert archive.json()["items"][0]["leadTitle"] == "OpenAI 发布 GPT-5"

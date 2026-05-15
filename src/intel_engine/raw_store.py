@@ -40,7 +40,13 @@ class RawStore:
 
         inserted = 0
         duplicates = 0
+        seen_hashes: set[tuple[str, str]] = set()
         for document in result.documents:
+            document_key = (document.source_id, document.content_hash)
+            if document_key in seen_hashes:
+                duplicates += 1
+                continue
+
             existing_id = self.session.scalar(
                 select(RawDocumentRecord.id)
                 .where(RawDocumentRecord.source_id == document.source_id)
@@ -48,6 +54,7 @@ class RawStore:
                 .limit(1)
             )
             if existing_id is not None:
+                seen_hashes.add(document_key)
                 duplicates += 1
                 continue
 
@@ -65,6 +72,7 @@ class RawStore:
                     fetched_at=document.fetched_at,
                 )
             )
+            seen_hashes.add(document_key)
             inserted += 1
 
         self.session.flush()

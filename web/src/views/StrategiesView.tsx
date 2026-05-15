@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { AdminApi } from "../api";
+import { AdminChannelCards, usePersistedAdminChannel } from "../components/AdminChannelCards";
 import { Section, TableWrap } from "../components/Section";
 import { StatusLabel } from "../components/StatusLabel";
 import { useAsyncData } from "../hooks";
@@ -7,12 +8,13 @@ import type { StrategyVersion } from "../types";
 import { channelLabel, jsonLabel } from "../utils";
 
 export function StrategiesView({ api }: { api: AdminApi }) {
-  const { data: strategies, reload, error } = useAsyncData(() => api.listStrategies(), [] as StrategyVersion[]);
-  const [form, setForm] = useState({ id: "ai-default-v1", channel: "ai", name: "AI 默认精选策略", threshold: "72" });
+  const [channel, setChannel] = usePersistedAdminChannel("admin-strategies-channel");
+  const { data: strategies, reload, error } = useAsyncData(() => api.listStrategies(channel), [] as StrategyVersion[], [channel]);
+  const [form, setForm] = useState({ id: "ai-default-v1", name: "AI 默认精选策略", threshold: "72" });
   async function createStrategy() {
     await api.createStrategy({
       id: form.id,
-      channel: form.channel,
+      channel,
       name: form.name,
       status: "draft",
       prefilterPromptVersion: "prefilter-v1",
@@ -30,9 +32,9 @@ export function StrategiesView({ api }: { api: AdminApi }) {
   return (
     <div className="view-stack split-layout">
       <Section title="新建策略版本" description="创建草稿策略后再激活，同一频道只保留一个生效策略。">
+        <AdminChannelCards value={channel} onChange={setChannel} metrics={[{ channel, metrics: { sourceCount: strategies.length } }]} />
         <div className="form-grid">
           <label>策略 ID<input value={form.id} onChange={(event) => setForm({ ...form, id: event.target.value })} /></label>
-          <label>频道<select value={form.channel} onChange={(event) => setForm({ ...form, channel: event.target.value })}><option value="ai">AI 热点</option><option value="amazon">Amazon 情报</option></select></label>
           <label>名称<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
           <label>精选阈值<input value={form.threshold} onChange={(event) => setForm({ ...form, threshold: event.target.value })} /></label>
         </div>

@@ -30,7 +30,330 @@ scoring:
     novelty_score: 0.15
     actionability_score: 0.15
     freshness_score: 0.05
+catalog_candidate_defaults: &amazon_catalog_candidate
+  source_type: website
+  language: en
+  region: global
+  marketplace: global
+  seller_area: operations
+  trust_level: authority
+  base_weight: 72
+  crawl_interval_minutes: 60
+  parser_type: website
+  enabled: false
+  collection_status: unavailable
+  free_access: true
 sources:
+  - id: ecomengine_blog
+    source_type: rss
+    name: eComEngine Blog RSS
+    url: https://www.ecomengine.com/blog/rss.xml
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: authority
+    base_weight: 78
+    default_categories: [account_health, listing_seo, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: ecomcrew_blog
+    source_type: rss
+    name: EcomCrew Blog RSS
+    url: https://www.ecomcrew.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: expert
+    base_weight: 76
+    default_categories: [product_research, fees_margin, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+    free_access: true
+  - id: practical_ecommerce_amazon
+    source_type: rss
+    name: Practical Ecommerce RSS
+    url: https://www.practicalecommerce.com/feed
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 72
+    default_categories: [product_research, listing_seo, ads_ppc]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: ecommercebytes
+    source_type: rss
+    name: EcommerceBytes RSS
+    url: https://www.ecommercebytes.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 70
+    default_categories: [policy, fees_margin, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: retail_dive
+    source_type: rss
+    name: Retail Dive RSS
+    url: https://www.retaildive.com/feeds/news/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 68
+    default_categories: [product_research, compliance_trade]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+    free_access: true
+  - id: modern_retail
+    source_type: rss
+    name: Modern Retail RSS
+    url: https://www.modernretail.co/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 68
+    default_categories: [product_research, ads_ppc]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+    free_access: true
+  - id: search_engine_land_amazon
+    source_type: rss
+    name: Search Engine Land RSS
+    url: https://searchengineland.com/feed
+    language: en
+    region: global
+    marketplace: global
+    seller_area: ads
+    trust_level: media
+    base_weight: 68
+    default_categories: [ads_ppc, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+    free_access: true
+  - id: fulltimefba_blog
+    source_type: rss
+    name: Full-Time FBA RSS
+    url: https://www.fulltimefba.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: expert
+    base_weight: 74
+    default_categories: [product_research, fba_logistics, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: repricerexpress_blog
+    source_type: rss
+    name: RepricerExpress RSS
+    url: https://www.repricerexpress.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: pricing
+    trust_level: authority
+    base_weight: 74
+    default_categories: [fees_margin, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: sellerengine_blog
+    source_type: rss
+    name: SellerEngine RSS
+    url: https://sellerengine.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: authority
+    base_weight: 74
+    default_categories: [account_health, product_research, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: riverbend_consulting
+    source_type: rss
+    name: Riverbend Consulting RSS
+    url: https://riverbendconsulting.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: account_health
+    trust_level: expert
+    base_weight: 76
+    default_categories: [account_health, compliance_trade]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+    free_access: true
+  - id: sellerplex_amazon
+    source_type: rss
+    name: SellerPlex Amazon RSS
+    url: https://sellerplex.com/category/amazon/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: authority
+    base_weight: 74
+    default_categories: [product_research, listing_seo, ads_ppc]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: channelx_amazon
+    source_type: rss
+    name: ChannelX Amazon RSS
+    url: https://channelx.world/category/amazon/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 68
+    default_categories: [policy, ads_ppc, product_research]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: seller_snap_blog
+    source_type: rss
+    name: Seller Snap RSS
+    url: https://sellersnap.io/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: pricing
+    trust_level: authority
+    base_weight: 72
+    default_categories: [fees_margin, ads_ppc, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: teikametrics_blog
+    source_type: rss
+    name: Teikametrics RSS
+    url: https://www.teikametrics.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: ads
+    trust_level: authority
+    base_weight: 76
+    default_categories: [ads_ppc, product_research, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+    free_access: true
+  - id: my_amazon_guy
+    source_type: rss
+    name: My Amazon Guy RSS
+    url: https://myamazonguy.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: operations
+    trust_level: expert
+    base_weight: 72
+    default_categories: [ads_ppc, listing_seo, account_health]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: sellerlabs_blog
+    source_type: rss
+    name: Seller Labs RSS
+    url: https://www.sellerlabs.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: ads
+    trust_level: authority
+    base_weight: 72
+    default_categories: [ads_ppc, listing_seo, tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+    free_access: true
+  - id: channelengine_marketplace
+    source_type: rss
+    name: ChannelEngine Blog RSS
+    url: https://www.channelengine.com/en/blog/rss.xml
+    language: en
+    region: global
+    marketplace: global
+    seller_area: marketplaces
+    trust_level: authority
+    base_weight: 72
+    default_categories: [product_research, tools, compliance_trade]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: ecommerce_times
+    source_type: rss
+    name: E-Commerce Times RSS
+    url: https://www.ecommercetimes.com/feed
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 66
+    default_categories: [product_research, tools, compliance_trade]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: digital_commerce_360
+    source_type: rss
+    name: Digital Commerce 360 RSS
+    url: https://www.digitalcommerce360.com/feed/
+    language: en
+    region: global
+    marketplace: global
+    seller_area: industry
+    trust_level: media
+    base_weight: 66
+    default_categories: [product_research, fees_margin]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+    free_access: true
+  - id: smartscout_blog
+    source_type: rss
+    name: SmartScout Blog RSS
+    url: https://www.smartscout.com/blog/rss.xml
+    language: en
+    region: global
+    marketplace: global
+    seller_area: product_research
+    trust_level: authority
+    base_weight: 76
+    default_categories: [product_research, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
   - id: amazon_sp_api_release_notes
     source_type: official
     name: Amazon SP-API Release Notes
@@ -42,8 +365,8 @@ sources:
     trust_level: official
     base_weight: 95
     default_categories: [policy, tools]
-    crawl_interval_minutes: 720
-    parser_type: website
+    crawl_interval_minutes: 60
+    parser_type: html_list
     enabled: true
   - id: amazon_ads_updates
     source_type: official
@@ -56,27 +379,29 @@ sources:
     trust_level: official
     base_weight: 92
     default_categories: [ads_ppc]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
+    crawl_interval_minutes: 60
+    parser_type: html_list
+    enabled: false
+    collection_status: watch
   - id: marketplace_pulse
-    source_type: authority
+    source_type: rss
     name: Marketplace Pulse
-    url: https://www.marketplacepulse.com/articles
+    url: https://www.marketplacepulse.com/articles/recent.atom
     language: en
     region: global
     marketplace: global
     seller_area: product_research
     trust_level: authority
     base_weight: 82
-    default_categories: [industry, product_research, fees_margin]
-    crawl_interval_minutes: 720
-    parser_type: website
+    default_categories: [product_research, fees_margin]
+    crawl_interval_minutes: 60
+    parser_type: rss
     enabled: true
+    collection_status: collectable
   - id: junglescout_blog
-    source_type: authority
+    source_type: rss
     name: Jungle Scout Blog
-    url: https://www.junglescout.com/blog/
+    url: https://www.junglescout.com/blog/feed/
     language: en
     region: global
     marketplace: global
@@ -84,8 +409,8 @@ sources:
     trust_level: authority
     base_weight: 78
     default_categories: [product_research, listing_seo, ads_ppc]
-    crawl_interval_minutes: 1440
-    parser_type: website
+    crawl_interval_minutes: 60
+    parser_type: rss
     enabled: true
   - id: amazon_seller_university
     source_type: official
@@ -98,9 +423,9 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [policy, listing_seo, fba_logistics]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: amazon_seller_blog
     source_type: official
     name: Amazon Seller Blog
@@ -112,9 +437,9 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [policy, listing_seo, product_research]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: amazon_supply_chain_blog
     source_type: official
     name: Amazon Supply Chain Blog
@@ -126,9 +451,9 @@ sources:
     trust_level: official
     base_weight: 88
     default_categories: [fba_logistics, fees_margin]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: amazon_pay_updates
     source_type: official
     name: Amazon Pay Updates
@@ -140,13 +465,13 @@ sources:
     trust_level: official
     base_weight: 84
     default_categories: [fees_margin, compliance_trade]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: helium10_blog
-    source_type: authority
+    source_type: rss
     name: Helium 10 Blog
-    url: https://www.helium10.com/blog/
+    url: https://www.helium10.com/blog/feed/
     language: en
     region: global
     marketplace: global
@@ -154,27 +479,14 @@ sources:
     trust_level: authority
     base_weight: 80
     default_categories: [product_research, listing_seo, ads_ppc, tools]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
-  - id: smartscout_blog
-    source_type: authority
-    name: SmartScout Blog
-    url: https://www.smartscout.com/blog
-    language: en
-    region: global
-    marketplace: global
-    seller_area: product_research
-    trust_level: authority
-    base_weight: 78
-    default_categories: [product_research, listing_seo]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: false
+    collection_status: unavailable
   - id: sellerapp_blog
-    source_type: authority
+    source_type: rss
     name: SellerApp Blog
-    url: https://www.sellerapp.com/blog/
+    url: https://www.sellerapp.com/blog/feed/
     language: en
     region: global
     marketplace: global
@@ -182,37 +494,10 @@ sources:
     trust_level: authority
     base_weight: 76
     default_categories: [ads_ppc, listing_seo, product_research, tools]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
-  - id: ecomengine_blog
-    source_type: authority
-    name: eComEngine Blog
-    url: https://www.ecomengine.com/blog
-    language: en
-    region: global
-    marketplace: global
-    seller_area: operations
-    trust_level: authority
-    base_weight: 76
-    default_categories: [account_health, listing_seo, tools]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
-  - id: ecomcrew_blog
-    source_type: blog
-    name: EcomCrew Blog
-    url: https://www.ecomcrew.com/blog/
-    language: en
-    region: global
-    marketplace: global
-    seller_area: operations
-    trust_level: expert
-    base_weight: 76
-    default_categories: [product_research, fees_margin, listing_seo]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: false
+    collection_status: unavailable
   - id: carbon6_blog
     source_type: authority
     name: Carbon6 Blog
@@ -224,9 +509,9 @@ sources:
     trust_level: expert
     base_weight: 75
     default_categories: [tools, account_health, product_research]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: amzscout_blog
     source_type: authority
     name: AMZScout Blog
@@ -238,76 +523,683 @@ sources:
     trust_level: expert
     base_weight: 74
     default_categories: [product_research, listing_seo]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: practical_ecommerce_amazon
-    source_type: authority
-    name: Practical Ecommerce
-    url: https://www.practicalecommerce.com/
-    language: en
-    region: global
-    marketplace: global
-    seller_area: industry
-    trust_level: media
-    base_weight: 72
-    default_categories: [industry, listing_seo, ads_ppc]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
-  - id: ecommercebytes
-    source_type: authority
-    name: EcommerceBytes
-    url: https://www.ecommercebytes.com/
-    language: en
-    region: global
-    marketplace: global
-    seller_area: industry
-    trust_level: media
-    base_weight: 70
-    default_categories: [industry, policy, fees_margin]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
-  - id: retail_dive
-    source_type: authority
-    name: Retail Dive
-    url: https://www.retaildive.com/
-    language: en
-    region: global
-    marketplace: global
-    seller_area: industry
-    trust_level: media
-    base_weight: 68
-    default_categories: [industry, compliance_trade]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
-  - id: modern_retail
-    source_type: authority
-    name: Modern Retail
-    url: https://www.modernretail.co/
-    language: en
-    region: global
-    marketplace: global
-    seller_area: industry
-    trust_level: media
-    base_weight: 68
-    default_categories: [industry, ads_ppc]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
-  - id: search_engine_land_amazon
-    source_type: authority
-    name: Search Engine Land Commerce
-    url: https://searchengineland.com/
+    enabled: false
+  - id: x_amazonads
+    source_type: social
+    name: "X: Amazon Ads"
+    url: https://x.com/AmazonAds
     language: en
     region: global
     marketplace: global
     seller_area: ads
+    trust_level: official_social
+    base_weight: 90
+    default_categories: [ads_ppc, policy]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AMZHOT-001
+    social_handle: "@AmazonAds"
+    collection_status: pending_api
+    free_access: true
+  - id: x_amazonbusiness
+    source_type: social
+    name: "X: Amazon Business"
+    url: https://x.com/AmazonBusiness
+    language: en
+    region: global
+    marketplace: global
+    seller_area: policy
+    trust_level: official_social
+    base_weight: 86
+    default_categories: [policy, tools]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AMZHOT-002
+    social_handle: "@AmazonBusiness"
+    collection_status: pending_api
+    free_access: true
+  - id: x_marketplacepulse
+    source_type: social
+    name: "X: Marketplace Pulse"
+    url: https://x.com/MarketplacePuls
+    language: en
+    region: global
+    marketplace: global
+    seller_area: product_research
+    trust_level: authority
+    base_weight: 82
+    default_categories: [product_research, fees_margin, policy]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AMZHOT-003
+    social_handle: "@MarketplacePuls"
+    collection_status: pending_api
+    free_access: true
+  - id: x_junglescout
+    source_type: social
+    name: "X: Jungle Scout"
+    url: https://x.com/junglescout
+    language: en
+    region: global
+    marketplace: global
+    seller_area: product_research
+    trust_level: authority
+    base_weight: 78
+    default_categories: [product_research, listing_seo, ads_ppc]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AMZHOT-004
+    social_handle: "@junglescout"
+    collection_status: pending_api
+    free_access: true
+  - id: x_helium10
+    source_type: social
+    name: "X: Helium 10"
+    url: https://x.com/H10Software
+    language: en
+    region: global
+    marketplace: global
+    seller_area: tools
+    trust_level: authority
+    base_weight: 76
+    default_categories: [tools, product_research, listing_seo]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AMZHOT-005
+    social_handle: "@H10Software"
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: amazon_seller_forums
+    name: Amazon Seller Forums
+    url: https://sellercentral.amazon.com/seller-forums/
+    source_type: forum
+    trust_level: official
+    base_weight: 88
+    seller_area: community
+    default_categories: [policy, account_health, fba_logistics]
+  - <<: *amazon_catalog_candidate
+    id: amazon_seller_central_news
+    name: Amazon Seller Central News
+    url: https://sellercentral.amazon.com/gp/headlines.html
+    trust_level: official
+    base_weight: 92
+    seller_area: policy
+    default_categories: [policy, account_health, fba_logistics]
+  - <<: *amazon_catalog_candidate
+    id: amazon_ads_blog_candidate
+    name: Amazon Ads Blog
+    url: https://advertising.amazon.com/blog
+    trust_level: official
+    base_weight: 90
+    seller_area: ads
+    default_categories: [ads_ppc, policy]
+  - <<: *amazon_catalog_candidate
+    id: amazon_ads_learning_console
+    name: Amazon Ads Learning Console
+    url: https://learningconsole.amazonadvertising.com/
+    trust_level: official
+    base_weight: 84
+    seller_area: ads
+    default_categories: [ads_ppc, tools]
+  - <<: *amazon_catalog_candidate
+    id: amazon_sp_api_docs
+    name: Amazon SP-API Documentation
+    url: https://developer-docs.amazon.com/sp-api/
+    trust_level: official
+    base_weight: 94
+    seller_area: tools
+    default_categories: [tools, policy]
+  - <<: *amazon_catalog_candidate
+    id: amazon_brand_registry
+    name: Amazon Brand Registry
+    url: https://brandservices.amazon.com/
+    trust_level: official
+    base_weight: 88
+    seller_area: account_health
+    default_categories: [account_health, compliance_trade]
+  - <<: *amazon_catalog_candidate
+    id: amazon_supply_chain_blog_candidate
+    name: Amazon Supply Chain Blog
+    url: https://supplychain.amazon.com/blog
+    trust_level: official
+    base_weight: 88
+    seller_area: logistics
+    default_categories: [fba_logistics, fees_margin]
+  - <<: *amazon_catalog_candidate
+    id: amazon_shipping_blog
+    name: Amazon Shipping Blog
+    url: https://shipping.amazon.com/insights-and-news.rss
+    source_type: rss
+    trust_level: official
+    base_weight: 84
+    seller_area: logistics
+    default_categories: [fba_logistics, fees_margin]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: amazon_pay_blog_candidate
+    name: Amazon Pay Blog
+    url: https://pay.amazon.com/blog
+    trust_level: official
+    base_weight: 84
+    seller_area: payments
+    default_categories: [fees_margin, compliance_trade]
+  - <<: *amazon_catalog_candidate
+    id: amazon_business_blog_candidate
+    name: Amazon Business Blog
+    url: https://business.amazon.com/en/blog
+    trust_level: official
+    base_weight: 84
+    seller_area: policy
+    default_categories: [policy, product_research]
+  - <<: *amazon_catalog_candidate
+    id: amazon_seller_university_candidate
+    name: Amazon Seller University
+    url: https://sell.amazon.com/learn
+    trust_level: official
+    base_weight: 88
+    seller_area: education
+    default_categories: [policy, listing_seo, fba_logistics]
+  - <<: *amazon_catalog_candidate
+    id: jungle_scout_blog_candidate
+    name: Jungle Scout Blog
+    url: https://www.junglescout.com/blog/
+    trust_level: authority
+    base_weight: 78
+    seller_area: product_research
+    default_categories: [product_research, listing_seo, ads_ppc]
+  - <<: *amazon_catalog_candidate
+    id: jungle_scout_resources
+    name: Jungle Scout Resources
+    url: https://www.junglescout.com/resources/
+    trust_level: authority
+    base_weight: 76
+    seller_area: product_research
+    default_categories: [product_research, fees_margin]
+  - <<: *amazon_catalog_candidate
+    id: helium10_blog_candidate
+    name: Helium 10 Blog
+    url: https://www.helium10.com/blog/
+    trust_level: authority
+    base_weight: 80
+    seller_area: tools
+    default_categories: [product_research, listing_seo, ads_ppc, tools]
+  - <<: *amazon_catalog_candidate
+    id: sellerapp_blog_candidate
+    name: SellerApp Blog
+    url: https://www.sellerapp.com/blog/
+    trust_level: authority
+    base_weight: 76
+    seller_area: tools
+    default_categories: [ads_ppc, listing_seo, product_research, tools]
+  - <<: *amazon_catalog_candidate
+    id: amzscout_blog_candidate
+    name: AMZScout Blog
+    url: https://amzscout.net/blog/
+    trust_level: expert
+    base_weight: 74
+    seller_area: product_research
+    default_categories: [product_research, listing_seo]
+  - <<: *amazon_catalog_candidate
+    id: carbon6_blog_candidate
+    name: Carbon6 Blog
+    url: https://www.carbon6.io/blog
+    trust_level: expert
+    base_weight: 75
+    seller_area: tools
+    default_categories: [tools, account_health, product_research]
+  - <<: *amazon_catalog_candidate
+    id: perpetua_blog
+    name: Perpetua Blog
+    url: https://perpetua.io/blog/
+    trust_level: authority
+    base_weight: 76
+    seller_area: ads
+    default_categories: [ads_ppc, tools]
+  - <<: *amazon_catalog_candidate
+    id: pacvue_blog
+    name: Pacvue Blog
+    url: https://pacvue.com/blog/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 76
+    seller_area: ads
+    default_categories: [ads_ppc, tools, product_research]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: skai_retail_media_blog
+    name: Skai Retail Media Blog
+    url: https://skai.io/blog/
+    trust_level: authority
+    base_weight: 74
+    seller_area: ads
+    default_categories: [ads_ppc, product_research]
+  - <<: *amazon_catalog_candidate
+    id: intentwise_blog
+    name: Intentwise Blog
+    url: https://www.intentwise.com/blog/
+    trust_level: authority
+    base_weight: 76
+    seller_area: ads
+    default_categories: [ads_ppc, tools]
+    parser_type: html_list
+    enabled: false
+    collection_status: watch
+  - <<: *amazon_catalog_candidate
+    id: quartile_blog
+    name: Quartile Blog
+    url: https://www.quartile.com/blog/
+    trust_level: authority
+    base_weight: 74
+    seller_area: ads
+    default_categories: [ads_ppc, tools]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: ad_badger_blog
+    name: Ad Badger Blog
+    url: https://www.adbadger.com/blog/feed/
+    source_type: rss
+    trust_level: expert
+    base_weight: 72
+    seller_area: ads
+    default_categories: [ads_ppc, listing_seo]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: ppc_entourage_blog
+    name: PPC Entourage Blog
+    url: https://www.ppcentourage.com/blog/
+    trust_level: expert
+    base_weight: 70
+    seller_area: ads
+    default_categories: [ads_ppc, tools]
+  - <<: *amazon_catalog_candidate
+    id: sellozo_blog
+    name: Sellozo Blog
+    url: https://www.sellozo.com/blog/
+    trust_level: authority
+    base_weight: 72
+    seller_area: ads
+    default_categories: [ads_ppc, tools]
+  - <<: *amazon_catalog_candidate
+    id: sellermetrics_blog
+    name: SellerMetrics Blog
+    url: https://sellermetrics.app/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 72
+    seller_area: ads
+    default_categories: [ads_ppc, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: feedvisor_blog
+    name: Feedvisor Blog
+    url: https://feedvisor.com/resources/
+    trust_level: authority
+    base_weight: 74
+    seller_area: pricing
+    default_categories: [fees_margin, ads_ppc, product_research]
+  - <<: *amazon_catalog_candidate
+    id: datahawk_blog
+    name: DataHawk Blog
+    url: https://datahawk.co/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 72
+    seller_area: tools
+    default_categories: [tools, listing_seo, product_research]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: zonguru_blog
+    name: ZonGuru Blog
+    url: https://www.zonguru.com/blog
+    trust_level: authority
+    base_weight: 72
+    seller_area: product_research
+    default_categories: [product_research, listing_seo]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: viral_launch_blog
+    name: Viral Launch Blog
+    url: https://viral-launch.com/blog/
+    trust_level: authority
+    base_weight: 72
+    seller_area: product_research
+    default_categories: [product_research, listing_seo]
+  - <<: *amazon_catalog_candidate
+    id: sellerise_blog
+    name: Sellerise Blog
+    url: https://sellerise.com/blog/
+    trust_level: authority
+    base_weight: 70
+    seller_area: tools
+    default_categories: [tools, listing_seo]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: managebystats_blog
+    name: ManageByStats Blog
+    url: https://managebystats.com/blog/
+    trust_level: authority
+    base_weight: 70
+    seller_area: tools
+    default_categories: [tools, fees_margin]
+  - <<: *amazon_catalog_candidate
+    id: sellerboard_blog
+    name: Sellerboard Blog
+    url: https://blog.sellerboard.com/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 72
+    seller_area: fees_margin
+    default_categories: [fees_margin, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: keepa_blog
+    name: Keepa
+    url: https://keepa.com/
+    trust_level: authority
+    base_weight: 74
+    seller_area: product_research
+    default_categories: [product_research, tools]
+  - <<: *amazon_catalog_candidate
+    id: shipbob_amazon
+    name: ShipBob Amazon Fulfillment
+    url: https://www.shipbob.com/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 72
+    seller_area: logistics
+    default_categories: [fba_logistics, fees_margin]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: shipstation_blog
+    name: ShipStation Blog
+    url: https://www.shipstation.com/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 70
+    seller_area: logistics
+    default_categories: [fba_logistics, fees_margin]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: flexport_blog
+    name: Flexport Blog
+    url: https://www.flexport.com/blog/
+    trust_level: authority
+    base_weight: 72
+    seller_area: logistics
+    default_categories: [fba_logistics, compliance_trade]
+    parser_type: html_list
+    enabled: false
+    collection_status: watch
+  - <<: *amazon_catalog_candidate
+    id: freightos_blog
+    name: Freightos Blog
+    url: https://www.freightos.com/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 70
+    seller_area: logistics
+    default_categories: [fba_logistics, compliance_trade, fees_margin]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: taxjar_blog
+    name: TaxJar Blog
+    url: https://www.taxjar.com/feed
+    source_type: rss
+    trust_level: authority
+    base_weight: 72
+    seller_area: tax
+    default_categories: [compliance_trade, fees_margin]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: avalara_marketplace
+    name: Avalara Marketplace Tax
+    url: https://www.avalara.com/blog/en/north-america.html
+    trust_level: authority
+    base_weight: 72
+    seller_area: tax
+    default_categories: [compliance_trade, fees_margin]
+  - <<: *amazon_catalog_candidate
+    id: pattern_blog
+    name: Pattern Blog
+    url: https://pattern.com/blog/
+    trust_level: authority
+    base_weight: 74
+    seller_area: marketplaces
+    default_categories: [product_research, ads_ppc, fees_margin]
+  - <<: *amazon_catalog_candidate
+    id: commerceiq_blog
+    name: CommerceIQ Blog
+    url: https://commerceiq.ai/blog/
+    trust_level: authority
+    base_weight: 74
+    seller_area: ads
+    default_categories: [ads_ppc, product_research, tools]
+    parser_type: html_list
+    enabled: false
+    collection_status: watch
+  - <<: *amazon_catalog_candidate
+    id: channeladvisor_blog
+    name: Rithum ChannelAdvisor Blog
+    url: https://www.rithum.com/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 72
+    seller_area: marketplaces
+    default_categories: [tools, product_research, listing_seo]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: linnworks_blog
+    name: Linnworks Blog
+    url: https://www.linnworks.com/blog/
+    trust_level: authority
+    base_weight: 70
+    seller_area: tools
+    default_categories: [tools, fba_logistics]
+  - <<: *amazon_catalog_candidate
+    id: repricercom_blog
+    name: Repricer.com Blog
+    url: https://www.repricer.com/blog/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 72
+    seller_area: pricing
+    default_categories: [fees_margin, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: sellercloud_blog
+    name: Sellercloud Blog
+    url: https://sellercloud.com/blog/
+    trust_level: authority
+    base_weight: 72
+    seller_area: tools
+    default_categories: [tools, fba_logistics]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: webretailer_blog
+    name: Webretailer
+    url: https://www.webretailer.com/
     trust_level: media
     base_weight: 68
-    default_categories: [ads_ppc, listing_seo]
-    crawl_interval_minutes: 1440
-    parser_type: website
+    seller_area: marketplaces
+    default_categories: [tools, product_research, fba_logistics]
+    parser_type: html_list
     enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: ecommercefuel_forum
+    name: EcommerceFuel Forum
+    url: https://www.ecommercefuel.com/ecommerce-forum/
+    source_type: forum
+    trust_level: community
+    base_weight: 64
+    seller_area: community
+    default_categories: [product_research, account_health, fees_margin]
+  - <<: *amazon_catalog_candidate
+    id: reddit_fulfillmentbyamazon
+    name: Reddit Fulfillment by Amazon
+    url: https://www.reddit.com/r/FulfillmentByAmazon/
+    source_type: forum
+    trust_level: community
+    base_weight: 62
+    seller_area: community
+    default_categories: [account_health, fba_logistics, product_research]
+  - <<: *amazon_catalog_candidate
+    id: marketplace_pulse_research
+    name: Marketplace Pulse Research
+    url: https://www.marketplacepulse.com/articles
+    trust_level: authority
+    base_weight: 82
+    seller_area: product_research
+    default_categories: [product_research, fees_margin, policy]
+  - <<: *amazon_catalog_candidate
+    id: tinuiti_amazon
+    name: Tinuiti Amazon Marketplace
+    url: https://tinuiti.com/blog/amazon/
+    trust_level: authority
+    base_weight: 74
+    seller_area: ads
+    default_categories: [ads_ppc, listing_seo, product_research]
+  - <<: *amazon_catalog_candidate
+    id: fortress_brand_blog
+    name: Fortress Brand Blog
+    url: https://www.fortressbrand.com/blog
+    trust_level: authority
+    base_weight: 72
+    seller_area: operations
+    default_categories: [account_health, listing_seo, ads_ppc]
+  - <<: *amazon_catalog_candidate
+    id: eva_guru_blog
+    name: Eva Guru Blog
+    url: https://eva.guru/blog/
+    trust_level: authority
+    base_weight: 72
+    seller_area: pricing
+    default_categories: [fees_margin, ads_ppc, tools]
+  - <<: *amazon_catalog_candidate
+    id: epinium_blog
+    name: Epinium Blog
+    url: https://epinium.com/en/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 70
+    seller_area: listing_seo
+    default_categories: [listing_seo, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: buybox_experts_blog
+    name: Buy Box Experts Blog
+    url: https://www.buyboxexperts.com/blog/
+    trust_level: expert
+    base_weight: 72
+    seller_area: operations
+    default_categories: [fees_margin, listing_seo, account_health]
+  - <<: *amazon_catalog_candidate
+    id: amazing_selling_machine_blog
+    name: Amazing Selling Machine Blog
+    url: https://www.amazingsellingmachine.com/blog/
+    trust_level: expert
+    base_weight: 68
+    seller_area: product_research
+    default_categories: [product_research, listing_seo]
+  - <<: *amazon_catalog_candidate
+    id: clear_ads_blog
+    name: Clear Ads Blog
+    url: https://www.clearads.co.uk/blog/
+    trust_level: authority
+    base_weight: 70
+    seller_area: ads
+    default_categories: [ads_ppc, listing_seo]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: amz_advisers_blog
+    name: AMZ Advisers Blog
+    url: https://www.amzadvisers.com/blog/
+    trust_level: expert
+    base_weight: 70
+    seller_area: operations
+    default_categories: [listing_seo, ads_ppc, product_research]
+  - <<: *amazon_catalog_candidate
+    id: supplykick_blog
+    name: SupplyKick Blog
+    url: https://www.supplykick.com/blog/rss.xml
+    source_type: rss
+    trust_level: authority
+    base_weight: 70
+    seller_area: operations
+    default_categories: [fba_logistics, listing_seo, account_health]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: repricerexpress_candidate
+    name: RepricerExpress Blog
+    url: https://www.repricerexpress.com/blog/
+    trust_level: authority
+    base_weight: 72
+    seller_area: pricing
+    default_categories: [fees_margin, tools]
+  - <<: *amazon_catalog_candidate
+    id: kaspien_blog
+    name: Kaspien Blog
+    url: https://www.kaspien.com/blog/
+    trust_level: authority
+    base_weight: 70
+    seller_area: marketplaces
+    default_categories: [product_research, listing_seo, fees_margin]
+  - <<: *amazon_catalog_candidate
+    id: channelengine_resources
+    name: ChannelEngine Resources
+    url: https://www.channelengine.com/en/blog
+    trust_level: authority
+    base_weight: 72
+    seller_area: marketplaces
+    default_categories: [product_research, tools, compliance_trade]

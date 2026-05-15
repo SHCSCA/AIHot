@@ -1,6 +1,7 @@
 import { RotateCcw } from "lucide-react";
 import { useState } from "react";
 import type { AdminApi } from "../api";
+import { AdminChannelCards, usePersistedAdminChannel } from "../components/AdminChannelCards";
 import { MetricCard, MetricGrid } from "../components/MetricCard";
 import { Section, TableWrap } from "../components/Section";
 import { StatusLabel } from "../components/StatusLabel";
@@ -9,14 +10,16 @@ import type { Job } from "../types";
 import { formatDateTime } from "../utils";
 
 export function JobsView({ api }: { api: AdminApi }) {
+  const [channel, setChannel] = usePersistedAdminChannel("admin-jobs-channel");
   const [status, setStatus] = useState("");
-  const { data: jobs, reload, error } = useAsyncData(() => api.listJobs({ status }), [] as Job[]);
+  const { data: jobs, reload, error } = useAsyncData(() => api.listJobs({ channel, status }), [] as Job[], [channel, status]);
   async function retry(job: Job) {
     await api.retryJob(job.id);
     reload();
   }
   return (
     <div className="view-stack">
+      <AdminChannelCards value={channel} onChange={setChannel} metrics={[{ channel, metrics: { sourceCount: jobs.length } }]} />
       <MetricGrid>
         <MetricCard label="待处理" value={jobs.filter((job) => job.status === "pending").length} />
         <MetricCard label="执行中" value={jobs.filter((job) => ["locked", "running"].includes(job.status)).length} tone="warn" />

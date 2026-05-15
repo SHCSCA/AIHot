@@ -23,21 +23,277 @@ scoring:
     novelty_score: 0.15
     actionability_score: 0.15
     freshness_score: 0.05
+catalog_candidate_defaults: &ai_catalog_candidate
+  source_type: website
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 72
+  crawl_interval_minutes: 60
+  parser_type: website
+  enabled: false
+  collection_status: unavailable
+  free_access: true
 sources:
+  - id: aihot_virxact_selected
+    source_type: api
+    name: AIHOT 精选聚合
+    url: https://aihot.virxact.com/api/public/items
+    language: zh
+    region: global
+    trust_level: authority
+    base_weight: 70
+    default_categories: [ai_models, ai_products, agent_tools, papers, industry]
+    crawl_interval_minutes: 60
+    parser_type: aihot_api
+    enabled: true
+    source_group: curated
+    collection_status: collectable
+    free_access: true
   - id: openai_news
-    source_type: website
-    name: OpenAI News
-    url: https://openai.com/news/
+    source_type: rss
+    name: OpenAI News RSS
+    url: https://openai.com/news/rss.xml
     language: en
     region: global
     trust_level: official
     base_weight: 95
     default_categories: [ai_models, ai_products, agent_tools]
-    crawl_interval_minutes: 360
-    parser_type: website
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: google_deepmind_blog
+    source_type: rss
+    name: Google DeepMind Blog RSS
+    url: https://deepmind.google/blog/rss.xml
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 94
+    default_categories: [ai_models, papers, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: google_ai_blog
+    source_type: rss
+    name: Google AI Blog RSS
+    url: https://blog.google/technology/ai/rss/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 92
+    default_categories: [ai_models, ai_products, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: aws_machine_learning_blog
+    source_type: rss
+    name: AWS Machine Learning Blog RSS
+    url: https://aws.amazon.com/blogs/machine-learning/feed/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 90
+    default_categories: [ai_products, agent_tools, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: github_ai_ml
+    source_type: rss
+    name: GitHub AI & ML Blog RSS
+    url: https://github.blog/ai-and-ml/feed/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 88
+    default_categories: [agent_tools, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: microsoft_research_ai
+    source_type: rss
+    name: Microsoft Research AI RSS
+    url: https://www.microsoft.com/en-us/research/feed/?facet%5Btax%5D%5Bmsr-research-area%5D%5B0%5D=13556
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 88
+    default_categories: [papers, ai_models, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: nvidia_ai_blog
+    source_type: rss
+    name: NVIDIA AI Blog RSS
+    url: https://blogs.nvidia.com/blog/category/deep-learning/feed/
+    language: en
+    region: global
+    trust_level: official
+    base_weight: 86
+    default_categories: [ai_models, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: huggingface_blog
+    source_type: rss
+    name: Hugging Face Blog RSS
+    url: https://huggingface.co/blog/feed.xml
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 85
+    default_categories: [ai_models, papers, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: langchain_blog
+    source_type: rss
+    name: LangChain Blog RSS
+    url: https://www.langchain.com/blog/rss.xml
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 82
+    default_categories: [agent_tools, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: replicate_blog
+    source_type: rss
+    name: Replicate Blog RSS
+    url: https://replicate.com/blog/rss
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 78
+    default_categories: [ai_products, agent_tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: arxiv_ai
+    source_type: rss
+    name: arXiv AI RSS
+    url: https://export.arxiv.org/rss/cs.AI
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 78
+    default_categories: [papers, ai_models]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: berkeley_ai_research
+    source_type: rss
+    name: Berkeley AI Research RSS
+    url: https://bair.berkeley.edu/blog/feed.xml
+    language: en
+    region: global
+    trust_level: authority
+    base_weight: 76
+    default_categories: [papers, ai_models]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: simon_willison_blog
+    source_type: rss
+    name: Simon Willison Blog Atom
+    url: https://simonwillison.net/atom/everything/
+    language: en
+    region: global
+    trust_level: expert
+    base_weight: 80
+    default_categories: [agent_tools, ai_products, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: semianalysis
+    source_type: rss
+    name: SemiAnalysis RSS
+    url: https://semianalysis.com/feed/
+    language: en
+    region: global
+    trust_level: expert
+    base_weight: 80
+    default_categories: [industry, monetization]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: techcrunch_ai
+    source_type: rss
+    name: TechCrunch AI RSS
+    url: https://techcrunch.com/category/artificial-intelligence/feed/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 74
+    default_categories: [industry, ai_products, monetization]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: theverge_ai
+    source_type: rss
+    name: The Verge AI RSS
+    url: https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 74
+    default_categories: [industry, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: marktechpost
+    source_type: rss
+    name: MarkTechPost RSS
+    url: https://www.marktechpost.com/feed/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 70
+    default_categories: [ai_models, papers, agent_tools]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: artificial_intelligence_news
+    source_type: rss
+    name: AI News RSS
+    url: https://www.artificialintelligence-news.com/feed/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 70
+    default_categories: [industry, ai_products, monetization]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: false
+    collection_status: unavailable
+    free_access: true
+  - id: infoq_ai
+    source_type: rss
+    name: InfoQ AI/ML RSS
+    url: https://feed.infoq.com/ai-ml-data-eng/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 70
+    default_categories: [agent_tools, ai_products, industry]
+    crawl_interval_minutes: 60
+    parser_type: rss
+    enabled: true
+  - id: mit_technology_review_ai
+    source_type: rss
+    name: MIT Technology Review AI RSS
+    url: https://www.technologyreview.com/topic/artificial-intelligence/feed/
+    language: en
+    region: global
+    trust_level: media
+    base_weight: 72
+    default_categories: [industry, ai_products, monetization]
+    crawl_interval_minutes: 60
+    parser_type: rss
     enabled: true
   - id: anthropic_news
-    source_type: website
+    source_type: official
     name: Anthropic News
     url: https://www.anthropic.com/news
     language: en
@@ -45,45 +301,9 @@ sources:
     trust_level: official
     base_weight: 95
     default_categories: [ai_models, ai_products]
-    crawl_interval_minutes: 360
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: huggingface_blog
-    source_type: website
-    name: Hugging Face Blog
-    url: https://huggingface.co/blog
-    language: en
-    region: global
-    trust_level: authority
-    base_weight: 85
-    default_categories: [ai_models, papers, industry]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
-  - id: google_deepmind_blog
-    source_type: official
-    name: Google DeepMind Blog
-    url: https://deepmind.google/discover/blog/
-    language: en
-    region: global
-    trust_level: official
-    base_weight: 94
-    default_categories: [ai_models, papers, industry]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
-  - id: google_ai_blog
-    source_type: official
-    name: Google AI Blog
-    url: https://blog.google/technology/ai/
-    language: en
-    region: global
-    trust_level: official
-    base_weight: 92
-    default_categories: [ai_models, ai_products, industry]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: microsoft_ai_blog
     source_type: official
     name: Microsoft AI Blog
@@ -91,11 +311,11 @@ sources:
     language: en
     region: global
     trust_level: official
-    base_weight: 90
+    base_weight: 88
     default_categories: [ai_products, industry]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: meta_ai_blog
     source_type: official
     name: Meta AI Blog
@@ -105,21 +325,9 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [ai_models, papers, industry]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: nvidia_ai_blog
-    source_type: official
-    name: NVIDIA AI Blog
-    url: https://blogs.nvidia.com/blog/category/deep-learning/
-    language: en
-    region: global
-    trust_level: official
-    base_weight: 88
-    default_categories: [ai_models, industry]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: mistral_news
     source_type: official
     name: Mistral AI News
@@ -129,9 +337,9 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [ai_models, ai_products]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: cohere_blog
     source_type: official
     name: Cohere Blog
@@ -141,9 +349,9 @@ sources:
     trust_level: official
     base_weight: 86
     default_categories: [ai_models, ai_products]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: stability_ai_news
     source_type: official
     name: Stability AI News
@@ -153,9 +361,9 @@ sources:
     trust_level: official
     base_weight: 84
     default_categories: [ai_models, ai_products]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
   - id: cursor_blog
     source_type: official
     name: Cursor Blog
@@ -165,21 +373,9 @@ sources:
     trust_level: official
     base_weight: 82
     default_categories: [agent_tools, ai_products]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: langchain_blog
-    source_type: authority
-    name: LangChain Blog
-    url: https://blog.langchain.com/
-    language: en
-    region: global
-    trust_level: authority
-    base_weight: 82
-    default_categories: [agent_tools, ai_products]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: openrouter_blog
     source_type: authority
     name: OpenRouter Blog
@@ -189,21 +385,9 @@ sources:
     trust_level: authority
     base_weight: 78
     default_categories: [ai_products, industry]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: replicate_blog
-    source_type: authority
-    name: Replicate Blog
-    url: https://replicate.com/blog
-    language: en
-    region: global
-    trust_level: authority
-    base_weight: 78
-    default_categories: [ai_products, agent_tools]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: the_batch
     source_type: authority
     name: DeepLearning.AI The Batch
@@ -213,21 +397,9 @@ sources:
     trust_level: media
     base_weight: 76
     default_categories: [industry, papers, ai_models]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: simon_willison_blog
-    source_type: blog
-    name: Simon Willison Blog
-    url: https://simonwillison.net/
-    language: en
-    region: global
-    trust_level: expert
-    base_weight: 80
-    default_categories: [agent_tools, ai_products, industry]
-    crawl_interval_minutes: 720
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: lilian_weng_blog
     source_type: blog
     name: Lilian Weng Blog
@@ -237,21 +409,9 @@ sources:
     trust_level: expert
     base_weight: 79
     default_categories: [papers, ai_models]
-    crawl_interval_minutes: 1440
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
-  - id: semianalysis
-    source_type: authority
-    name: SemiAnalysis
-    url: https://semianalysis.com/
-    language: en
-    region: global
-    trust_level: expert
-    base_weight: 80
-    default_categories: [industry, monetization]
-    crawl_interval_minutes: 1440
-    parser_type: website
-    enabled: true
+    enabled: false
   - id: venturebeat_ai
     source_type: authority
     name: VentureBeat AI
@@ -261,6 +421,566 @@ sources:
     trust_level: media
     base_weight: 72
     default_categories: [industry, ai_products, monetization]
-    crawl_interval_minutes: 720
+    crawl_interval_minutes: 60
     parser_type: website
-    enabled: true
+    enabled: false
+  - id: x_openai
+    source_type: social
+    name: "X: OpenAI"
+    url: https://x.com/OpenAI
+    language: en
+    region: global
+    trust_level: official_social
+    base_weight: 93
+    default_categories: [ai_models, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-001
+    social_handle: "@OpenAI"
+    collection_status: pending_api
+    free_access: true
+  - id: x_anthropicai
+    source_type: social
+    name: "X: Anthropic"
+    url: https://x.com/AnthropicAI
+    language: en
+    region: global
+    trust_level: official_social
+    base_weight: 92
+    default_categories: [ai_models, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-002
+    social_handle: "@AnthropicAI"
+    collection_status: pending_api
+    free_access: true
+  - id: x_googledeepmind
+    source_type: social
+    name: "X: Google DeepMind"
+    url: https://x.com/GoogleDeepMind
+    language: en
+    region: global
+    trust_level: official_social
+    base_weight: 92
+    default_categories: [ai_models, papers, industry]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-003
+    social_handle: "@GoogleDeepMind"
+    collection_status: pending_api
+    free_access: true
+  - id: x_huggingface
+    source_type: social
+    name: "X: Hugging Face"
+    url: https://x.com/huggingface
+    language: en
+    region: global
+    trust_level: official_social
+    base_weight: 88
+    default_categories: [ai_models, papers, agent_tools]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-004
+    social_handle: "@huggingface"
+    collection_status: pending_api
+    free_access: true
+  - id: x_langchainai
+    source_type: social
+    name: "X: LangChain"
+    url: https://x.com/LangChainAI
+    language: en
+    region: global
+    trust_level: official_social
+    base_weight: 84
+    default_categories: [agent_tools, ai_products]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-005
+    social_handle: "@LangChainAI"
+    collection_status: pending_api
+    free_access: true
+  - id: x_simonw
+    source_type: social
+    name: "X: Simon Willison"
+    url: https://x.com/simonw
+    language: en
+    region: global
+    trust_level: expert
+    base_weight: 82
+    default_categories: [agent_tools, ai_products, industry]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-006
+    social_handle: "@simonw"
+    collection_status: pending_api
+    free_access: true
+  - id: x_karpathy
+    source_type: social
+    name: "X: Andrej Karpathy"
+    url: https://x.com/karpathy
+    language: en
+    region: global
+    trust_level: expert
+    base_weight: 82
+    default_categories: [ai_models, papers, industry]
+    crawl_interval_minutes: 60
+    parser_type: x_timeline
+    enabled: false
+    source_group: social
+    contributor_no: AIHOT-007
+    social_handle: "@karpathy"
+    collection_status: pending_api
+    free_access: true
+  - <<: *ai_catalog_candidate
+    id: ai2_blog
+    name: Allen Institute for AI Blog
+    url: https://allenai.org/blog
+    trust_level: authority
+    base_weight: 84
+    default_categories: [papers, ai_models, industry]
+  - <<: *ai_catalog_candidate
+    id: anthropic_research
+    name: Anthropic Research
+    url: https://www.anthropic.com/research
+    trust_level: official
+    base_weight: 94
+    default_categories: [papers, ai_models]
+  - <<: *ai_catalog_candidate
+    id: openai_research
+    name: OpenAI Research
+    url: https://openai.com/research/
+    trust_level: official
+    base_weight: 95
+    default_categories: [papers, ai_models]
+  - <<: *ai_catalog_candidate
+    id: google_research_blog_ai
+    name: Google Research Blog AI
+    url: https://research.google/blog/
+    trust_level: official
+    base_weight: 90
+    default_categories: [papers, ai_models, industry]
+  - <<: *ai_catalog_candidate
+    id: microsoft_ai_blog_candidate
+    name: Microsoft AI Blog
+    url: https://blogs.microsoft.com/ai/
+    trust_level: official
+    base_weight: 88
+    default_categories: [ai_products, industry]
+  - <<: *ai_catalog_candidate
+    id: azure_ai_blog
+    name: Microsoft Azure AI Blog
+    url: https://azure.microsoft.com/blog/topics/ai-machine-learning/
+    trust_level: official
+    base_weight: 86
+    default_categories: [ai_products, agent_tools, industry]
+  - <<: *ai_catalog_candidate
+    id: meta_ai_blog_candidate
+    name: Meta AI Blog
+    url: https://ai.meta.com/blog/
+    trust_level: official
+    base_weight: 90
+    default_categories: [ai_models, papers, industry]
+  - <<: *ai_catalog_candidate
+    id: ibm_research_ai
+    name: IBM Research AI
+    url: https://research.ibm.com/blog/artificial-intelligence
+    trust_level: official
+    base_weight: 82
+    default_categories: [papers, ai_products, industry]
+  - <<: *ai_catalog_candidate
+    id: cohere_blog_candidate
+    name: Cohere Blog
+    url: https://cohere.com/blog
+    trust_level: official
+    base_weight: 86
+    default_categories: [ai_models, ai_products]
+  - <<: *ai_catalog_candidate
+    id: mistral_news_candidate
+    name: Mistral AI News
+    url: https://mistral.ai/news/
+    trust_level: official
+    base_weight: 90
+    default_categories: [ai_models, ai_products]
+  - <<: *ai_catalog_candidate
+    id: stability_ai_news_candidate
+    name: Stability AI News
+    url: https://stability.ai/news
+    trust_level: official
+    base_weight: 84
+    default_categories: [ai_models, ai_products]
+  - <<: *ai_catalog_candidate
+    id: deepseek_news
+    name: DeepSeek
+    url: https://www.deepseek.com/
+    trust_level: official
+    base_weight: 88
+    default_categories: [ai_models, ai_products]
+  - <<: *ai_catalog_candidate
+    id: qwen_blog_candidate
+    name: Qwen Blog
+    url: https://qwenlm.github.io/blog/
+    trust_level: official
+    base_weight: 88
+    default_categories: [ai_models, papers]
+  - <<: *ai_catalog_candidate
+    id: moonshot_ai_news
+    name: Moonshot AI
+    url: https://www.moonshot.cn/
+    trust_level: official
+    base_weight: 82
+    default_categories: [ai_models, ai_products]
+  - <<: *ai_catalog_candidate
+    id: zhipu_ai_news
+    name: Zhipu AI
+    url: https://www.zhipuai.cn/
+    trust_level: official
+    base_weight: 82
+    default_categories: [ai_models, ai_products]
+  - <<: *ai_catalog_candidate
+    id: baai_news
+    name: Beijing Academy of Artificial Intelligence
+    url: https://www.baai.ac.cn/
+    trust_level: authority
+    base_weight: 82
+    default_categories: [papers, ai_models, industry]
+  - <<: *ai_catalog_candidate
+    id: tencent_hunyuan_news
+    name: Tencent Hunyuan
+    url: https://hunyuan.tencent.com/
+    trust_level: official
+    base_weight: 82
+    default_categories: [ai_models, ai_products]
+  - <<: *ai_catalog_candidate
+    id: volcengine_ai_news
+    name: Volcano Engine AI
+    url: https://www.volcengine.com/product/ark
+    trust_level: official
+    base_weight: 80
+    default_categories: [ai_products, ai_models]
+  - <<: *ai_catalog_candidate
+    id: databricks_ai_blog
+    name: Databricks AI Blog
+    url: https://www.databricks.com/blog/category/artificial-intelligence
+    trust_level: official
+    base_weight: 82
+    default_categories: [ai_products, agent_tools, industry]
+  - <<: *ai_catalog_candidate
+    id: snowflake_ai_blog
+    name: Snowflake AI Blog
+    url: https://www.snowflake.com/blog/category/ai-ml/
+    trust_level: official
+    base_weight: 80
+    default_categories: [ai_products, industry]
+  - <<: *ai_catalog_candidate
+    id: pinecone_blog
+    name: Pinecone Blog
+    url: https://www.pinecone.io/blog/
+    trust_level: authority
+    base_weight: 78
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: weaviate_blog
+    name: Weaviate Blog
+    url: https://weaviate.io/blog
+    trust_level: authority
+    base_weight: 78
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: chroma_blog
+    name: Chroma Blog
+    url: https://www.trychroma.com/blog
+    trust_level: authority
+    base_weight: 76
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: qdrant_blog
+    name: Qdrant Blog
+    url: https://qdrant.tech/blog/
+    trust_level: authority
+    base_weight: 76
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: milvus_blog
+    name: Milvus Blog
+    url: https://milvus.io/blog
+    trust_level: authority
+    base_weight: 76
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: llamaindex_blog
+    name: LlamaIndex Blog
+    url: https://www.llamaindex.ai/blog
+    trust_level: authority
+    base_weight: 82
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: haystack_blog
+    name: Haystack Blog
+    url: https://haystack.deepset.ai/blog
+    trust_level: authority
+    base_weight: 76
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: crewai_blog
+    name: CrewAI Blog
+    url: https://www.crewai.com/blog
+    trust_level: authority
+    base_weight: 76
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: autogen_blog
+    name: Microsoft AutoGen
+    url: https://microsoft.github.io/autogen/
+    trust_level: authority
+    base_weight: 78
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: semantic_kernel_blog
+    name: Microsoft Semantic Kernel Blog
+    url: https://devblogs.microsoft.com/semantic-kernel/
+    trust_level: official
+    base_weight: 80
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: ollama_blog
+    name: Ollama Blog
+    url: https://ollama.com/blog
+    trust_level: authority
+    base_weight: 82
+    default_categories: [ai_models, agent_tools]
+  - <<: *ai_catalog_candidate
+    id: vllm_blog
+    name: vLLM Blog
+    url: https://blog.vllm.ai/
+    trust_level: authority
+    base_weight: 82
+    default_categories: [ai_models, agent_tools]
+  - <<: *ai_catalog_candidate
+    id: llama_cpp_releases
+    name: llama.cpp Releases
+    url: https://github.com/ggml-org/llama.cpp/releases
+    trust_level: authority
+    base_weight: 82
+    default_categories: [ai_models, agent_tools]
+  - <<: *ai_catalog_candidate
+    id: lm_studio_blog
+    name: LM Studio Blog
+    url: https://lmstudio.ai/blog
+    trust_level: authority
+    base_weight: 76
+    default_categories: [ai_products, agent_tools]
+  - <<: *ai_catalog_candidate
+    id: openrouter_blog_candidate
+    name: OpenRouter Blog
+    url: https://openrouter.ai/blog
+    trust_level: authority
+    base_weight: 78
+    default_categories: [ai_products, industry]
+  - <<: *ai_catalog_candidate
+    id: cursor_changelog
+    name: Cursor Changelog
+    url: https://www.cursor.com/changelog
+    trust_level: official
+    base_weight: 82
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: windsurf_blog
+    name: Windsurf Blog
+    url: https://windsurf.com/blog
+    trust_level: official
+    base_weight: 80
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: replit_ai_blog
+    name: Replit Blog
+    url: https://blog.replit.com/
+    trust_level: official
+    base_weight: 78
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: github_copilot_changelog
+    name: GitHub Copilot Changelog
+    url: https://github.blog/changelog/label/copilot/
+    trust_level: official
+    base_weight: 86
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: jetbrains_ai_blog
+    name: JetBrains AI Blog
+    url: https://blog.jetbrains.com/ai/
+    trust_level: official
+    base_weight: 78
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: sourcegraph_blog
+    name: Sourcegraph Blog
+    url: https://sourcegraph.com/blog
+    trust_level: authority
+    base_weight: 76
+    default_categories: [agent_tools, ai_products]
+  - <<: *ai_catalog_candidate
+    id: huggingface_daily_papers
+    name: Hugging Face Daily Papers
+    url: https://huggingface.co/papers
+    trust_level: authority
+    base_weight: 84
+    default_categories: [papers, ai_models]
+  - <<: *ai_catalog_candidate
+    id: paperswithcode_ai
+    name: Papers with Code
+    url: https://paperswithcode.com/
+    trust_level: authority
+    base_weight: 78
+    default_categories: [papers, ai_models]
+  - <<: *ai_catalog_candidate
+    id: arxiv_cs_lg
+    name: arXiv Machine Learning
+    url: https://arxiv.org/list/cs.LG/recent
+    trust_level: authority
+    base_weight: 78
+    default_categories: [papers, ai_models]
+  - <<: *ai_catalog_candidate
+    id: arxiv_cs_cl
+    name: arXiv Computation and Language
+    url: https://arxiv.org/list/cs.CL/recent
+    trust_level: authority
+    base_weight: 78
+    default_categories: [papers, ai_models]
+  - <<: *ai_catalog_candidate
+    id: arxiv_stat_ml
+    name: arXiv Statistics Machine Learning
+    url: https://arxiv.org/list/stat.ML/recent
+    trust_level: authority
+    base_weight: 76
+    default_categories: [papers, ai_models]
+  - <<: *ai_catalog_candidate
+    id: distill_pub
+    name: Distill
+    url: https://distill.pub/
+    trust_level: authority
+    base_weight: 76
+    default_categories: [papers, ai_models]
+  - <<: *ai_catalog_candidate
+    id: lilian_weng_blog_candidate
+    name: Lilian Weng Blog
+    url: https://lilianweng.github.io/
+    trust_level: expert
+    base_weight: 79
+    default_categories: [papers, ai_models]
+  - <<: *ai_catalog_candidate
+    id: andrej_karpathy_blog
+    name: Andrej Karpathy Blog
+    url: https://karpathy.github.io/
+    trust_level: expert
+    base_weight: 78
+    default_categories: [papers, ai_models, industry]
+  - <<: *ai_catalog_candidate
+    id: sebastian_raschka_blog
+    name: Sebastian Raschka Blog
+    url: https://sebastianraschka.com/blog/
+    trust_level: expert
+    base_weight: 76
+    default_categories: [papers, ai_models]
+  - <<: *ai_catalog_candidate
+    id: latent_space
+    name: Latent Space
+    url: https://www.latent.space/
+    trust_level: expert
+    base_weight: 78
+    default_categories: [industry, ai_models, agent_tools]
+  - <<: *ai_catalog_candidate
+    id: import_ai_newsletter
+    name: Import AI
+    url: https://importai.substack.com/
+    trust_level: expert
+    base_weight: 76
+    default_categories: [industry, ai_models]
+  - <<: *ai_catalog_candidate
+    id: the_batch_candidate
+    name: DeepLearning.AI The Batch
+    url: https://www.deeplearning.ai/the-batch/
+    trust_level: media
+    base_weight: 76
+    default_categories: [industry, papers, ai_models]
+  - <<: *ai_catalog_candidate
+    id: the_decoder
+    name: The Decoder
+    url: https://the-decoder.com/
+    trust_level: media
+    base_weight: 72
+    default_categories: [industry, ai_products, ai_models]
+  - <<: *ai_catalog_candidate
+    id: venturebeat_ai_candidate
+    name: VentureBeat AI
+    url: https://venturebeat.com/category/ai/
+    trust_level: media
+    base_weight: 72
+    default_categories: [industry, ai_products, monetization]
+  - <<: *ai_catalog_candidate
+    id: zdnet_ai
+    name: ZDNET AI
+    url: https://www.zdnet.com/topic/artificial-intelligence/
+    trust_level: media
+    base_weight: 70
+    default_categories: [industry, ai_products]
+  - <<: *ai_catalog_candidate
+    id: wired_ai
+    name: WIRED AI
+    url: https://www.wired.com/tag/artificial-intelligence/
+    trust_level: media
+    base_weight: 70
+    default_categories: [industry, ai_products]
+  - <<: *ai_catalog_candidate
+    id: bloomberg_ai
+    name: Bloomberg AI
+    url: https://www.bloomberg.com/artificial-intelligence
+    trust_level: media
+    base_weight: 74
+    default_categories: [industry, monetization]
+  - <<: *ai_catalog_candidate
+    id: semafor_ai
+    name: Semafor AI
+    url: https://www.semafor.com/
+    trust_level: media
+    base_weight: 70
+    default_categories: [industry, monetization]
+  - <<: *ai_catalog_candidate
+    id: rest_of_world_ai
+    name: Rest of World AI
+    url: https://restofworld.org/
+    trust_level: media
+    base_weight: 70
+    default_categories: [industry, monetization]
+  - <<: *ai_catalog_candidate
+    id: product_hunt_ai
+    name: Product Hunt AI
+    url: https://www.producthunt.com/topics/artificial-intelligence
+    trust_level: community
+    base_weight: 64
+    default_categories: [ai_products, monetization]
+  - <<: *ai_catalog_candidate
+    id: adobe_ai_blog
+    name: Adobe AI Blog
+    url: https://blog.adobe.com/en/topics/ai
+    trust_level: official
+    base_weight: 78
+    default_categories: [ai_products, industry]
+  - <<: *ai_catalog_candidate
+    id: salesforce_ai_research
+    name: Salesforce AI Research
+    url: https://www.salesforceairesearch.com/
+    trust_level: official
+    base_weight: 80
+    default_categories: [papers, ai_models, ai_products]

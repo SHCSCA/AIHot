@@ -8,12 +8,20 @@ import type {
   Job,
   PipelineRun,
   Page,
+  QualityDashboard,
   PublicDaily,
+  DailyArchiveItem,
   PublicEvent,
   PublicEventDetail,
   Source,
+  SourceDiagnostic,
   SourceState,
-  StrategyVersion
+  StrategyVersion,
+  SessionInfo,
+  UserAccount,
+  Role,
+  Permission,
+  AuditLog
 } from "./types";
 
 export type Credentials = {
@@ -44,20 +52,40 @@ export class PublicApi {
       channel?: string;
       mode?: "selected" | "all";
       category?: string;
+      sourceGroup?: string;
       q?: string;
       date?: string;
       window?: number;
       take?: number;
       cursor?: string | null;
+      page?: number;
+      pageSize?: number;
     } = {}
   ): Promise<Page<PublicEvent>> {
     const response = await this.request<{
       count: number;
+      page?: number;
+      pageSize?: number;
+      total?: number;
+      totalPages?: number;
+      hasPrev?: boolean;
+      metrics?: Record<string, number>;
       events: PublicEvent[];
       hasNext: boolean;
       nextCursor: string | null;
     }>(`/api/v1/public/events${query(filters)}`);
-    return { items: response.events, count: response.count, hasNext: response.hasNext, nextCursor: response.nextCursor };
+    return {
+      items: response.events,
+      count: response.count,
+      page: response.page,
+      pageSize: response.pageSize,
+      total: response.total,
+      totalPages: response.totalPages,
+      hasPrev: response.hasPrev,
+      hasNext: response.hasNext,
+      nextCursor: response.nextCursor,
+      metrics: response.metrics
+    };
   }
 
   async getEventDetail(eventId: string): Promise<PublicEventDetail> {
@@ -68,30 +96,193 @@ export class PublicApi {
     return (await this.request<{ daily: PublicDaily | null }>(`/api/v1/public/daily${query(filters)}`)).daily;
   }
 
-  private async request<T>(path: string): Promise<T> {
+  async listDailies(filters: { channel: string; page?: number; pageSize?: number }): Promise<Page<DailyArchiveItem>> {
+    const response = await this.request<{
+      items: DailyArchiveItem[];
+      count: number;
+      page?: number;
+      pageSize?: number;
+      total?: number;
+      totalPages?: number;
+      hasPrev?: boolean;
+      metrics?: Record<string, number>;
+      hasNext: boolean;
+      nextCursor: string | null;
+    }>(`/api/v1/public/dailies${query(filters)}`);
+    return {
+      items: response.items,
+      count: response.count,
+      page: response.page,
+      pageSize: response.pageSize,
+      total: response.total,
+      totalPages: response.totalPages,
+      hasPrev: response.hasPrev,
+      hasNext: response.hasNext,
+      nextCursor: response.nextCursor,
+      metrics: response.metrics
+    };
+  }
+
+  async listSources(filters: { channel?: string; q?: string; sourceGroup?: string; page?: number; pageSize?: number } = {}): Promise<Source[]> {
+    return (await this.listSourcesPage(filters)).items;
+  }
+
+  async listSourcesPage(filters: { channel?: string; q?: string; sourceGroup?: string; page?: number; pageSize?: number } = {}): Promise<Page<Source>> {
+    const response = await this.request<{
+      sources: Source[];
+      count: number;
+      page?: number;
+      pageSize?: number;
+      total?: number;
+      totalPages?: number;
+      hasPrev?: boolean;
+      metrics?: Record<string, number>;
+      hasNext: boolean;
+      nextCursor: string | null;
+    }>(`/api/v1/public/sources${query(filters)}`);
+    return {
+      items: response.sources,
+      count: response.count,
+      page: response.page,
+      pageSize: response.pageSize,
+      total: response.total,
+      totalPages: response.totalPages,
+      hasPrev: response.hasPrev,
+      hasNext: response.hasNext,
+      nextCursor: response.nextCursor,
+      metrics: response.metrics
+    };
+  }
+
+  async submitFeedback(payload: {
+    channel: string;
+    feedbackType: string;
+    reason: string;
+    contact?: string | null;
+    clusterId?: string | number | null;
+    itemId?: string | number | null;
+  }): Promise<FeedbackEvent> {
+    return (await this.request<{ feedbackEvent: FeedbackEvent }>("/api/v1/public/feedback-events", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    })).feedbackEvent;
+  }
+
+  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
+      method: init.method,
+      body: init.body,
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...(init.headers ?? {})
       }
     });
     if (!response.ok) throw new ApiError(`请求失败：HTTP ${response.status}`, response.status);
+    if (!responseContentType(response).includes("application/json")) {
+      throw new ApiError("请求失败：情报接口没有返回 JSON 数据", response.status);
+    }
+    return response.json() as Promise<T>;
+  }
+}
+
+export class AuthApi {
+  constructor(private baseUrl = "") {}
+
+  async login(credentials: Credentials): Promise<SessionInfo> {
+    return this.request<SessionInfo>("/api/v1/auth/login", {
+      method: "POST",
+      body: JSON.stringify(credentials)
+    });
+  }
+
+  async logout(): Promise<void> {
+    await this.request<{ ok: boolean }>("/api/v1/auth/logout", { method: "POST" });
+  }
+
+  async me(): Promise<SessionInfo> {
+    return this.request<SessionInfo>("/api/v1/me");
+  }
+
+  async updatePreferences(payload: Partial<SessionInfo["preferences"]>): Promise<SessionInfo> {
+    return this.request<SessionInfo>("/api/v1/me/preferences", {
+      method: "PATCH",
+      body: JSON.stringify(payload)
+    });
+  }
+
+  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      method: init.method,
+      body: init.body,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(init.headers ?? {})
+      }
+    });
+    if (!response.ok) throw new ApiError(`请求失败：HTTP ${response.status}`, response.status);
+    if (!responseContentType(response).includes("application/json")) {
+      throw new ApiError("请求失败：身份接口没有返回 JSON 数据", response.status);
+    }
     return response.json() as Promise<T>;
   }
 }
 
 export class AdminApi {
   constructor(
-    private credentials: Credentials,
     private baseUrl = "",
     private onUnauthorized?: () => void
   ) {}
 
-  async getDashboard(): Promise<Dashboard> {
-    return this.request<Dashboard>("/api/v1/internal/dashboard");
+  async getDashboard(filters: { channel?: string } = {}): Promise<Dashboard> {
+    return this.request<Dashboard>(`/api/v1/internal/dashboard${query(filters)}`);
+  }
+
+  async getQualityDashboard(filters: { window?: number } = {}): Promise<QualityDashboard> {
+    return this.request<QualityDashboard>(`/api/v1/internal/quality-dashboard${query(filters)}`);
   }
 
   async listSources(channel?: string): Promise<Source[]> {
-    return (await this.request<{ sources: Source[] }>(`/api/v1/internal/sources${query({ channel })}`)).sources;
+    return (await this.listSourcesPage({ channel, take: 200 })).items;
+  }
+
+  async listSourcesPage(
+    filters: {
+      channel?: string;
+      q?: string;
+      sourceGroup?: string;
+      collectionStatus?: string;
+      enabled?: boolean | string;
+      take?: number;
+      cursor?: string | null;
+      page?: number;
+      pageSize?: number;
+    } = {}
+  ): Promise<Page<Source>> {
+    const response = await this.request<{
+      count: number;
+      page?: number;
+      pageSize?: number;
+      total?: number;
+      totalPages?: number;
+      hasPrev?: boolean;
+      hasNext: boolean;
+      nextCursor: string | null;
+      metrics?: Record<string, number>;
+      sources: Source[];
+    }>(`/api/v1/internal/sources${query(filters)}`);
+    return {
+      items: response.sources,
+      count: response.count,
+      page: response.page,
+      pageSize: response.pageSize,
+      total: response.total,
+      totalPages: response.totalPages,
+      hasPrev: response.hasPrev,
+      hasNext: response.hasNext,
+      nextCursor: response.nextCursor,
+      metrics: response.metrics
+    };
   }
 
   async createSource(payload: Source): Promise<Source> {
@@ -113,7 +304,52 @@ export class AdminApi {
       .sourceStates;
   }
 
-  async listJobs(filters: { status?: string } = {}): Promise<Job[]> {
+  async listSourceDiagnostics(channel?: string): Promise<SourceDiagnostic[]> {
+    return (await this.listSourceDiagnosticsPage({ channel, take: 200 })).items;
+  }
+
+  async listSourceDiagnosticsPage(
+    filters: {
+      channel?: string;
+      q?: string;
+      sourceGroup?: string;
+      collectionStatus?: string;
+      freeAccess?: boolean | string;
+      diagnosticStatus?: string;
+      sort?: string;
+      take?: number;
+      cursor?: string | null;
+      page?: number;
+      pageSize?: number;
+    } = {}
+  ): Promise<Page<SourceDiagnostic>> {
+    const response = await this.request<{
+      count: number;
+      page?: number;
+      pageSize?: number;
+      total?: number;
+      totalPages?: number;
+      hasPrev?: boolean;
+      hasNext: boolean;
+      nextCursor: string | null;
+      metrics?: Record<string, number>;
+      sourceDiagnostics: SourceDiagnostic[];
+    }>(`/api/v1/internal/source-diagnostics${query(filters)}`);
+    return {
+      items: response.sourceDiagnostics,
+      count: response.count,
+      page: response.page,
+      pageSize: response.pageSize,
+      total: response.total,
+      totalPages: response.totalPages,
+      hasPrev: response.hasPrev,
+      hasNext: response.hasNext,
+      nextCursor: response.nextCursor,
+      metrics: response.metrics
+    };
+  }
+
+  async listJobs(filters: { channel?: string; status?: string } = {}): Promise<Job[]> {
     return (await this.request<{ jobs: Job[] }>(`/api/v1/internal/jobs${query(filters)}`)).jobs;
   }
 
@@ -201,6 +437,13 @@ export class AdminApi {
       .feedbackEvents;
   }
 
+  async updateFeedbackStatus(feedbackId: string, status: string): Promise<FeedbackEvent> {
+    return (await this.request<{ feedbackEvent: FeedbackEvent }>(`/api/v1/internal/feedback-events/${feedbackId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ status })
+    })).feedbackEvent;
+  }
+
   async createEvaluationRun(payload: Record<string, unknown>): Promise<EvaluationRun> {
     return (await this.request<{ evaluationRun: EvaluationRun }>("/api/v1/internal/evaluation-runs", {
       method: "POST",
@@ -230,19 +473,62 @@ export class AdminApi {
     })).pipelineRun;
   }
 
+  async listUsers(): Promise<UserAccount[]> {
+    return (await this.request<{ users: UserAccount[] }>("/api/v1/internal/users")).users;
+  }
+
+  async createUser(payload: {
+    username: string;
+    password: string;
+    displayName?: string;
+    email?: string;
+    roleIds: string[];
+    status?: string;
+  }): Promise<UserAccount> {
+    return (await this.request<{ user: UserAccount }>("/api/v1/internal/users", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    })).user;
+  }
+
+  async updateUser(userId: string, payload: Partial<Pick<UserAccount, "displayName" | "email" | "status">> & { roleIds?: string[]; password?: string }): Promise<UserAccount> {
+    return (await this.request<{ user: UserAccount }>(`/api/v1/internal/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload)
+    })).user;
+  }
+
+  async listRoles(): Promise<{ roles: Role[]; permissions: Permission[] }> {
+    return this.request<{ roles: Role[]; permissions: Permission[] }>("/api/v1/internal/roles");
+  }
+
+  async updateRole(roleId: string, permissionIds: string[]): Promise<Role> {
+    return (await this.request<{ role: Role }>(`/api/v1/internal/roles/${roleId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ permissionIds })
+    })).role;
+  }
+
+  async listAuditLogs(filters: { actor?: string; action?: string; take?: number } = {}): Promise<AuditLog[]> {
+    return (await this.request<{ auditLogs: AuditLog[] }>(`/api/v1/internal/audit-logs${query(filters)}`)).auditLogs;
+  }
+
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       method: init.method,
       body: init.body,
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        Authorization: buildBasicAuthHeader(this.credentials),
         ...(init.headers ?? {})
       }
     });
     if (!response.ok) {
       if (response.status === 401) this.onUnauthorized?.();
-      throw new ApiError(`请求失败：HTTP ${response.status}`, response.status);
+      throw new ApiError(await errorMessage(response, "后台接口"), response.status);
+    }
+    if (!responseContentType(response).includes("application/json")) {
+      throw new ApiError("请求失败：后台接口没有返回 JSON 数据", response.status);
     }
     return response.json() as Promise<T>;
   }
@@ -255,4 +541,24 @@ function query(values: Record<string, QueryValue>) {
   });
   const text = params.toString();
   return text ? `?${text}` : "";
+}
+
+function responseContentType(response: Response) {
+  return response.headers?.get?.("content-type") ?? "application/json";
+}
+
+async function errorMessage(response: Response, context: string) {
+  if (!responseContentType(response).includes("application/json")) {
+    return `请求失败：HTTP ${response.status}`;
+  }
+  const payload = await response.json().catch(() => null) as { detail?: unknown; message?: string } | null;
+  if (payload) {
+    if (typeof payload.detail === "string") return payload.detail;
+    if (payload.detail && typeof payload.detail === "object") {
+      const detail = payload.detail as { message?: unknown };
+      if (typeof detail.message === "string" && detail.message) return detail.message;
+    }
+    if (typeof payload.message === "string" && payload.message) return payload.message;
+  }
+  return `请求失败：${context} HTTP ${response.status}`;
 }

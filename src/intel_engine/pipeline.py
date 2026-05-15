@@ -8,8 +8,17 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from intel_engine.clustering import ClusterCandidate, cluster_candidates
+from intel_engine.daily import generate_daily_digest
 from intel_engine.fetchers import get_fetch_adapter
-from intel_engine.llm import FakeLLMProvider, LLMProvider, ModelScore, build_llm_provider
+from intel_engine.llm import (
+    FakeLLMProvider,
+    LLMProvider,
+    ModelScore,
+    ScreeningProvider,
+    ScreeningResult,
+    build_scoring_provider,
+    build_screening_provider,
+)
 from intel_engine.models import (
     ClusterMemberRecord,
     EventClusterRecord,
@@ -19,15 +28,23 @@ from intel_engine.models import (
     PrefilterResultRecord,
     RankedItemRecord,
     RawDocumentRecord,
+    RawScreeningResultRecord,
     SourceRecord,
     StrategyVersionRecord,
     utc_now,
 )
 from intel_engine.normalizer import canonicalize_url
 from intel_engine.prescreen import PreScreenDecision
-from intel_engine.quality import is_same_operational_day
+from intel_engine.quality import OPERATIONAL_TIMEZONE, is_within_recent_hours
 from intel_engine.rank_policy import RankPolicy, RankPolicyInput
 from intel_engine.raw_store import RawStore
+from intel_engine.review import (
+    ACCEPTED_BUCKETS,
+    adjusted_selected_threshold,
+    auto_review_decision,
+    validate_model_score,
+    validate_screening_result,
+)
 from intel_engine.scheduler import claim_fetch_jobs, mark_job_failed, mark_job_succeeded, schedule_due_sources
 from intel_engine.settings import Settings
 
@@ -85,16 +102,27 @@ def run_worker_once(
     now: datetime | None = None,
     client: httpx.Client | None = None,
     llm_provider: LLMProvider | None = None,
+    screening_provider: ScreeningProvider | None = None,
 ) -> PipelineStats:
     resolved_now = now or utc_now()
-    with SessionLocal() as session:
-        jobs = claim_fetch_jobs(session, worker_id=worker_id, limit=limit, now=resolved_now)
-        session.commit()
-
-    total = PipelineStats(claimed=len(jobs))
-    for job in jobs:
+    total = PipelineStats()
+    for _index in range(limit):
         with SessionLocal() as session:
-            stats = process_fetch_job(session, job.id, now=resolved_now, client=client, llm_provider=llm_provider)
+            jobs = claim_fetch_jobs(session, worker_id=worker_id, limit=1, now=resolved_now)
+            session.commit()
+        if not jobs:
+            break
+        job_id = jobs[0].id
+        total = total.add(PipelineStats(claimed=1))
+        with SessionLocal() as session:
+            stats = process_fetch_job(
+                session,
+                job_id,
+                now=resolved_now,
+                client=client,
+                llm_provider=llm_provider,
+                screening_provider=screening_provider,
+            )
             session.commit()
             total = total.add(stats)
     return total
@@ -108,6 +136,7 @@ def run_pipeline_once(
     now: datetime | None = None,
     client: httpx.Client | None = None,
     llm_provider: LLMProvider | None = None,
+    screening_provider: ScreeningProvider | None = None,
 ) -> PipelineStats:
     resolved_now = now or utc_now()
     scheduled = run_scheduler_once(SessionLocal, now=resolved_now, limit=limit)
@@ -118,8 +147,11 @@ def run_pipeline_once(
         now=resolved_now,
         client=client,
         llm_provider=llm_provider,
+        screening_provider=screening_provider,
     )
-    return worked.add(scheduled)
+    total = worked.add(scheduled)
+    _auto_generate_recent_daily(SessionLocal, now=resolved_now)
+    return total
 
 
 def reprocess_existing_items(
@@ -132,7 +164,7 @@ def reprocess_existing_items(
     settings = Settings()
     provider = llm_provider
     if provider is None and settings.llm_provider != "fake":
-        provider = build_llm_provider(settings)
+        provider = build_scoring_provider(settings)
 
     processed = 0
     failed = 0
@@ -170,63 +202,89 @@ def process_fetch_job(
     now: datetime | None = None,
     client: httpx.Client | None = None,
     llm_provider: LLMProvider | None = None,
+    screening_provider: ScreeningProvider | None = None,
 ) -> PipelineStats:
     resolved_now = now or utc_now()
     job = _get_job(session, job_id)
     source = _get_source(session, job.source_id)
     try:
-        result = get_fetch_adapter(source.fetch_adapter).fetch(source, client=client)
-    except Exception as exc:  # noqa: BLE001 - isolate one bad source from the worker batch.
-        mark_job_failed(session, job.id, error_message=str(exc), now=resolved_now)
-        return PipelineStats(failed=1)
-    raw_result = RawStore(session).save_fetch_result(job, result, now=resolved_now)
+        result = get_fetch_adapter(source.fetch_adapter, now=resolved_now).fetch(source, client=client)
+        raw_result = RawStore(session).save_fetch_result(job, result, now=resolved_now)
 
-    if result.status != "succeeded":
-        mark_job_failed(session, job.id, error_message=result.error_message or "fetch failed", now=resolved_now)
+        if result.status != "succeeded":
+            mark_job_failed(session, job.id, error_message=result.error_message or "fetch failed", now=resolved_now)
+            return PipelineStats(
+                failed=1,
+                raw_documents_inserted=raw_result.documents_inserted,
+                duplicates=raw_result.duplicates,
+            )
+
+        raw_documents = list(
+            session.scalars(
+                select(RawDocumentRecord).where(RawDocumentRecord.fetch_run_id == raw_result.fetch_run_id)
+            ).all()
+        )
+        normalized_count = 0
+        ranked_count = 0
+        for raw_document in raw_documents:
+            strategy = _ensure_active_strategy(session, source.channel)
+            screening = _upsert_screening_result(
+                session,
+                raw_document,
+                source,
+                strategy,
+                now=resolved_now,
+                screening_provider=screening_provider,
+            )
+            item = _normalize_raw_document(session, source, raw_document, screening=screening)
+            if item is None:
+                continue
+            normalized_count += 1
+            prefilter = _upsert_prefilter(session, item, strategy)
+            model_score = _upsert_model_score(session, item, source, strategy, llm_provider=llm_provider)
+            score_validation = validate_model_score(model_score, channel=source.channel)
+            if not score_validation.accepted:
+                continue
+            _upsert_ranked_item(
+                session,
+                item,
+                source,
+                strategy,
+                prefilter,
+                model_score,
+                screening=screening,
+                observed_at=resolved_now,
+            )
+            ranked_count += 1
+
+        clusters_created = _persist_ranked_clusters(session, channel=source.channel)
+        mark_job_succeeded(
+            session,
+            job.id,
+            now=resolved_now,
+            item_count=len(result.documents),
+            avg_latency_ms=None,
+        )
         return PipelineStats(
-            failed=1,
+            succeeded=1,
             raw_documents_inserted=raw_result.documents_inserted,
             duplicates=raw_result.duplicates,
+            normalized_items=normalized_count,
+            ranked_items=ranked_count,
+            clusters=clusters_created,
         )
-
-    raw_documents = list(
-        session.scalars(select(RawDocumentRecord).where(RawDocumentRecord.fetch_run_id == raw_result.fetch_run_id)).all()
-    )
-    normalized_count = 0
-    ranked_count = 0
-    for raw_document in raw_documents:
-        item = _normalize_raw_document(session, source, raw_document)
-        if item is None:
-            continue
-        normalized_count += 1
-        strategy = _ensure_active_strategy(session, source.channel)
-        prefilter = _upsert_prefilter(session, item, strategy)
-        model_score = _upsert_model_score(session, item, source, strategy, llm_provider=llm_provider)
-        _upsert_ranked_item(session, item, source, strategy, prefilter, model_score, observed_at=resolved_now)
-        ranked_count += 1
-
-    clusters_created = _persist_selected_clusters(session, channel=source.channel)
-    mark_job_succeeded(
-        session,
-        job.id,
-        now=resolved_now,
-        item_count=len(result.documents),
-        avg_latency_ms=None,
-    )
-    return PipelineStats(
-        succeeded=1,
-        raw_documents_inserted=raw_result.documents_inserted,
-        duplicates=raw_result.duplicates,
-        normalized_items=normalized_count,
-        ranked_items=ranked_count,
-        clusters=clusters_created,
-    )
+    except Exception as exc:  # noqa: BLE001 - keep one bad source/model result from stopping the worker.
+        session.rollback()
+        mark_job_failed(session, job_id, error_message=str(exc), now=resolved_now)
+        return PipelineStats(failed=1)
 
 
 def _normalize_raw_document(
     session: Session,
     source: SourceRecord,
     raw_document: RawDocumentRecord,
+    *,
+    screening: RawScreeningResultRecord | None = None,
 ) -> NormalizedItemRecord | None:
     existing = session.scalar(
         select(NormalizedItemRecord)
@@ -239,18 +297,22 @@ def _normalize_raw_document(
 
     title = raw_document.response_headers_json.get("x-intel-title") or source.name
     published_at = _parse_datetime(raw_document.response_headers_json.get("x-intel-published-at"))
-    if not is_same_operational_day(published_at, raw_document.fetched_at):
+    if not is_within_recent_hours(published_at, raw_document.fetched_at):
+        return None
+    if screening is not None and (
+        screening.screen_status != "accepted" or screening.screen_bucket not in ACCEPTED_BUCKETS
+    ):
         return None
     item = NormalizedItemRecord(
         channel=source.channel,
         source_id=source.id,
         raw_document_id=raw_document.id,
         title_original=title,
-        title_cn=None,
+        title_cn=screening.title_cn if screening is not None else None,
         url=raw_document.url,
         canonical_url=canonicalize_url(raw_document.canonical_url),
         summary_original=raw_document.body_text,
-        summary_cn=None,
+        summary_cn=screening.summary_cn if screening is not None else None,
         published_at=published_at,
         fetched_at=raw_document.fetched_at,
         language=source.language,
@@ -279,13 +341,311 @@ def _ensure_active_strategy(session: Session, channel: str) -> StrategyVersionRe
         prefilter_prompt_version="prefilter-v1",
         score_prompt_version="score-v1",
         rank_formula_version="rank-v1",
-        thresholds_json={"selected": 72},
-        model_config_json={"provider": "fake"},
+        thresholds_json={"record": 70, "selected": 78 if channel == "amazon" else 80, "confidence": 80},
+        model_config_json={
+            "provider": Settings().llm_provider,
+            "screeningModel": Settings().llm_screening_model,
+            "scoringModel": Settings().llm_scoring_model,
+        },
         activated_at=utc_now(),
     )
     session.add(strategy)
     session.flush()
     return strategy
+
+
+def _upsert_screening_result(
+    session: Session,
+    raw_document: RawDocumentRecord,
+    source: SourceRecord,
+    strategy: StrategyVersionRecord,
+    *,
+    now: datetime,
+    screening_provider: ScreeningProvider | None = None,
+) -> RawScreeningResultRecord:
+    existing = session.scalar(
+        select(RawScreeningResultRecord)
+        .where(RawScreeningResultRecord.raw_document_id == raw_document.id)
+        .where(RawScreeningResultRecord.strategy_version == strategy.id)
+        .limit(1)
+    )
+    result = _screen_raw_document(raw_document, source, now=now, screening_provider=screening_provider)
+    result = _apply_screening_guardrails(result, raw_document, source)
+    published_at = _parse_datetime(raw_document.response_headers_json.get("x-intel-published-at"))
+    validation = validate_screening_result(
+        result,
+        channel=source.channel,
+        published_at=published_at,
+        observed_at=raw_document.fetched_at,
+        original_url=raw_document.canonical_url,
+        source_url=source.url,
+    )
+    if not validation.accepted:
+        result = result.model_copy(
+            update={
+                "screen_status": "rejected" if result.screen_status != "failed" else "failed",
+                "screen_bucket": "invalid" if result.screen_bucket in ACCEPTED_BUCKETS else result.screen_bucket,
+                "reason_code": validation.reason_code or result.reason_code,
+                "reason_cn": validation.reason_cn or result.reason_cn,
+            }
+        )
+    raw_json = dict(result.raw_json)
+    provider = str(raw_json.get("provider") or "unknown")
+    model = str(raw_json.get("model") or "unknown")
+    payload = {
+        "raw_document_id": raw_document.id,
+        "strategy_version": strategy.id,
+        "provider": provider,
+        "model": model,
+        "screen_status": result.screen_status,
+        "screen_bucket": result.screen_bucket,
+        "relevance_score": result.relevance_score,
+        "confidence_score": result.confidence_score,
+        "category": result.category,
+        "title_cn": result.title_cn,
+        "summary_cn": result.summary_cn,
+        "tags_json": result.tags,
+        "reason_code": result.reason_code,
+        "reason_cn": result.reason_cn,
+        "raw_json": raw_json,
+    }
+    if existing is None:
+        existing = RawScreeningResultRecord(**payload)
+        session.add(existing)
+    else:
+        for key, value in payload.items():
+            if key not in {"raw_document_id", "strategy_version"}:
+                setattr(existing, key, value)
+    session.flush()
+    return existing
+
+
+def _screen_raw_document(
+    raw_document: RawDocumentRecord,
+    source: SourceRecord,
+    *,
+    now: datetime,
+    screening_provider: ScreeningProvider | None,
+) -> ScreeningResult:
+    provider = screening_provider
+    if provider is None:
+        try:
+            provider = build_screening_provider(Settings())
+        except Exception as exc:  # noqa: BLE001
+            return _failed_screening_result("model_failed", f"初筛模型不可用：{exc}")
+    try:
+        return provider.screen_item(_screening_payload(raw_document, source, now=now))
+    except Exception as exc:  # noqa: BLE001 - one bad model response should not stop the batch.
+        return _failed_screening_result("model_failed", f"初筛模型失败：{exc}")
+
+
+def _failed_screening_result(reason_code: str, reason_cn: str) -> ScreeningResult:
+    return ScreeningResult(
+        screen_status="failed",
+        screen_bucket="invalid",
+        relevance_score=0,
+        confidence_score=0,
+        category="industry",
+        title_cn="初筛失败",
+        summary_cn="初筛模型未能生成合格摘要。",
+        tags=["初筛失败", "模型异常"],
+        reason_code=reason_code,
+        reason_cn=reason_cn,
+        raw_json={"provider": "system", "model": "screening-failure"},
+    )
+
+
+AMAZON_LOW_INFORMATION_REASON_CODES = {
+    "low_info",
+    "low_info_generic",
+    "low_information_value",
+    "tutorial_rejection",
+    "evergreen_tutorial",
+}
+
+AMAZON_GUARDRAIL_REASON_CODES = AMAZON_LOW_INFORMATION_REASON_CODES | {
+    "schema_invalid",
+    "low_confidence",
+}
+
+AMAZON_SCREENING_CATEGORIES = {
+    "policy",
+    "account_health",
+    "fba_logistics",
+    "ads_ppc",
+    "listing_seo",
+    "fees_margin",
+    "product_research",
+    "tools",
+    "compliance_trade",
+}
+
+AMAZON_SELLER_CONTEXT_TERMS = (
+    "amazon seller",
+    "seller central",
+    "selling partner",
+    "sp-api",
+    "fba",
+    "fulfillment by amazon",
+    "amazon ads",
+    "ppc",
+)
+
+AMAZON_OPERATIONAL_TERMS = (
+    "account health",
+    "advertising",
+    "campaign",
+    "fee",
+    "fulfillment center",
+    "inbound",
+    "inventory",
+    "listing",
+    "lost",
+    "missing",
+    "placement",
+    "reimbursement",
+    "return",
+    "storage",
+)
+
+
+def _apply_screening_guardrails(
+    result: ScreeningResult,
+    raw_document: RawDocumentRecord,
+    source: SourceRecord,
+) -> ScreeningResult:
+    if source.channel != "amazon":
+        return result
+    if result.screen_status == "accepted" and result.relevance_score >= 70 and result.confidence_score >= 70:
+        return result
+    reason_code = result.reason_code.lower()
+    if reason_code not in AMAZON_GUARDRAIL_REASON_CODES and result.screen_status != "accepted":
+        return result
+
+    text = " ".join(
+        [
+            str(raw_document.response_headers_json.get("x-intel-title") or ""),
+            raw_document.body_text or "",
+            raw_document.canonical_url or "",
+        ]
+    ).lower()
+    has_seller_context = any(term in text for term in AMAZON_SELLER_CONTEXT_TERMS)
+    has_operational_signal = any(term in text for term in AMAZON_OPERATIONAL_TERMS)
+    if not (has_seller_context and has_operational_signal):
+        return result
+
+    tags = [tag for tag in result.tags if tag]
+    for tag in ("FBA", "库存赔付", "卖家运营"):
+        if tag not in tags:
+            tags.append(tag)
+        if len(tags) >= 3:
+            break
+
+    raw_json = {
+        **dict(result.raw_json),
+        "guardrail": "amazon_seller_ops_signal",
+        "original_screen_status": result.screen_status,
+        "original_screen_bucket": result.screen_bucket,
+        "original_reason_code": result.reason_code,
+    }
+    return result.model_copy(
+        update={
+            "screen_status": "accepted",
+            "screen_bucket": "related",
+            "category": result.category if result.category in AMAZON_SCREENING_CATEGORIES else _amazon_guardrail_category(text),
+            "relevance_score": max(result.relevance_score, 72),
+            "confidence_score": max(result.confidence_score, 72),
+            "tags": tags[:5],
+            "reason_code": "seller_ops_signal",
+            "reason_cn": "内容包含 Amazon 卖家运营信号，涉及 FBA、库存、赔付、广告、费用或工具等可执行事项，按卖家价值规则修正为入库。",
+            "raw_json": raw_json,
+        }
+    )
+
+
+def _amazon_guardrail_category(text: str) -> str:
+    if any(term in text for term in ("fba", "fulfillment", "inventory", "inbound", "storage", "placement")):
+        return "fba_logistics"
+    if any(term in text for term in ("advertising", "campaign", "ppc", "amazon ads", "dsp")):
+        return "ads_ppc"
+    if any(term in text for term in ("fee", "reimbursement", "margin", "payment", "commission")):
+        return "fees_margin"
+    if any(term in text for term in ("account health", "suspension", "appeal", "brand registry")):
+        return "account_health"
+    if any(term in text for term in ("listing", "review", "keyword", "a+", "search")):
+        return "listing_seo"
+    if any(term in text for term in ("sp-api", "api", "seller central", "tool")):
+        return "tools"
+    return "policy"
+
+
+def _screening_payload(raw_document: RawDocumentRecord, source: SourceRecord, *, now: datetime) -> dict[str, object]:
+    return {
+        "rawDocumentId": raw_document.id,
+        "channel": source.channel,
+        "source": {
+            "id": source.id,
+            "name": source.name,
+            "tier": source.tier,
+            "authorityWeight": source.authority_weight,
+            "defaultCategories": source.default_categories,
+            "sourceGroup": source.source_group,
+            "socialHandle": source.social_handle,
+            "collectionStatus": source.collection_status,
+        },
+        "titleOriginal": _truncate_text(raw_document.response_headers_json.get("x-intel-title") or source.name, 300),
+        "summaryOriginal": _truncate_text(raw_document.body_text, 3000),
+        "url": raw_document.canonical_url,
+        "publishedAt": raw_document.response_headers_json.get("x-intel-published-at"),
+        "fetchedAt": raw_document.fetched_at,
+        "observedAt": now,
+        "rules": _channel_screening_rules(source.channel),
+    }
+
+
+def _channel_screening_rules(channel: str) -> dict[str, object]:
+    if channel == "amazon":
+        return {
+            "allowedCategories": [
+                "policy",
+                "account_health",
+                "fba_logistics",
+                "ads_ppc",
+                "listing_seo",
+                "fees_margin",
+                "product_research",
+                "tools",
+                "compliance_trade",
+            ],
+            "tagRules": "标签 2-5 个；除品牌、平台、API、产品名外必须使用中文短词；禁止 news/update/AI/Amazon 等泛标签。",
+            "reasonRules": "推荐理由必须说明对 Amazon 卖家利润、风险、广告、库存、Listing 或合规动作的具体价值。",
+            "accepted": [
+                "平台政策、费用、广告、FBA、账号健康、合规、税务、贸易变化",
+                "SP-API、Seller Central、Brand Registry、广告控制台等卖家工具变更",
+                "对选品、Listing、广告、库存、利润、账号风险有明确影响",
+            ],
+            "rejected": [
+                "泛泛运营教程",
+                "工具商软文和优惠推广",
+                "与 Amazon 卖家无直接关系的泛电商新闻",
+                "旧政策重复解释",
+            ],
+        }
+    return {
+        "allowedCategories": ["ai_models", "ai_products", "agent_tools", "papers", "industry", "monetization"],
+        "tagRules": "标签 2-5 个；除品牌、模型名、产品名、账号名外必须使用中文短词；禁止 news/update/AI/Amazon 等泛标签。",
+        "reasonRules": "推荐理由必须说明为什么值得关注，关联模型能力、产品变化、开发者动作或行业影响。",
+        "accepted": [
+            "新模型发布、模型能力变化、开源模型、API 或价格变化",
+            "AI 产品上线、功能更新、商业化变化、重要合作",
+            "Agent、编程工具、开发框架、论文、技术报告、行业变化",
+        ],
+        "rejected": [
+            "只提到 AI 但没有具体变化",
+            "泛教程、列表合集、SEO 文章",
+            "无来源、无发布时间、无明确事件的转述",
+        ],
+    }
 
 
 def _upsert_prefilter(
@@ -352,7 +712,14 @@ def _upsert_model_score(
         "credibility_score": provider_score.credibility_score,
         "seller_action_level": provider_score.seller_action_level,
         "reason": provider_score.reason,
-        "raw_json": provider_score.raw_json,
+        "raw_json": {
+            **provider_score.raw_json,
+            "confidenceScore": provider_score.confidence_score,
+            "tags": provider_score.tags,
+            "eventType": provider_score.event_type,
+            "keyFacts": provider_score.key_facts,
+            "riskFlags": provider_score.risk_flags,
+        },
     }
     if existing is None:
         session.add(ModelScoreRecord(**payload))
@@ -378,7 +745,7 @@ def _score_item(
         return FakeLLMProvider(_fake_score(item, source)).score_item(_model_payload(item, source))
 
     try:
-        return build_llm_provider(settings).score_item(_model_payload(item, source))
+        return build_scoring_provider(settings).score_item(_model_payload(item, source))
     except Exception as exc:  # noqa: BLE001 - one model failure should not stop the whole worker batch.
         fallback = _fake_score(item, source)
         fallback_raw = dict(fallback.raw_json)
@@ -402,11 +769,25 @@ def _model_payload(item: NormalizedItemRecord, source: SourceRecord) -> dict[str
             "trustLevel": source.tier,
             "authorityWeight": source.authority_weight,
             "defaultCategories": source.default_categories,
+            "sourceGroup": source.source_group,
+            "socialHandle": source.social_handle,
+            "collectionStatus": source.collection_status,
         },
         "titleOriginal": _truncate_text(item.title_original, 300),
         "summaryOriginal": _truncate_text(item.summary_original, 4000),
         "url": item.url,
         "publishedAt": item.published_at,
+        "rules": _channel_scoring_rules(item.channel),
+    }
+
+
+def _channel_scoring_rules(channel: str) -> dict[str, object]:
+    rules = _channel_screening_rules(channel)
+    return {
+        "allowedCategories": rules["allowedCategories"],
+        "tagRules": rules["tagRules"],
+        "reasonRules": rules["reasonRules"],
+        "scoreRules": "五维评分均为 0-100；只输出中间评分，不允许决定 selected；推荐理由不能为空。",
     }
 
 
@@ -426,9 +807,18 @@ def _upsert_ranked_item(
     prefilter: PreScreenDecision,
     model_score: ModelScore,
     *,
+    screening: RawScreeningResultRecord,
     observed_at: datetime,
 ) -> RankedItemRecord:
-    threshold = strategy.thresholds_json.get(model_score.category, strategy.thresholds_json.get("selected", 72))
+    base_threshold = float(strategy.thresholds_json.get(model_score.category, strategy.thresholds_json.get("selected", 80)))
+    threshold = adjusted_selected_threshold(
+        channel=item.channel,
+        base_threshold=base_threshold,
+        source_tier=source.tier,
+        screen_bucket=screening.screen_bucket,
+        source_count=1,
+        risk_flags=model_score.risk_flags,
+    )
     policy = RankPolicy(default_threshold=float(threshold), category_thresholds={model_score.category: float(threshold)})
     decision = policy.evaluate(
         RankPolicyInput(
@@ -442,6 +832,16 @@ def _upsert_ranked_item(
             duplicate_penalty=0,
         )
     )
+    selected = decision.selected
+    selection_reason = decision.selection_reason
+    confidence_threshold = float(strategy.thresholds_json.get("confidence", 80))
+    confidence_score = model_score.confidence_score if model_score.confidence_score is not None else screening.confidence_score
+    if confidence_score < confidence_threshold:
+        selected = False
+        selection_reason = "低于精选置信度阈值"
+    if model_score.raw_json.get("provider") != "deepseek" or model_score.raw_json.get("fallbackReason"):
+        selected = False
+        selection_reason = "非 DeepSeek 正式精筛结果，不进入精选"
     ranked = session.get(RankedItemRecord, {"item_id": item.id, "strategy_version": strategy.id})
     payload = {
         "source_weight": decision.source_weight,
@@ -450,9 +850,9 @@ def _upsert_ranked_item(
         "duplicate_penalty": decision.duplicate_penalty,
         "channel_impact_weight": decision.channel_impact_weight,
         "final_score": decision.final_score,
-        "selected": decision.selected,
+        "selected": selected,
         "threshold_used": decision.threshold_used,
-        "selection_reason": decision.selection_reason,
+        "selection_reason": selection_reason,
     }
     if ranked is None:
         ranked = RankedItemRecord(item_id=item.id, strategy_version=strategy.id, **payload)
@@ -464,13 +864,12 @@ def _upsert_ranked_item(
     return ranked
 
 
-def _persist_selected_clusters(session: Session, *, channel: str) -> int:
+def _persist_ranked_clusters(session: Session, *, channel: str) -> int:
     rows = session.execute(
         select(NormalizedItemRecord, SourceRecord, RankedItemRecord)
         .join(SourceRecord, SourceRecord.id == NormalizedItemRecord.source_id)
         .join(RankedItemRecord, RankedItemRecord.item_id == NormalizedItemRecord.id)
         .where(NormalizedItemRecord.channel == channel)
-        .where(RankedItemRecord.selected.is_(True))
     ).all()
     candidates: list[ClusterCandidate] = []
     for item, source, ranked in rows:
@@ -509,6 +908,22 @@ def _persist_selected_clusters(session: Session, *, channel: str) -> int:
             cluster_score=draft.cluster_score,
             embedding=draft.embedding,
         )
+        main_item = session.get(NormalizedItemRecord, draft.main_item_id)
+        main_source = session.get(SourceRecord, main_item.source_id) if main_item is not None else None
+        main_screening = _screening_for_item(session, draft.main_item_id)
+        main_score = _model_score_for_item(session, draft.main_item_id)
+        main_ranked = _ranked_for_item(session, draft.main_item_id)
+        review = auto_review_decision(
+            item=main_item,
+            source=main_source,
+            screening=main_screening,
+            score=main_score,
+            ranked=main_ranked,
+        )
+        cluster.review_status = review.status
+        cluster.review_note = review.note
+        cluster.reviewed_by = "ai-reviewer"
+        cluster.reviewed_at = utc_now()
         session.add(cluster)
         session.flush()
         for candidate in candidates:
@@ -525,6 +940,43 @@ def _persist_selected_clusters(session: Session, *, channel: str) -> int:
         created += 1
     session.flush()
     return created
+
+
+def _screening_for_item(session: Session, item_id: int) -> RawScreeningResultRecord | None:
+    item = session.get(NormalizedItemRecord, item_id)
+    if item is None:
+        return None
+    return session.scalar(
+        select(RawScreeningResultRecord)
+        .where(RawScreeningResultRecord.raw_document_id == item.raw_document_id)
+        .order_by(RawScreeningResultRecord.created_at.desc())
+        .limit(1)
+    )
+
+
+def _model_score_for_item(session: Session, item_id: int) -> ModelScoreRecord | None:
+    return session.scalar(select(ModelScoreRecord).where(ModelScoreRecord.item_id == item_id).limit(1))
+
+
+def _ranked_for_item(session: Session, item_id: int) -> RankedItemRecord | None:
+    return session.scalar(select(RankedItemRecord).where(RankedItemRecord.item_id == item_id).limit(1))
+
+
+def _auto_generate_recent_daily(SessionLocal: sessionmaker[Session], *, now: datetime) -> None:
+    digest_date = now.astimezone(OPERATIONAL_TIMEZONE).date()
+    with SessionLocal() as session:
+        channels = list(session.scalars(select(StrategyVersionRecord.channel).where(StrategyVersionRecord.status == "active")).all())
+        for channel in sorted(set(channels)):
+            strategy = _ensure_active_strategy(session, channel)
+            generate_daily_digest(
+                session,
+                channel=channel,
+                digest_date=digest_date,
+                strategy_version=strategy.id,
+                now=now,
+                auto_publish=True,
+            )
+        session.commit()
 
 
 def ranked_category(session: Session, item_id: int) -> str:
@@ -548,6 +1000,11 @@ def _fake_score(item: NormalizedItemRecord, source: SourceRecord) -> ModelScore:
         title_cn=item.title_cn,
         reason="Fake provider 生成的结构化评分，仅用于流水线验证。",
         seller_action_level="review",
+        confidence_score=82,
+        tags=["本地验证", "模型评分"],
+        event_type="test",
+        key_facts=["本地流水线验证数据"],
+        risk_flags=[],
         raw_json={"provider": "fake", "model": "fake-default"},
     )
 

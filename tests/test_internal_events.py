@@ -16,7 +16,7 @@ def test_internal_events_can_filter_show_detail_and_review(tmp_path):
         headers=auth_header(),
     )
     approved = client.get("/api/v1/internal/events?reviewStatus=approved", headers=auth_header())
-    public = client.get("/api/v1/public/events?channel=ai")
+    public = client.get("/api/v1/public/events?channel=ai&date=2026-05-11")
 
     assert listed.status_code == 200
     assert listed.json()["events"][0]["reviewStatus"] == "pending"
@@ -27,5 +27,11 @@ def test_internal_events_can_filter_show_detail_and_review(tmp_path):
     assert reviewed.json()["event"]["reviewStatus"] == "approved"
     assert reviewed.json()["event"]["reviewNote"] == "可发布"
     assert approved.json()["count"] == 1
-    assert "reviewNote" not in public.json()["events"][0]
-    assert "reviewStatus" not in public.json()["events"][0]
+    public_event = public.json()["events"][0]
+    assert public_event["entryReason"] == "DeepSeek 认为这是高权威模型发布，值得关注。"
+    assert public_event["sourceGroup"] == "official"
+    assert public_event["sourceType"] == "html"
+    assert public_event["sourceTier"] == "T1"
+    assert public_event["mainItem"]["sourceGroup"] == "official"
+    assert "reviewNote" not in public_event
+    assert "reviewStatus" not in public_event

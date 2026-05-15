@@ -12,7 +12,9 @@ from intel_engine.models import (
     FetchRunRecord,
     ModelScoreRecord,
     NormalizedItemRecord,
+    RankedItemRecord,
     RawDocumentRecord,
+    RawScreeningResultRecord,
     SourceRecord,
     SourceStateRecord,
     StrategyVersionRecord,
@@ -115,7 +117,7 @@ def _app_with_event(tmp_path):
             ModelScoreRecord(
                 item_id=item.id,
                 strategy_version="ai-default-v1",
-                model="deepseek-v4-flash",
+                model="deepseek-v4-pro",
                 category="ai_models",
                 relevance_score=91,
                 impact_score=90,
@@ -124,7 +126,49 @@ def _app_with_event(tmp_path):
                 credibility_score=95,
                 seller_action_level="review",
                 reason="DeepSeek 认为这是高权威模型发布，值得关注。",
+                raw_json={
+                    "provider": "deepseek",
+                    "model": "deepseek-v4-pro",
+                    "confidenceScore": 88,
+                    "tags": ["模型发布", "官方动态"],
+                    "eventType": "model_release",
+                    "keyFacts": ["OpenAI 发布 GPT-5"],
+                    "riskFlags": [],
+                },
+            )
+        )
+        session.add(
+            RawScreeningResultRecord(
+                raw_document_id=raw.id,
+                strategy_version="ai-default-v1",
+                provider="deepseek",
+                model="deepseek-v4-flash",
+                screen_status="accepted",
+                screen_bucket="core",
+                relevance_score=92,
+                confidence_score=88,
+                category="ai_models",
+                title_cn="OpenAI 发布 GPT-5",
+                summary_cn="OpenAI 发布新模型。",
+                tags_json=["模型发布", "官方动态"],
+                reason_code="accepted",
+                reason_cn="官方模型发布，信息增量明确。",
                 raw_json={"provider": "deepseek", "model": "deepseek-v4-flash"},
+            )
+        )
+        session.add(
+            RankedItemRecord(
+                item_id=item.id,
+                strategy_version="ai-default-v1",
+                source_weight=95,
+                category_weight=80,
+                freshness_weight=100,
+                duplicate_penalty=0,
+                channel_impact_weight=90,
+                final_score=91.5,
+                selected=True,
+                threshold_used=77,
+                selection_reason="达到精选阈值",
             )
         )
         cluster = EventClusterRecord(
@@ -138,6 +182,10 @@ def _app_with_event(tmp_path):
             source_count=1,
             cluster_score=91.5,
             embedding=[0.1, 0.2],
+            review_status="approved",
+            review_note="AI 自动审核通过。",
+            reviewed_by="ai-reviewer",
+            reviewed_at=now,
         )
         session.add(cluster)
         session.flush()
@@ -167,7 +215,7 @@ def _app_with_event(tmp_path):
 def test_public_events_endpoint_returns_event_clusters_without_internal_fields(tmp_path):
     client = TestClient(_app_with_event(tmp_path))
 
-    response = client.get("/api/v1/public/events?channel=ai")
+    response = client.get("/api/v1/public/events?channel=ai&date=2026-05-11")
 
     assert response.status_code == 200
     payload = response.json()
@@ -203,6 +251,70 @@ def test_public_events_uses_cursor_pagination_without_duplicates(tmp_path):
     assert second["events"][0]["id"] != first["events"][0]["id"]
 
 
+def test_public_events_support_numbered_pagination_metadata(tmp_path):
+    app = _app_with_event(tmp_path)
+    SessionLocal = app.state.production_sessionmaker
+    with SessionLocal() as session:
+        base = datetime(2026, 5, 11, 10, 0, tzinfo=timezone.utc)
+        _add_public_event(session, event_id_suffix="2", observed_at=base + timedelta(hours=1), title="第二条事件")
+        _add_public_event(session, event_id_suffix="3", observed_at=base + timedelta(hours=2), title="第三条事件")
+        session.commit()
+    client = TestClient(app)
+
+    first = client.get("/api/v1/public/events?channel=ai&date=2026-05-11&page=1&pageSize=2").json()
+    second = client.get("/api/v1/public/events?channel=ai&date=2026-05-11&page=2&pageSize=2").json()
+
+    assert first["page"] == 1
+    assert first["pageSize"] == 2
+    assert first["total"] == 3
+    assert first["totalPages"] == 2
+    assert first["hasPrev"] is False
+    assert first["hasNext"] is True
+    assert [event["title"] for event in first["events"]] == ["第三条事件", "第二条事件"]
+    assert second["hasPrev"] is True
+    assert second["hasNext"] is False
+    assert [event["title"] for event in second["events"]] == ["OpenAI 发布 GPT-5"]
+
+
+def test_public_events_support_grouped_category_filter(tmp_path):
+    app = _app_with_event(tmp_path)
+    SessionLocal = app.state.production_sessionmaker
+    with SessionLocal() as session:
+        _add_public_event(
+            session,
+            event_id_suffix="2",
+            observed_at=datetime(2026, 5, 11, 11, 0, tzinfo=timezone.utc),
+            title="第二条事件",
+        )
+        session.commit()
+    client = TestClient(app)
+
+    response = client.get("/api/v1/public/events?channel=ai&date=2026-05-11&category=ai_models,papers&page=1&pageSize=10")
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 2
+
+
+def test_public_events_expose_safe_image_metadata(tmp_path):
+    app = _app_with_event(tmp_path)
+    SessionLocal = app.state.production_sessionmaker
+    with SessionLocal() as session:
+        raw = session.get(RawDocumentRecord, 1)
+        raw.response_headers_json = {
+            **raw.response_headers_json,
+            "x-intel-image-url": "https://openai.com/news/gpt-5/card.png",
+            "x-intel-image-alt": "OpenAI 发布 GPT-5",
+        }
+        session.commit()
+    client = TestClient(app)
+
+    response = client.get("/api/v1/public/events?channel=ai&date=2026-05-11")
+
+    main_item = response.json()["events"][0]["mainItem"]
+    assert main_item["imageUrl"] == "https://openai.com/news/gpt-5/card.png"
+    assert main_item["imageAlt"] == "OpenAI 发布 GPT-5"
+
+
 def test_public_event_detail_returns_members(tmp_path):
     client = TestClient(_app_with_event(tmp_path))
 
@@ -222,7 +334,8 @@ def test_public_daily_endpoint_returns_published_digest(tmp_path):
     assert response.status_code == 200
     payload = response.json()
     assert payload["daily"]["title"] == "AI 日报"
-    assert payload["daily"]["sections"]["highlights"][0]["title"] == "OpenAI 发布 GPT-5"
+    assert payload["daily"]["sections"][0]["items"][0]["title"] == "OpenAI 发布 GPT-5"
+    assert payload["daily"]["sectionsJson"]["highlights"][0]["title"] == "OpenAI 发布 GPT-5"
 
 
 def test_build_events_feed_uses_public_event_fields_only():
@@ -295,7 +408,7 @@ def _add_public_event(session, *, event_id_suffix: str, observed_at: datetime, t
         ModelScoreRecord(
             item_id=item.id,
             strategy_version="ai-default-v1",
-            model="deepseek-v4-flash",
+            model="deepseek-v4-pro",
             category="ai_models",
             relevance_score=91,
             impact_score=90,
@@ -304,7 +417,49 @@ def _add_public_event(session, *, event_id_suffix: str, observed_at: datetime, t
             credibility_score=95,
             seller_action_level="review",
             reason=f"{title} 推荐理由。",
+            raw_json={
+                "provider": "deepseek",
+                "model": "deepseek-v4-pro",
+                "confidenceScore": 88,
+                "tags": ["模型发布", "官方动态"],
+                "eventType": "model_release",
+                "keyFacts": [title],
+                "riskFlags": [],
+            },
+        )
+    )
+    session.add(
+        RawScreeningResultRecord(
+            raw_document_id=raw.id,
+            strategy_version="ai-default-v1",
+            provider="deepseek",
+            model="deepseek-v4-flash",
+            screen_status="accepted",
+            screen_bucket="core",
+            relevance_score=91,
+            confidence_score=88,
+            category="ai_models",
+            title_cn=title,
+            summary_cn=f"{title} 中文摘要。",
+            tags_json=["模型发布", "官方动态"],
+            reason_code="accepted",
+            reason_cn="信息增量明确。",
             raw_json={"provider": "deepseek", "model": "deepseek-v4-flash"},
+        )
+    )
+    session.add(
+        RankedItemRecord(
+            item_id=item.id,
+            strategy_version="ai-default-v1",
+            source_weight=95,
+            category_weight=80,
+            freshness_weight=100,
+            duplicate_penalty=0,
+            channel_impact_weight=90,
+            final_score=90,
+            selected=True,
+            threshold_used=77,
+            selection_reason="达到精选阈值",
         )
     )
     cluster = EventClusterRecord(
@@ -318,6 +473,10 @@ def _add_public_event(session, *, event_id_suffix: str, observed_at: datetime, t
         source_count=1,
         cluster_score=90,
         embedding=[0.1, 0.2],
+        review_status="approved",
+        review_note="AI 自动审核通过。",
+        reviewed_by="ai-reviewer",
+        reviewed_at=observed_at,
     )
     session.add(cluster)
     session.flush()

@@ -22,6 +22,7 @@ def test_initial_migration_declares_production_tables():
         "fetch_jobs",
         "fetch_runs",
         "raw_documents",
+        "raw_screening_results",
         "normalized_items",
         "prefilter_results",
         "model_scores",

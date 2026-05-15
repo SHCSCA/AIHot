@@ -85,16 +85,74 @@ def test_seed_maps_yaml_source_to_production_source(tmp_path):
     assert source.default_categories == ["ai_models"]
     assert source.fetch_interval_minutes == 60
     assert source.visibility == "public"
+    assert source.source_group == "official"
+    assert source.collection_status == "collectable"
+    assert source.free_access is True
 
 
 def test_bundled_channel_configs_have_production_source_coverage():
     configs = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}
 
-    assert len(configs["ai"].sources) >= 20
-    assert len(configs["amazon"].sources) >= 20
+    assert len(configs["ai"].sources) >= 100
+    assert len(configs["amazon"].sources) >= 100
     assert {source.trust_level for source in configs["ai"].sources}.issuperset({"official", "authority", "expert", "media"})
     assert {source.trust_level for source in configs["amazon"].sources}.issuperset({"official", "authority", "expert", "media"})
     assert all(60 <= source.base_weight <= 100 for config in configs.values() for source in config.sources)
+
+
+def test_bundled_enabled_sources_are_rss_first_for_hourly_production():
+    configs = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}
+
+    stable_hourly_parsers = {"rss", "aihot_api", "html_list"}
+    for channel_id in ("ai", "amazon"):
+        enabled_sources = [source for source in configs[channel_id].sources if source.enabled]
+        assert len(enabled_sources) >= 15
+        assert all(source.parser_type in stable_hourly_parsers for source in enabled_sources)
+        assert all(source.url.startswith("https://") for source in enabled_sources)
+
+
+def test_seed_supports_curated_api_and_html_list_adapters(tmp_path):
+    SessionLocal = _session_factory(tmp_path)
+
+    with SessionLocal() as session:
+        seed_sources_from_channel_configs(session, CHANNELS_DIR)
+        aihot = session.scalar(select(SourceRecord).where(SourceRecord.id == "aihot_virxact_selected"))
+        amazon_ads = session.scalar(select(SourceRecord).where(SourceRecord.id == "amazon_ads_updates"))
+
+    assert aihot is not None
+    assert aihot.fetch_adapter == "aihot_api"
+    assert aihot.source_group == "curated"
+    assert amazon_ads is not None
+    assert amazon_ads.fetch_adapter == "html_list"
+
+
+def test_amazon_hourly_sources_prioritize_precise_official_or_seller_feeds():
+    amazon = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}["amazon"]
+    sources = {source.id: source for source in amazon.sources}
+
+    assert sources["amazon_sp_api_release_notes"].enabled is True
+    assert sources["amazon_sp_api_release_notes"].parser_type == "html_list"
+    assert sources["amazon_ads_updates"].enabled is False
+    assert sources["amazon_ads_updates"].metadata.get("collection_status") == "watch"
+    assert sources["amazon_ads_updates"].parser_type == "html_list"
+    for precise_feed in (
+        "marketplace_pulse",
+        "junglescout_blog",
+        "pacvue_blog",
+        "ad_badger_blog",
+        "datahawk_blog",
+        "amazon_shipping_blog",
+        "sellerboard_blog",
+        "repricercom_blog",
+        "supplykick_blog",
+    ):
+        assert sources[precise_feed].enabled is True
+        assert sources[precise_feed].parser_type == "rss"
+    assert sources["datahawk_blog"].url == "https://datahawk.co/feed/"
+    assert sources["helium10_blog"].enabled is False
+    assert sources["sellerapp_blog"].enabled is False
+    assert sources["helium10_blog"].metadata.get("collection_status") == "unavailable"
+    assert sources["sellerapp_blog"].metadata.get("collection_status") == "unavailable"
 
 
 def test_registry_can_upsert_toggle_and_update_state(tmp_path):
@@ -122,6 +180,11 @@ def test_registry_can_upsert_toggle_and_update_state(tmp_path):
                 fetch_interval_minutes=120,
                 enabled=True,
                 visibility="internal",
+                source_group="media",
+                contributor_no="AIHOT-009",
+                social_handle=None,
+                collection_status="collectable",
+                free_access=True,
                 notes=None,
             )
         )
@@ -142,6 +205,10 @@ def test_registry_can_upsert_toggle_and_update_state(tmp_path):
 
     assert source is not None
     assert source.enabled is False
+    assert source.source_group == "media"
+    assert source.contributor_no == "AIHOT-009"
+    assert source.collection_status == "collectable"
+    assert source.free_access is True
     assert state is not None
     assert state.last_success_at == now
     assert state.duplicate_ratio == 0.1

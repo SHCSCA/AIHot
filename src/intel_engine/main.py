@@ -6,6 +6,7 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
+from intel_engine.auth import seed_rbac_defaults
 from intel_engine.db import (
     create_engine_from_settings as create_production_engine,
     init_schema_for_sqlite,
@@ -37,6 +38,14 @@ def create_app(
         init_schema_for_sqlite(production_engine)
         app.state.production_engine = production_engine
         app.state.production_sessionmaker = sessionmaker_for_engine(production_engine)
+        with app.state.production_sessionmaker() as session:
+            settings = Settings(database_url=production_database_url)
+            seed_rbac_defaults(
+                session,
+                admin_username=settings.admin_username,
+                admin_password=settings.admin_password,
+            )
+            session.commit()
 
     app.include_router(router)
     _mount_spa(app, web_dist_path)
