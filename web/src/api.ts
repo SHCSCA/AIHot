@@ -16,7 +16,12 @@ import type {
   Source,
   SourceDiagnostic,
   SourceState,
-  StrategyVersion
+  StrategyVersion,
+  SessionInfo,
+  UserAccount,
+  Role,
+  Permission,
+  AuditLog
 } from "./types";
 
 export type Credentials = {
@@ -118,11 +123,11 @@ export class PublicApi {
     };
   }
 
-  async listSources(filters: { channel?: string; sourceGroup?: string; page?: number; pageSize?: number } = {}): Promise<Source[]> {
+  async listSources(filters: { channel?: string; q?: string; sourceGroup?: string; page?: number; pageSize?: number } = {}): Promise<Source[]> {
     return (await this.listSourcesPage(filters)).items;
   }
 
-  async listSourcesPage(filters: { channel?: string; sourceGroup?: string; page?: number; pageSize?: number } = {}): Promise<Page<Source>> {
+  async listSourcesPage(filters: { channel?: string; q?: string; sourceGroup?: string; page?: number; pageSize?: number } = {}): Promise<Page<Source>> {
     const response = await this.request<{
       sources: Source[];
       count: number;
@@ -180,9 +185,51 @@ export class PublicApi {
   }
 }
 
+export class AuthApi {
+  constructor(private baseUrl = "") {}
+
+  async login(credentials: Credentials): Promise<SessionInfo> {
+    return this.request<SessionInfo>("/api/v1/auth/login", {
+      method: "POST",
+      body: JSON.stringify(credentials)
+    });
+  }
+
+  async logout(): Promise<void> {
+    await this.request<{ ok: boolean }>("/api/v1/auth/logout", { method: "POST" });
+  }
+
+  async me(): Promise<SessionInfo> {
+    return this.request<SessionInfo>("/api/v1/me");
+  }
+
+  async updatePreferences(payload: Partial<SessionInfo["preferences"]>): Promise<SessionInfo> {
+    return this.request<SessionInfo>("/api/v1/me/preferences", {
+      method: "PATCH",
+      body: JSON.stringify(payload)
+    });
+  }
+
+  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      method: init.method,
+      body: init.body,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...(init.headers ?? {})
+      }
+    });
+    if (!response.ok) throw new ApiError(`请求失败：HTTP ${response.status}`, response.status);
+    if (!responseContentType(response).includes("application/json")) {
+      throw new ApiError("请求失败：身份接口没有返回 JSON 数据", response.status);
+    }
+    return response.json() as Promise<T>;
+  }
+}
+
 export class AdminApi {
   constructor(
-    private credentials: Credentials,
     private baseUrl = "",
     private onUnauthorized?: () => void
   ) {}
@@ -426,13 +473,53 @@ export class AdminApi {
     })).pipelineRun;
   }
 
+  async listUsers(): Promise<UserAccount[]> {
+    return (await this.request<{ users: UserAccount[] }>("/api/v1/internal/users")).users;
+  }
+
+  async createUser(payload: {
+    username: string;
+    password: string;
+    displayName?: string;
+    email?: string;
+    roleIds: string[];
+    status?: string;
+  }): Promise<UserAccount> {
+    return (await this.request<{ user: UserAccount }>("/api/v1/internal/users", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    })).user;
+  }
+
+  async updateUser(userId: string, payload: Partial<Pick<UserAccount, "displayName" | "email" | "status">> & { roleIds?: string[]; password?: string }): Promise<UserAccount> {
+    return (await this.request<{ user: UserAccount }>(`/api/v1/internal/users/${userId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload)
+    })).user;
+  }
+
+  async listRoles(): Promise<{ roles: Role[]; permissions: Permission[] }> {
+    return this.request<{ roles: Role[]; permissions: Permission[] }>("/api/v1/internal/roles");
+  }
+
+  async updateRole(roleId: string, permissionIds: string[]): Promise<Role> {
+    return (await this.request<{ role: Role }>(`/api/v1/internal/roles/${roleId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ permissionIds })
+    })).role;
+  }
+
+  async listAuditLogs(filters: { actor?: string; action?: string; take?: number } = {}): Promise<AuditLog[]> {
+    return (await this.request<{ auditLogs: AuditLog[] }>(`/api/v1/internal/audit-logs${query(filters)}`)).auditLogs;
+  }
+
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       method: init.method,
       body: init.body,
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        Authorization: buildBasicAuthHeader(this.credentials),
         ...(init.headers ?? {})
       }
     });

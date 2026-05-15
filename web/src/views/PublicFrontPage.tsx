@@ -31,8 +31,8 @@ import type { DailyArchiveItem, DailySection, PublicDaily, PublicEvent, PublicEv
 import { formatDateTime, formatMonthDay, formatTime, today } from "../utils";
 import { useAsyncData } from "../hooks";
 
-type PublicChannel = "ai" | "amazon";
-type PublicSection = "selected" | "all" | "daily" | "rss" | "sources" | "feedback";
+export type PublicChannel = "ai" | "amazon";
+export type PublicSection = "selected" | "all" | "daily" | "rss" | "sources" | "feedback";
 type ResolvedTheme = "dark" | "light";
 type ThemePreference = ResolvedTheme | "system";
 
@@ -81,16 +81,36 @@ export function PublicFrontPage({
   api,
   loginError,
   loginOpen,
-  onLogin
+  onLogin,
+  embedded = false,
+  hideLoginControls = false,
+  channelValue,
+  sectionValue,
+  searchValue,
+  themeValue,
+  onChannelChange,
+  onSectionChange,
+  onSearchChange,
+  onThemeChange
 }: {
   api: PublicApi;
   loginError: string | null;
   loginOpen: boolean;
   onLogin: (credentials: Credentials) => Promise<void>;
+  embedded?: boolean;
+  hideLoginControls?: boolean;
+  channelValue?: PublicChannel;
+  sectionValue?: PublicSection;
+  searchValue?: string;
+  themeValue?: ThemePreference;
+  onChannelChange?: (channel: PublicChannel) => void;
+  onSectionChange?: (section: PublicSection) => void;
+  onSearchChange?: (query: string) => void;
+  onThemeChange?: (theme: ThemePreference) => void;
 }) {
-  const [channel, setChannel] = useState<PublicChannel>("ai");
-  const [section, setSection] = useState<PublicSection>(() => sectionFromPath(window.location.pathname));
-  const [theme, setTheme] = useState<ThemePreference>(() => loadTheme());
+  const [internalChannel, setInternalChannel] = useState<PublicChannel>("ai");
+  const [internalSection, setInternalSection] = useState<PublicSection>(() => sectionFromPath(window.location.pathname));
+  const [internalTheme, setInternalTheme] = useState<ThemePreference>(() => loadTheme());
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
   const [showLogin, setShowLogin] = useState(loginOpen);
   const [filters, setFilters] = useState({ q: "", category: "", date: "", sourceGroup: "" });
@@ -100,9 +120,18 @@ export function PublicFrontPage({
   const [page, setPage] = useState(1);
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, total: 0 });
   const [eventVersion, setEventVersion] = useState(0);
+  const channel = channelValue ?? internalChannel;
+  const section = sectionValue ?? internalSection;
+  const theme = themeValue ?? internalTheme;
   const activeMode = section === "all" ? "all" : "selected";
   const activeChannel = channels[channel];
   const resolvedTheme = theme === "system" ? systemTheme : theme;
+
+  useEffect(() => {
+    if (searchValue === undefined) return;
+    setFilters((current) => (current.q === searchValue ? current : { ...current, q: searchValue }));
+    setPage(1);
+  }, [searchValue]);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -167,21 +196,27 @@ export function PublicFrontPage({
   ]);
 
   function switchChannel(next: PublicChannel) {
-    setChannel(next);
+    setInternalChannel(next);
+    onChannelChange?.(next);
     setFilters({ q: "", category: "", date: "", sourceGroup: "" });
     setPage(1);
     setEventVersion((current) => current + 1);
   }
 
   function switchSection(next: PublicSection) {
-    setSection(next);
+    setInternalSection(next);
+    onSectionChange?.(next);
     setPage(1);
     window.history.replaceState(null, "", next === "selected" ? "/" : `/${next}`);
   }
 
-  return (
-    <main className="aihot-public-shell">
-      <aside className="aihot-sidebar">
+  function switchTheme(next: ThemePreference) {
+    setInternalTheme(next);
+    onThemeChange?.(next);
+  }
+
+  const sidebar = (
+    <aside className="aihot-sidebar">
         <div className="aihot-logo" aria-label="AI Hot">
           <span>AI</span><i />HOT
         </div>
@@ -206,7 +241,7 @@ export function PublicFrontPage({
               type="button"
               className={theme === "dark" ? "theme-dot active" : "theme-dot"}
               aria-label="深色模式"
-              onClick={() => setTheme("dark")}
+              onClick={() => switchTheme("dark")}
             >
               <Moon size={16} />
             </button>
@@ -214,7 +249,7 @@ export function PublicFrontPage({
               type="button"
               className={theme === "system" ? "theme-dot active" : "theme-dot"}
               aria-label="跟随系统"
-              onClick={() => setTheme("system")}
+              onClick={() => switchTheme("system")}
             >
               <Monitor size={16} />
             </button>
@@ -222,19 +257,21 @@ export function PublicFrontPage({
               type="button"
               className={theme === "light" ? "theme-dot active" : "theme-dot"}
               aria-label="浅色模式"
-              onClick={() => setTheme("light")}
+              onClick={() => switchTheme("light")}
             >
               <Sun size={16} />
             </button>
           </div>
-          <button type="button" className="login-link" onClick={() => setShowLogin((current) => !current)}>
+          {!hideLoginControls && <button type="button" className="login-link" onClick={() => setShowLogin((current) => !current)}>
             <LockKeyhole size={16} />后台入口
-          </button>
+          </button>}
         </div>
       </aside>
+  );
 
-      <section className="aihot-workspace">
-        {section !== "daily" && (
+  const workspace = (
+      <section className={embedded ? "aihot-workspace unified-public-workspace" : "aihot-workspace"}>
+        {section !== "daily" && !embedded && (
           <header className="aihot-topbar">
             <div>
               <h1>{section === "selected" ? activeChannel.title : section === "all" ? activeChannel.heading : sectionTitle(section)}</h1>
@@ -247,15 +284,16 @@ export function PublicFrontPage({
                 value={filters.q}
                 onChange={(event) => {
                   setFilters({ ...filters, q: event.target.value });
+                  onSearchChange?.(event.target.value);
                   setPage(1);
                 }}
                 placeholder="搜索标题/摘要..."
               />
               <button onClick={() => { setPage(1); setEventVersion((current) => current + 1); }}>搜索</button>
             </div>
-            <button className="login-trigger dark" onClick={() => setShowLogin((current) => !current)}>
+            {!hideLoginControls && <button className="login-trigger dark" onClick={() => setShowLogin((current) => !current)}>
               <LockKeyhole size={16} />运营登录
-            </button>
+            </button>}
           </header>
         )}
 
@@ -266,7 +304,7 @@ export function PublicFrontPage({
         ) : section === "rss" ? (
           <RssLinks channel={channel} />
         ) : section === "sources" ? (
-          <SourceWall api={api} channel={channel} />
+          <SourceWall api={api} channel={channel} q={filters.q} />
         ) : section === "feedback" ? (
           <PublicFeedback api={api} channel={channel} />
         ) : (
@@ -299,6 +337,14 @@ export function PublicFrontPage({
           </>
         )}
       </section>
+  );
+
+  if (embedded) return workspace;
+
+  return (
+    <main className="aihot-public-shell">
+      {sidebar}
+      {workspace}
     </main>
   );
 }
@@ -442,14 +488,18 @@ function PublicEventCard({ event, api, showDate }: { event: PublicEvent; api: Pu
   );
 }
 
-function SourceWall({ api, channel }: { api: PublicApi; channel: PublicChannel }) {
+function SourceWall({ api, channel, q }: { api: PublicApi; channel: PublicChannel; q?: string }) {
   const [page, setPage] = useState(1);
+  const [sourceGroup, setSourceGroup] = useState("");
+  useEffect(() => {
+    setPage(1);
+  }, [channel, q, sourceGroup]);
   const { data: sourcePage, error, loading, reload } = useAsyncData(
     async () => {
       if (typeof api.listSourcesPage === "function") {
-        return api.listSourcesPage({ channel, page, pageSize: SOURCE_PAGE_SIZE });
+        return api.listSourcesPage({ channel, q, sourceGroup, page, pageSize: SOURCE_PAGE_SIZE });
       }
-      const sources = await api.listSources({ channel });
+      const sources = await api.listSources({ channel, sourceGroup });
       return {
         items: sources,
         count: sources.length,
@@ -462,7 +512,7 @@ function SourceWall({ api, channel }: { api: PublicApi; channel: PublicChannel }
       };
     },
     { items: [] as Source[], count: 0, page: 1, pageSize: SOURCE_PAGE_SIZE, total: 0, totalPages: 1, hasNext: false, nextCursor: null },
-    [api, channel, page]
+    [api, channel, page, q, sourceGroup]
   );
   return (
     <section className="source-wall">
@@ -472,6 +522,17 @@ function SourceWall({ api, channel }: { api: PublicApi; channel: PublicChannel }
           <p>每张卡片都是一位贡献者的功劳；审核通过的提报会获得专属编号，永久收录在这里。</p>
         </div>
         <button className="ghost dark" onClick={reload}><RefreshCw size={15} />刷新</button>
+      </div>
+      <div className="source-wall-tools segmented-row source-tabs" aria-label="信源墙类型筛选">
+        {sourceGroups.map((option) => (
+          <button
+            key={option.value || "all"}
+            className={sourceGroup === option.value ? "active" : ""}
+            onClick={() => setSourceGroup(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
       {error && <p className="error">{error}</p>}
       {loading && <p className="hint">正在加载信源...</p>}

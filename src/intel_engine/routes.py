@@ -7,9 +7,22 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from pydantic import BaseModel, ConfigDict, Field
-from sqlalchemy import and_, exists, func, or_, select
+from sqlalchemy import and_, delete, exists, func, or_, select
 
-from intel_engine.auth import require_admin
+from intel_engine.auth import (
+    audit_log,
+    clear_session_cookie,
+    create_session,
+    create_user,
+    current_principal,
+    principal_payload,
+    Principal,
+    replace_user_roles,
+    require_permission,
+    revoke_session,
+    set_session_cookie,
+    verify_password,
+)
 from intel_engine.channel_config import load_channel_configs
 from intel_engine.daily import generate_daily_digest
 from intel_engine.evaluation import activate_strategy_version, run_evaluation
@@ -29,7 +42,15 @@ from intel_engine.models import (
     RawScreeningResultRecord,
     SourceRecord,
     SourceStateRecord,
+    AuditLogRecord,
+    PermissionRecord,
+    RolePermissionRecord,
+    RoleRecord,
+    SessionRecord,
     StrategyVersionRecord,
+    UserPreferenceRecord,
+    UserRecord,
+    UserRoleRecord,
 )
 from intel_engine.pipeline import run_pipeline_once
 from intel_engine.quality import is_publishable_original_url, operational_day_bounds_utc
@@ -158,6 +179,46 @@ class PipelineRunWrite(BaseModel):
 
     worker_id: str = Field(default="manual-worker", alias="workerId")
     limit: int = Field(default=10, ge=1, le=100)
+
+
+class LoginWrite(BaseModel):
+    username: str
+    password: str
+
+
+class UserCreateWrite(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    username: str
+    password: str
+    display_name: str | None = Field(default=None, alias="displayName")
+    email: str | None = None
+    role_ids: list[str] = Field(default_factory=lambda: ["operator"], alias="roleIds")
+    status: str = "active"
+
+
+class UserPatchWrite(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    password: str | None = None
+    display_name: str | None = Field(default=None, alias="displayName")
+    email: str | None = None
+    role_ids: list[str] | None = Field(default=None, alias="roleIds")
+    status: str | None = None
+
+
+class RolePatchWrite(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    permission_ids: list[str] = Field(alias="permissionIds")
+
+
+class PreferencePatchWrite(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    theme: str | None = None
+    default_channel: str | None = Field(default=None, alias="defaultChannel")
+    compact_mode: bool | None = Field(default=None, alias="compactMode")
 
 
 PUBLIC_FEEDBACK_TYPES = {"general", "false_positive", "false_negative", "promote", "demote", "category_fix"}
@@ -317,6 +378,7 @@ def public_sources(
     request: Request,
     channel: str | None = None,
     source_group: str | None = Query(default=None, alias="sourceGroup"),
+    q: str | None = None,
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
     page: int | None = Query(default=None, ge=1),
@@ -330,6 +392,16 @@ def public_sources(
         source_group_values = _split_filter_values(source_group)
         if source_group_values:
             stmt = stmt.where(SourceRecord.source_group.in_(source_group_values))
+        if q:
+            like = f"%{q.strip()}%"
+            stmt = stmt.where(
+                or_(
+                    SourceRecord.id.like(like),
+                    SourceRecord.name.like(like),
+                    SourceRecord.url.like(like),
+                    SourceRecord.social_handle.like(like),
+                )
+            )
         if page is not None:
             rows = list(session.scalars(stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc())).all())
             page_data = _numbered_page(rows, page=page, page_size=page_size)
@@ -524,10 +596,188 @@ def daily_feed(request: Request, channel: str) -> Response:
     return Response(content=xml, media_type="application/rss+xml")
 
 
-ADMIN_DEPENDENCIES = [Depends(require_admin)]
+OPS_DASHBOARD = [Depends(require_permission("ops.dashboard.read"))]
+SOURCES_READ = [Depends(require_permission("sources.read"))]
+SOURCES_WRITE = [Depends(require_permission("sources.write"))]
+HEALTH_READ = [Depends(require_permission("health.read"))]
+QUALITY_READ = [Depends(require_permission("quality.read"))]
+JOBS_READ = [Depends(require_permission("jobs.read"))]
+JOBS_RETRY = [Depends(require_permission("jobs.retry"))]
+STRATEGIES_READ = [Depends(require_permission("strategies.read"))]
+STRATEGIES_WRITE = [Depends(require_permission("strategies.write"))]
+STRATEGIES_ACTIVATE = [Depends(require_permission("strategies.activate"))]
+FEEDBACK_READ = [Depends(require_permission("feedback.read"))]
+FEEDBACK_UPDATE = [Depends(require_permission("feedback.update"))]
+EVALUATIONS_READ = [Depends(require_permission("evaluations.read"))]
+EVALUATIONS_RUN = [Depends(require_permission("evaluations.run"))]
+EVENTS_READ = [Depends(require_permission("events.read"))]
+EVENTS_REVIEW = [Depends(require_permission("events.review"))]
+DAILY_READ = [Depends(require_permission("daily.read"))]
+DAILY_PUBLISH = [Depends(require_permission("daily.publish"))]
+USERS_MANAGE = [Depends(require_permission("users.manage"))]
+ROLES_MANAGE = [Depends(require_permission("roles.manage"))]
+SYSTEM_MANAGE = [Depends(require_permission("system.manage"))]
 
 
-@router.get("/api/v1/internal/dashboard", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/auth/login")
+def auth_login(request: Request, response: Response, payload: LoginWrite) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        user = session.scalar(select(UserRecord).where(UserRecord.username == payload.username))
+        if user is None or user.status != "active" or not verify_password(payload.password, user.password_hash):
+            raise HTTPException(status_code=401, detail={"code": "invalid_credentials", "message": "账号或密码错误。"})
+        token = create_session(session, user)
+        session.commit()
+        set_session_cookie(response, token)
+        principal = _principal_payload_for_user(session, user)
+        return principal_payload(principal)
+
+
+@router.post("/api/v1/auth/logout")
+def auth_logout(request: Request, response: Response) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        revoke_session(session, request.cookies.get("aihot_session"))
+        session.commit()
+    clear_session_cookie(response)
+    return {"ok": True}
+
+
+@router.get("/api/v1/me")
+def auth_me(request: Request) -> dict[str, object]:
+    return principal_payload(current_principal(request))
+
+
+@router.patch("/api/v1/me/preferences")
+def auth_patch_preferences(
+    request: Request,
+    payload: PreferencePatchWrite,
+    principal=Depends(require_permission("public.read")),
+) -> dict[str, object]:
+    if principal.user_id is None:
+        raise HTTPException(status_code=401, detail={"code": "unauthenticated", "message": "请先登录。"})
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        prefs = session.get(UserPreferenceRecord, principal.user_id)
+        if prefs is None:
+            prefs = UserPreferenceRecord(user_id=principal.user_id)
+            session.add(prefs)
+        if payload.theme is not None:
+            prefs.theme = payload.theme
+        if payload.default_channel is not None:
+            prefs.default_channel = payload.default_channel
+        if payload.compact_mode is not None:
+            prefs.compact_mode = payload.compact_mode
+        session.commit()
+        user = session.get(UserRecord, principal.user_id)
+        return principal_payload(_principal_payload_for_user(session, user))
+
+
+@router.get("/api/v1/internal/users", dependencies=USERS_MANAGE)
+def internal_users(request: Request) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        users = session.scalars(select(UserRecord).order_by(UserRecord.created_at.desc(), UserRecord.id.desc())).all()
+        return {"users": [_user_payload(session, user) for user in users]}
+
+
+@router.post("/api/v1/internal/users", dependencies=USERS_MANAGE)
+def internal_create_user(request: Request, payload: UserCreateWrite) -> dict[str, object]:
+    if payload.status not in {"active", "disabled"}:
+        raise HTTPException(status_code=422, detail="invalid user status")
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        if session.scalar(select(UserRecord).where(UserRecord.username == payload.username)) is not None:
+            raise HTTPException(status_code=409, detail="username already exists")
+        _ensure_roles_exist(session, payload.role_ids)
+        user = create_user(
+            session,
+            username=payload.username,
+            password=payload.password,
+            display_name=payload.display_name,
+            email=payload.email,
+            role_ids=payload.role_ids,
+            status=payload.status,
+        )
+        audit_log(request, session, action="users.create", target_type="user", target_id=user.id)
+        session.commit()
+        return {"user": _user_payload(session, user)}
+
+
+@router.patch("/api/v1/internal/users/{user_id}", dependencies=USERS_MANAGE)
+def internal_patch_user(request: Request, user_id: int, payload: UserPatchWrite) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        user = session.get(UserRecord, user_id)
+        if user is None:
+            raise HTTPException(status_code=404, detail="user not found")
+        if payload.status is not None:
+            if payload.status not in {"active", "disabled"}:
+                raise HTTPException(status_code=422, detail="invalid user status")
+            user.status = payload.status
+        if payload.display_name is not None:
+            user.display_name = payload.display_name
+        if payload.email is not None:
+            user.email = payload.email
+        if payload.password:
+            from intel_engine.auth import hash_password
+
+            user.password_hash = hash_password(payload.password)
+        if payload.role_ids is not None:
+            _ensure_roles_exist(session, payload.role_ids)
+            replace_user_roles(session, user.id, payload.role_ids)
+        audit_log(request, session, action="users.update", target_type="user", target_id=user.id)
+        session.commit()
+        return {"user": _user_payload(session, user)}
+
+
+@router.get("/api/v1/internal/roles", dependencies=ROLES_MANAGE)
+def internal_roles(request: Request) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        roles = session.scalars(select(RoleRecord).order_by(RoleRecord.id)).all()
+        permissions = session.scalars(select(PermissionRecord).order_by(PermissionRecord.group, PermissionRecord.id)).all()
+        return {
+            "roles": [_role_payload(session, role) for role in roles],
+            "permissions": [_permission_payload(permission) for permission in permissions],
+        }
+
+
+@router.patch("/api/v1/internal/roles/{role_id}", dependencies=ROLES_MANAGE)
+def internal_patch_role(request: Request, role_id: str, payload: RolePatchWrite) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        role = session.get(RoleRecord, role_id)
+        if role is None:
+            raise HTTPException(status_code=404, detail="role not found")
+        _ensure_permissions_exist(session, payload.permission_ids)
+        session.execute(delete(RolePermissionRecord).where(RolePermissionRecord.role_id == role_id))
+        for permission_id in payload.permission_ids:
+            session.add(RolePermissionRecord(role_id=role_id, permission_id=permission_id))
+        audit_log(request, session, action="roles.update", target_type="role", target_id=role_id)
+        session.commit()
+        return {"role": _role_payload(session, role)}
+
+
+@router.get("/api/v1/internal/audit-logs", dependencies=SYSTEM_MANAGE)
+def internal_audit_logs(
+    request: Request,
+    actor: str | None = None,
+    action: str | None = None,
+    take: int = Query(default=50, ge=1, le=200),
+) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        stmt = select(AuditLogRecord)
+        if actor:
+            stmt = stmt.where(AuditLogRecord.actor_username == actor)
+        if action:
+            stmt = stmt.where(AuditLogRecord.action == action)
+        logs = session.scalars(stmt.order_by(AuditLogRecord.created_at.desc(), AuditLogRecord.id.desc()).limit(take)).all()
+        return {"auditLogs": [_audit_payload(log) for log in logs]}
+
+
+@router.get("/api/v1/internal/dashboard", dependencies=OPS_DASHBOARD)
 def internal_dashboard(request: Request, channel: str | None = None) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -556,7 +806,7 @@ def internal_dashboard(request: Request, channel: str | None = None) -> dict[str
         }
 
 
-@router.get("/api/v1/internal/quality-dashboard", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/quality-dashboard", dependencies=QUALITY_READ)
 def internal_quality_dashboard(
     request: Request,
     window: int = Query(default=24, ge=1, le=720),
@@ -576,7 +826,7 @@ def internal_quality_dashboard(
         }
 
 
-@router.get("/api/v1/internal/sources", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/sources", dependencies=SOURCES_READ)
 def internal_sources(
     request: Request,
     channel: str | None = None,
@@ -623,18 +873,25 @@ def internal_sources(
         }
 
 
-@router.post("/api/v1/internal/sources", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/internal/sources", dependencies=SOURCES_WRITE)
 def internal_create_source(request: Request, payload: SourceWrite) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         registry = SourceRegistry(session)
         result = registry.upsert_source(_source_upsert(payload))
         source = registry.get_source(result.source_id)
+        audit_log(
+            request,
+            session,
+            action="sources.create" if result.created else "sources.update",
+            target_type="source",
+            target_id=source.id,
+        )
         session.commit()
         return {"source": _source_payload(source), "created": result.created}
 
 
-@router.patch("/api/v1/internal/sources/{source_id}", dependencies=ADMIN_DEPENDENCIES)
+@router.patch("/api/v1/internal/sources/{source_id}", dependencies=SOURCES_WRITE)
 def internal_patch_source(request: Request, source_id: str, payload: SourcePatch) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -644,12 +901,13 @@ def internal_patch_source(request: Request, source_id: str, payload: SourcePatch
         updates = payload.model_dump(exclude_unset=True)
         for field_name, value in updates.items():
             setattr(source, field_name, value)
+        audit_log(request, session, action="sources.update", target_type="source", target_id=source.id, metadata=updates)
         session.commit()
         session.refresh(source)
         return {"source": _source_payload(source)}
 
 
-@router.get("/api/v1/internal/source-states", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/source-states", dependencies=HEALTH_READ)
 def internal_source_states(
     request: Request,
     channel: str | None = None,
@@ -668,7 +926,7 @@ def internal_source_states(
         return {"count": len(states), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "sourceStates": states}
 
 
-@router.get("/api/v1/internal/source-diagnostics", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/source-diagnostics", dependencies=HEALTH_READ)
 def internal_source_diagnostics(
     request: Request,
     channel: str | None = None,
@@ -723,7 +981,7 @@ def internal_source_diagnostics(
         }
 
 
-@router.get("/api/v1/internal/jobs", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/jobs", dependencies=JOBS_READ)
 def internal_jobs(
     request: Request,
     channel: str | None = None,
@@ -752,7 +1010,7 @@ def internal_jobs(
         return {"count": len(jobs), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "jobs": jobs}
 
 
-@router.post("/api/v1/internal/jobs/{job_id}/retry", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/internal/jobs/{job_id}/retry", dependencies=JOBS_RETRY)
 def internal_retry_job(request: Request, job_id: int) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -765,12 +1023,13 @@ def internal_retry_job(request: Request, job_id: int) -> dict[str, object]:
         job.locked_by = None
         job.attempt_count = 0
         job.last_error = None
+        audit_log(request, session, action="jobs.retry", target_type="job", target_id=job.id)
         session.commit()
         session.refresh(job)
         return {"job": _job_payload(job)}
 
 
-@router.get("/api/v1/internal/strategy-versions", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/strategy-versions", dependencies=STRATEGIES_READ)
 def internal_strategy_versions(request: Request, channel: str | None = None) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -780,18 +1039,19 @@ def internal_strategy_versions(request: Request, channel: str | None = None) -> 
         return {"strategyVersions": [_strategy_payload(strategy) for strategy in session.scalars(stmt).all()]}
 
 
-@router.post("/api/v1/internal/strategy-versions", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/internal/strategy-versions", dependencies=STRATEGIES_WRITE)
 def internal_create_strategy_version(request: Request, payload: StrategyVersionWrite) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         strategy = StrategyVersionRecord(**payload.model_dump())
         session.add(strategy)
+        audit_log(request, session, action="strategies.create", target_type="strategy", target_id=strategy.id)
         session.commit()
         session.refresh(strategy)
         return {"strategyVersion": _strategy_payload(strategy)}
 
 
-@router.post("/api/v1/internal/strategy-versions/{strategy_id}/activate", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/internal/strategy-versions/{strategy_id}/activate", dependencies=STRATEGIES_ACTIVATE)
 def internal_activate_strategy_version(request: Request, strategy_id: str) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -799,23 +1059,26 @@ def internal_activate_strategy_version(request: Request, strategy_id: str) -> di
             strategy = activate_strategy_version(session, strategy_id, now=datetime.now(timezone.utc))
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        audit_log(request, session, action="strategies.activate", target_type="strategy", target_id=strategy.id)
         session.commit()
         session.refresh(strategy)
         return {"strategyVersion": _strategy_payload(strategy)}
 
 
-@router.post("/api/v1/internal/feedback-events", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/internal/feedback-events", dependencies=FEEDBACK_UPDATE)
 def internal_create_feedback_event(request: Request, payload: FeedbackEventWrite) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         event = FeedbackEventRecord(**payload.model_dump())
         session.add(event)
+        session.flush()
+        audit_log(request, session, action="feedback.create", target_type="feedback", target_id=event.id)
         session.commit()
         session.refresh(event)
         return {"feedbackEvent": _feedback_payload(event)}
 
 
-@router.get("/api/v1/internal/feedback-events", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/feedback-events", dependencies=FEEDBACK_READ)
 def internal_feedback_events(
     request: Request,
     channel: str | None = None,
@@ -847,7 +1110,7 @@ def internal_feedback_events(
         return {"count": len(events), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "feedbackEvents": events}
 
 
-@router.patch("/api/v1/internal/feedback-events/{feedback_id}", dependencies=ADMIN_DEPENDENCIES)
+@router.patch("/api/v1/internal/feedback-events/{feedback_id}", dependencies=FEEDBACK_UPDATE)
 def internal_patch_feedback_event(request: Request, feedback_id: int, payload: dict[str, object]) -> dict[str, object]:
     status = payload.get("status")
     if status not in {"unread", "read", "accepted", "ignored"}:
@@ -858,23 +1121,26 @@ def internal_patch_feedback_event(request: Request, feedback_id: int, payload: d
         if event is None:
             raise HTTPException(status_code=404, detail="feedback event not found")
         event.status = str(status)
+        audit_log(request, session, action="feedback.update", target_type="feedback", target_id=event.id, metadata={"status": status})
         session.commit()
         session.refresh(event)
         return {"feedbackEvent": _feedback_payload(event)}
 
 
-@router.post("/api/v1/internal/evaluation-runs", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/internal/evaluation-runs", dependencies=EVALUATIONS_RUN)
 def internal_create_evaluation_run(request: Request, payload: EvaluationRunWrite) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         run = EvaluationRunRecord(**payload.model_dump(), status="pending", metrics_json={})
         session.add(run)
+        session.flush()
+        audit_log(request, session, action="evaluations.create", target_type="evaluation", target_id=run.id)
         session.commit()
         session.refresh(run)
         return {"evaluationRun": _evaluation_run_payload(run)}
 
 
-@router.get("/api/v1/internal/evaluation-runs", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/evaluation-runs", dependencies=EVALUATIONS_READ)
 def internal_evaluation_runs(
     request: Request,
     channel: str | None = None,
@@ -900,7 +1166,7 @@ def internal_evaluation_runs(
         return {"count": len(runs), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "evaluationRuns": runs}
 
 
-@router.get("/api/v1/internal/evaluation-runs/{run_id}", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/evaluation-runs/{run_id}", dependencies=EVALUATIONS_READ)
 def internal_evaluation_run_detail(request: Request, run_id: int) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -910,7 +1176,7 @@ def internal_evaluation_run_detail(request: Request, run_id: int) -> dict[str, o
         return {"evaluationRun": _evaluation_run_payload(run)}
 
 
-@router.post("/api/v1/internal/evaluation-runs/{run_id}/run", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/internal/evaluation-runs/{run_id}/run", dependencies=EVALUATIONS_RUN)
 def internal_run_evaluation(request: Request, run_id: int) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -918,12 +1184,13 @@ def internal_run_evaluation(request: Request, run_id: int) -> dict[str, object]:
             run = run_evaluation(session, run_id, now=datetime.now(timezone.utc))
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+        audit_log(request, session, action="evaluations.run", target_type="evaluation", target_id=run.id)
         session.commit()
         session.refresh(run)
         return {"evaluationRun": _evaluation_run_payload(run)}
 
 
-@router.get("/api/v1/internal/events", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/events", dependencies=EVENTS_READ)
 def internal_events(
     request: Request,
     channel: str | None = None,
@@ -958,7 +1225,7 @@ def internal_events(
         return {"count": len(events), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "events": events}
 
 
-@router.get("/api/v1/internal/events/{event_id}", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/events/{event_id}", dependencies=EVENTS_READ)
 def internal_event_detail(request: Request, event_id: int) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -971,7 +1238,7 @@ def internal_event_detail(request: Request, event_id: int) -> dict[str, object]:
         }
 
 
-@router.patch("/api/v1/internal/events/{event_id}/review", dependencies=ADMIN_DEPENDENCIES)
+@router.patch("/api/v1/internal/events/{event_id}/review", dependencies=EVENTS_REVIEW)
 def internal_review_event(request: Request, event_id: int, payload: EventReviewWrite) -> dict[str, object]:
     if payload.review_status not in {"pending", "approved", "rejected"}:
         raise HTTPException(status_code=422, detail="invalid review status")
@@ -984,12 +1251,20 @@ def internal_review_event(request: Request, event_id: int, payload: EventReviewW
         cluster.review_note = payload.review_note
         cluster.reviewed_by = payload.actor
         cluster.reviewed_at = datetime.now(timezone.utc)
+        audit_log(
+            request,
+            session,
+            action="events.review",
+            target_type="event",
+            target_id=cluster.id,
+            metadata={"reviewStatus": payload.review_status},
+        )
         session.commit()
         session.refresh(cluster)
         return {"event": _internal_event_payload(session, cluster)}
 
 
-@router.get("/api/v1/internal/daily-digests", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/daily-digests", dependencies=DAILY_READ)
 def internal_daily_digests(
     request: Request,
     channel: str | None = None,
@@ -1018,7 +1293,7 @@ def internal_daily_digests(
         return {"count": len(digests), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "dailyDigests": digests}
 
 
-@router.post("/api/v1/internal/daily-digests/generate", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/internal/daily-digests/generate", dependencies=DAILY_PUBLISH)
 def internal_generate_daily_digest(request: Request, payload: DailyDigestGenerateWrite) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -1033,6 +1308,7 @@ def internal_generate_daily_digest(request: Request, payload: DailyDigestGenerat
             session.commit()
             return {"dailyDigest": None, "created": False, "eventCount": 0}
         digest = session.get(DailyDigestRecord, result.digest_id)
+        audit_log(request, session, action="daily.generate", target_type="daily_digest", target_id=result.digest_id)
         session.commit()
         session.refresh(digest)
         return {
@@ -1042,17 +1318,17 @@ def internal_generate_daily_digest(request: Request, payload: DailyDigestGenerat
         }
 
 
-@router.post("/api/v1/internal/daily-digests/{digest_id}/publish", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/internal/daily-digests/{digest_id}/publish", dependencies=DAILY_PUBLISH)
 def internal_publish_daily_digest(request: Request, digest_id: int, payload: ActorWrite) -> dict[str, object]:
     return _set_daily_digest_published(request, digest_id, published=True, actor=payload.actor)
 
 
-@router.post("/api/v1/internal/daily-digests/{digest_id}/unpublish", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/internal/daily-digests/{digest_id}/unpublish", dependencies=DAILY_PUBLISH)
 def internal_unpublish_daily_digest(request: Request, digest_id: int, payload: ActorWrite) -> dict[str, object]:
     return _set_daily_digest_published(request, digest_id, published=False, actor=payload.actor)
 
 
-@router.get("/api/v1/internal/pipeline-runs", dependencies=ADMIN_DEPENDENCIES)
+@router.get("/api/v1/internal/pipeline-runs", dependencies=OPS_DASHBOARD)
 def internal_pipeline_runs(
     request: Request,
     take: int = Query(default=50, ge=1, le=200),
@@ -1074,7 +1350,7 @@ def internal_pipeline_runs(
         return {"count": len(runs), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "pipelineRuns": runs}
 
 
-@router.post("/api/v1/internal/pipeline-runs", dependencies=ADMIN_DEPENDENCIES)
+@router.post("/api/v1/internal/pipeline-runs", dependencies=JOBS_RETRY)
 def internal_create_pipeline_run(request: Request, payload: PipelineRunWrite) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     started_at = datetime.now(timezone.utc)
@@ -1115,6 +1391,7 @@ def internal_create_pipeline_run(request: Request, payload: PipelineRunWrite) ->
             run.normalized_items = stats.normalized_items
             run.ranked_items = stats.ranked_items
             run.clusters = stats.clusters
+        audit_log(request, session, action="pipeline.run", target_type="pipeline_run", target_id=run.id, result=status)
         session.commit()
         session.refresh(run)
         return {"pipelineRun": _pipeline_run_payload(run)}
@@ -1328,6 +1605,117 @@ def _decode_cursor(value: str) -> dict[str, object]:
 
 def _source_upsert(payload: SourceWrite) -> SourceUpsert:
     return SourceUpsert(**payload.model_dump())
+
+
+def _principal_payload_for_user(session, user: UserRecord) -> Principal:
+    roles = list(
+        session.scalars(
+            select(UserRoleRecord.role_id).where(UserRoleRecord.user_id == user.id).order_by(UserRoleRecord.role_id)
+        ).all()
+    )
+    permissions = sorted(
+        set(
+            session.scalars(
+                select(RolePermissionRecord.permission_id).where(RolePermissionRecord.role_id.in_(roles))
+            ).all()
+        )
+    )
+    prefs = session.get(UserPreferenceRecord, user.id)
+    return Principal(
+        user_id=user.id,
+        username=user.username,
+        display_name=user.display_name,
+        roles=roles,
+        permissions=permissions,
+        preferences={
+            "theme": prefs.theme if prefs else "system",
+            "defaultChannel": prefs.default_channel if prefs else "ai",
+            "compactMode": prefs.compact_mode if prefs else False,
+        },
+        authenticated=True,
+        auth_type="session",
+    )
+
+
+def _user_payload(session, user: UserRecord) -> dict[str, object]:
+    roles = list(
+        session.scalars(
+            select(UserRoleRecord.role_id).where(UserRoleRecord.user_id == user.id).order_by(UserRoleRecord.role_id)
+        ).all()
+    )
+    prefs = session.get(UserPreferenceRecord, user.id)
+    return {
+        "id": str(user.id),
+        "username": user.username,
+        "displayName": user.display_name,
+        "email": user.email,
+        "status": user.status,
+        "roles": roles,
+        "preferences": {
+            "theme": prefs.theme if prefs else "system",
+            "defaultChannel": prefs.default_channel if prefs else "ai",
+            "compactMode": prefs.compact_mode if prefs else False,
+        },
+        "lastLoginAt": _iso(user.last_login_at),
+        "createdAt": _iso(user.created_at),
+        "updatedAt": _iso(user.updated_at),
+    }
+
+
+def _role_payload(session, role: RoleRecord) -> dict[str, object]:
+    permissions = list(
+        session.scalars(
+            select(RolePermissionRecord.permission_id)
+            .where(RolePermissionRecord.role_id == role.id)
+            .order_by(RolePermissionRecord.permission_id)
+        ).all()
+    )
+    return {
+        "id": role.id,
+        "name": role.name,
+        "description": role.description,
+        "locked": role.locked,
+        "permissions": permissions,
+        "createdAt": _iso(role.created_at),
+        "updatedAt": _iso(role.updated_at),
+    }
+
+
+def _permission_payload(permission: PermissionRecord) -> dict[str, object]:
+    return {
+        "id": permission.id,
+        "name": permission.name,
+        "description": permission.description,
+        "group": permission.group,
+    }
+
+
+def _audit_payload(log: AuditLogRecord) -> dict[str, object]:
+    return {
+        "id": str(log.id),
+        "actorUserId": str(log.actor_user_id) if log.actor_user_id is not None else None,
+        "actorUsername": log.actor_username,
+        "action": log.action,
+        "targetType": log.target_type,
+        "targetId": log.target_id,
+        "result": log.result,
+        "metadata": log.metadata_json,
+        "createdAt": _iso(log.created_at),
+    }
+
+
+def _ensure_roles_exist(session, role_ids: list[str]) -> None:
+    existing = set(session.scalars(select(RoleRecord.id).where(RoleRecord.id.in_(role_ids))).all())
+    missing = set(role_ids) - existing
+    if missing:
+        raise HTTPException(status_code=422, detail=f"unknown roles: {', '.join(sorted(missing))}")
+
+
+def _ensure_permissions_exist(session, permission_ids: list[str]) -> None:
+    existing = set(session.scalars(select(PermissionRecord.id).where(PermissionRecord.id.in_(permission_ids))).all())
+    missing = set(permission_ids) - existing
+    if missing:
+        raise HTTPException(status_code=422, detail=f"unknown permissions: {', '.join(sorted(missing))}")
 
 
 def _source_payload(source: SourceRecord) -> dict[str, object]:
@@ -2075,6 +2463,13 @@ def _set_daily_digest_published(request: Request, digest_id: int, *, published: 
         digest.published = published
         digest.published_by = actor if published else None
         digest.published_at = datetime.now(timezone.utc) if published else None
+        audit_log(
+            request,
+            session,
+            action="daily.publish" if published else "daily.unpublish",
+            target_type="daily_digest",
+            target_id=digest.id,
+        )
         session.commit()
         session.refresh(digest)
         return {"dailyDigest": _daily_digest_payload(digest)}

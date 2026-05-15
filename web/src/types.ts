@@ -186,6 +186,66 @@ export type Page<T> = {
   metrics?: Record<string, number>;
 };
 
+export type CurrentUser = {
+  id: string | number | null;
+  username: string;
+  displayName: string;
+};
+
+export type UserPreferences = {
+  theme: "dark" | "light" | "system";
+  defaultChannel: "ai" | "amazon";
+  compactMode: boolean;
+};
+
+export type SessionInfo = {
+  user: CurrentUser | null;
+  roles: string[];
+  permissions: string[];
+  preferences: UserPreferences;
+  authenticated: boolean;
+};
+
+export type UserAccount = {
+  id: string;
+  username: string;
+  displayName: string;
+  email?: string | null;
+  status: string;
+  roles: string[];
+  preferences?: UserPreferences;
+  lastLoginAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+export type Role = {
+  id: string;
+  name: string;
+  description: string;
+  locked: boolean;
+  permissions: string[];
+};
+
+export type Permission = {
+  id: string;
+  name: string;
+  description: string;
+  group: string;
+};
+
+export type AuditLog = {
+  id: string;
+  actorUserId: string | null;
+  actorUsername: string;
+  action: string;
+  targetType: string;
+  targetId: string | null;
+  result: string;
+  metadata: Record<string, unknown>;
+  createdAt: string | null;
+};
+
 export type DailyItem = {
   eventId?: string | null;
   title: string;

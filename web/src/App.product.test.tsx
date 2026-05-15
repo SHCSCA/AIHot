@@ -167,6 +167,46 @@ describe("后台产品化界面", () => {
   it("shows a login page before rendering the workspace", async () => {
     sessionStorage.clear();
     const fetchMock = vi.fn().mockImplementation((url: string, init?: RequestInit) => {
+      if (String(url).startsWith("/api/v1/me")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            user: null,
+            roles: ["guest"],
+            permissions: ["feedback.create", "public.read"],
+            preferences: { theme: "dark", defaultChannel: "ai", compactMode: false },
+            authenticated: false
+          })
+        });
+      }
+      if (String(url).startsWith("/api/v1/auth/login")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            user: { id: "1", username: "admin", displayName: "系统管理员" },
+            roles: ["admin"],
+            permissions: [
+              "public.read",
+              "feedback.create",
+              "ops.dashboard.read",
+              "sources.read",
+              "health.read",
+              "quality.read",
+              "jobs.read",
+              "events.read",
+              "daily.read",
+              "strategies.read",
+              "feedback.read",
+              "evaluations.read",
+              "users.manage",
+              "roles.manage",
+              "system.manage"
+            ],
+            preferences: { theme: "dark", defaultChannel: "ai", compactMode: false },
+            authenticated: true
+          })
+        });
+      }
       if (String(url).startsWith("/api/v1/internal/dashboard")) {
         return Promise.resolve({
           ok: true,
@@ -201,19 +241,53 @@ describe("后台产品化界面", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: "AI 热点" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "精选" })).toBeInTheDocument();
     expect(screen.queryByText("信源管理")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "运营登录" }));
     fireEvent.change(screen.getByLabelText("管理员账号"), { target: { value: "admin" } });
     fireEvent.change(screen.getByLabelText("管理员密码"), { target: { value: "admin" } });
     fireEvent.click(screen.getByRole("button", { name: "登录" }));
 
+    expect(await screen.findByRole("button", { name: /信源管理/ })).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: /工作台/ })[0]);
     expect(await screen.findByRole("heading", { name: "工作台" })).toBeInTheDocument();
     expect(screen.getByText("7")).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/v1/internal/dashboard",
-      expect.objectContaining({ headers: expect.objectContaining({ Authorization: "Basic YWRtaW46YWRtaW4=" }) })
+      "/api/v1/internal/dashboard?channel=ai",
+      expect.objectContaining({
+        credentials: "include",
+        headers: expect.not.objectContaining({ Authorization: expect.any(String) })
+      })
     );
+  });
+
+  it("keeps the local theme preference for guest sessions", async () => {
+    localStorage.setItem("publicTheme", "light");
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (String(url).startsWith("/api/v1/me")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            user: null,
+            roles: ["guest"],
+            permissions: ["feedback.create", "public.read"],
+            preferences: { theme: "system", defaultChannel: "ai", compactMode: false },
+            authenticated: false
+          })
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ events: [] })
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "精选" })).toBeInTheDocument();
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe("light"));
+    expect(localStorage.getItem("publicTheme")).toBe("light");
   });
 
   it("uses public API without Basic Auth for the public front page", async () => {

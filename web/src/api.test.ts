@@ -1,24 +1,43 @@
 import { describe, expect, it, vi } from "vitest";
-import { AdminApi, ApiError, PublicApi, buildBasicAuthHeader } from "./api";
+import { AdminApi, ApiError, AuthApi, PublicApi, buildBasicAuthHeader } from "./api";
 
 describe("AdminApi", () => {
   it("builds a Basic Auth header", () => {
     expect(buildBasicAuthHeader({ username: "admin", password: "secret" })).toBe("Basic YWRtaW46c2VjcmV0");
   });
 
-  it("sends Basic Auth when listing sources", async () => {
+  it("sends cookie credentials when listing sources", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ sources: [] })
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    await new AdminApi({ username: "admin", password: "secret" }).listSources();
+    await new AdminApi().listSources();
 
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/v1/internal/sources?take=200",
       expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: "Basic YWRtaW46c2VjcmV0" })
+        credentials: "include",
+        headers: expect.not.objectContaining({ Authorization: expect.any(String) })
+      })
+    );
+  });
+
+  it("uses cookie sessions rather than Basic Auth for RBAC admin calls", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ sources: [] })
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await new AdminApi().listSources();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/internal/sources?take=200",
+      expect.objectContaining({
+        credentials: "include",
+        headers: expect.not.objectContaining({ Authorization: expect.any(String) })
       })
     );
   });
@@ -30,7 +49,7 @@ describe("AdminApi", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const source = await new AdminApi({ username: "admin", password: "secret" }).patchSource("openai_news", {
+    const source = await new AdminApi().patchSource("openai_news", {
       enabled: false
     });
 
@@ -41,7 +60,7 @@ describe("AdminApi", () => {
     );
   });
 
-  it("uses Basic Auth for productized admin endpoints", async () => {
+  it("uses session credentials for productized admin endpoints", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -52,7 +71,7 @@ describe("AdminApi", () => {
       })
     });
     vi.stubGlobal("fetch", fetchMock);
-    const api = new AdminApi({ username: "admin", password: "secret" });
+    const api = new AdminApi();
 
     await api.getDashboard();
     await api.getQualityDashboard({ window: 24 });
@@ -63,13 +82,15 @@ describe("AdminApi", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/v1/internal/dashboard",
       expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: "Basic YWRtaW46c2VjcmV0" })
+        credentials: "include",
+        headers: expect.not.objectContaining({ Authorization: expect.any(String) })
       })
     );
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/v1/internal/quality-dashboard?window=24",
       expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: "Basic YWRtaW46c2VjcmV0" })
+        credentials: "include",
+        headers: expect.not.objectContaining({ Authorization: expect.any(String) })
       })
     );
     expect(fetchMock).toHaveBeenCalledWith(
@@ -100,11 +121,44 @@ describe("AdminApi", () => {
     );
     const onUnauthorized = vi.fn();
 
-    await expect(new AdminApi({ username: "bad", password: "bad" }, "", onUnauthorized).getDashboard()).rejects.toBeInstanceOf(
+    await expect(new AdminApi("", onUnauthorized).getDashboard()).rejects.toBeInstanceOf(
       ApiError
     );
 
     expect(onUnauthorized).toHaveBeenCalledOnce();
+  });
+});
+
+describe("AuthApi", () => {
+  it("logs in with a session cookie and loads the current user", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ user: { username: "admin" }, roles: ["admin"], permissions: ["users.manage"] })
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ user: { username: "admin" }, roles: ["admin"], permissions: ["users.manage"] })
+      });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const api = new AuthApi();
+    await api.login({ username: "admin", password: "secret" });
+    const me = await api.me();
+
+    expect(me.roles).toEqual(["admin"]);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/auth/login",
+      expect.objectContaining({
+        method: "POST",
+        credentials: "include",
+        body: JSON.stringify({ username: "admin", password: "secret" })
+      })
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/me",
+      expect.objectContaining({ credentials: "include" })
+    );
   });
 });
 
