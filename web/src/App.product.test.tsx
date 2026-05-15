@@ -244,9 +244,11 @@ describe("后台产品化界面", () => {
     expect(await screen.findByRole("heading", { name: "精选" })).toBeInTheDocument();
     expect(screen.queryByText("信源管理")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "运营登录" }));
+    expect(await screen.findByRole("heading", { name: "AIHOT 运营入口" })).toBeInTheDocument();
+    expect(screen.getByText("普通访客无需登录即可继续浏览公开内容。")).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("管理员账号"), { target: { value: "admin" } });
     fireEvent.change(screen.getByLabelText("管理员密码"), { target: { value: "admin" } });
-    fireEvent.click(screen.getByRole("button", { name: "登录" }));
+    fireEvent.click(screen.getByRole("button", { name: /进入运营工作台/ }));
 
     expect(await screen.findByRole("button", { name: /信源管理/ })).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("button", { name: /工作台/ })[0]);
@@ -259,6 +261,43 @@ describe("后台产品化界面", () => {
         headers: expect.not.objectContaining({ Authorization: expect.any(String) })
       })
     );
+  });
+
+  it("shows a friendly 401 message on admin login failure", async () => {
+    window.history.replaceState(null, "", "/admin/dashboard");
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (String(url).startsWith("/api/v1/me")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            user: null,
+            roles: ["guest"],
+            permissions: ["feedback.create", "public.read"],
+            preferences: { theme: "dark", defaultChannel: "ai", compactMode: false },
+            authenticated: false
+          })
+        });
+      }
+      if (String(url).startsWith("/api/v1/auth/login")) {
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          headers: { get: () => "application/json" },
+          json: async () => ({ detail: "invalid username or password" })
+        });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({ events: [] }) });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "AIHOT 运营入口" })).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("管理员账号"), { target: { value: "admin" } });
+    fireEvent.change(screen.getByLabelText("管理员密码"), { target: { value: "wrong" } });
+    fireEvent.click(screen.getByRole("button", { name: /进入运营工作台/ }));
+
+    expect(await screen.findByText("账号或密码不正确，请检查后台账号后再试。")).toBeInTheDocument();
   });
 
   it("keeps the local theme preference for guest sessions", async () => {

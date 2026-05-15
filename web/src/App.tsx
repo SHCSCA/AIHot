@@ -1,5 +1,6 @@
 import {
   Activity,
+  ArrowRight,
   BarChart3,
   CalendarDays,
   ClipboardList,
@@ -28,8 +29,8 @@ import {
   Users,
   Zap
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { AdminApi, AuthApi, PublicApi, type Credentials } from "./api";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { AdminApi, ApiError, AuthApi, PublicApi, type Credentials } from "./api";
 import { AuditLogsView, RolesView, UsersView } from "./views/AdminAccessView";
 import type { Dashboard, SessionInfo } from "./types";
 import { DailyDigestsView } from "./views/DailyDigestsView";
@@ -190,7 +191,7 @@ export function App() {
       if (next.preferences?.theme) setTheme(next.preferences.theme);
       if (window.location.pathname.startsWith("/admin") || activeView.startsWith("admin:")) setActiveView("admin:dashboard");
     } catch (error) {
-      setLoginError(error instanceof Error ? error.message : "登录失败");
+      setLoginError(formatLoginError(error));
       throw error;
     }
   }
@@ -221,6 +222,26 @@ export function App() {
     } else {
       window.history.replaceState(null, "", `/admin/${item.id.replace("admin:", "")}`);
     }
+  }
+
+  function leaveLoginGate() {
+    setLoginOpen(false);
+    setLoginError(null);
+    if (activeView.startsWith("admin:")) {
+      setActiveView("public:selected");
+      window.history.replaceState(null, "", "/");
+    }
+  }
+
+  if (!session.authenticated && (loginOpen || activeView.startsWith("admin:"))) {
+    return (
+      <AdminLoginGate
+        error={loginError}
+        loading={sessionLoading}
+        onLogin={login}
+        onBack={leaveLoginGate}
+      />
+    );
   }
 
   return (
@@ -292,6 +313,66 @@ export function App() {
         })}
         {(visibleOps[0] ?? null) && <button className={activeView.startsWith("admin:") ? "active" : ""} onClick={() => activate(visibleOps[0])}><Database size={18} /><span>工作台</span></button>}
       </nav>
+    </main>
+  );
+}
+
+function AdminLoginGate({
+  error,
+  loading,
+  onLogin,
+  onBack
+}: {
+  error: string | null;
+  loading: boolean;
+  onLogin: (credentials: Credentials) => Promise<void>;
+  onBack: () => void;
+}) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault();
+    setSubmitting(true);
+    try {
+      await onLogin({ username, password });
+    } catch {
+      // The gate renders the normalized error from the parent.
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <main className="admin-login-gate">
+      <section className="admin-login-hero" aria-label="AIHOT 运营登录">
+        <div className="admin-login-symbol" aria-hidden="true"><span /></div>
+        <p>AIHOT</p>
+        <h1>AIHOT 运营入口</h1>
+        <strong>员工与授权运营人员登录入口。</strong>
+        <span>普通访客无需登录即可继续浏览公开内容。</span>
+      </section>
+      <form className="admin-login-card" onSubmit={submit}>
+        <div>
+          <h2>登录</h2>
+          <p>登录后解锁收藏、反馈、信源提报、审核、日报发布和质量校准等内部功能。</p>
+        </div>
+        <label>
+          后台账号
+          <input aria-label="管理员账号" autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} />
+        </label>
+        <label>
+          后台密码
+          <input aria-label="管理员密码" autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+        </label>
+        {error && <p className="admin-login-error">{error}</p>}
+        {loading && <p className="admin-login-hint">正在同步登录状态...</p>}
+        <button className="admin-login-submit" type="submit" disabled={submitting || loading || !username || !password}>
+          <span>{submitting ? "正在登录" : "进入运营工作台"}</span><ArrowRight size={17} />
+        </button>
+        <button className="admin-login-back" type="button" onClick={onBack}>暂不登录，返回 AIHot</button>
+      </form>
     </main>
   );
 }
@@ -419,6 +500,13 @@ function PermissionState({ title, description }: { title: string; description: s
       <p>{description}</p>
     </section>
   );
+}
+
+function formatLoginError(error: unknown): string {
+  if (error instanceof ApiError && error.status === 401) return "账号或密码不正确，请检查后台账号后再试。";
+  if (error instanceof ApiError && error.status === 403) return "当前账号没有进入后台的权限。";
+  if (error instanceof Error) return error.message;
+  return "登录失败，请稍后重试。";
 }
 
 function viewFromPath(pathname: string): ActiveView {
