@@ -259,6 +259,66 @@ def test_html_list_adapter_extracts_recent_article_cards_with_images():
     assert result.metadata_json["skipped_old_items"] == 1
 
 
+def test_html_list_adapter_reads_dates_before_card_links():
+    now = datetime(2026, 5, 14, 12, 0, tzinfo=timezone.utc)
+    html = """
+    <html>
+      <body>
+        <div class="post-card">
+          <span class="date">May 14th, 2026</span>
+          <a href="/blog/new-amazon-fba-fee-workflow">New Amazon FBA fee workflow</a>
+          <p>Amazon sellers now have a changed fee workflow to review.</p>
+        </div>
+      </body>
+    </html>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=html, headers={"content-type": "text/html"})
+
+    source = _source_record("amazon_fee_blog", "html_list")
+    source.channel = "amazon"
+    source.url = "https://example.com/blog/"
+    result = HtmlListAdapter(now=now).fetch(source, client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+    assert result.status == "succeeded"
+    assert [document.url for document in result.documents] == [
+        "https://example.com/blog/new-amazon-fba-fee-workflow"
+    ]
+    assert result.documents[0].response_headers_json["x-intel-published-at"] == "2026-05-14T00:00:00+00:00"
+    assert result.metadata_json["candidate_items"] == 1
+    assert result.metadata_json["accepted_items"] == 1
+
+
+def test_html_list_adapter_reads_iso_date_text_in_cards():
+    now = datetime(2026, 5, 14, 12, 0, tzinfo=timezone.utc)
+    html = """
+    <html>
+      <body>
+        <a href="/resources/amazon-ads-keyword-update">Amazon Ads keyword update</a>
+        <span>2026-05-14</span>
+        <p>Amazon Ads changed a campaign keyword control for sellers.</p>
+      </body>
+    </html>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=html, headers={"content-type": "text/html"})
+
+    source = _source_record("amazon_ads_cards", "html_list")
+    source.channel = "amazon"
+    source.url = "https://example.com/resources/"
+    result = HtmlListAdapter(now=now).fetch(source, client=httpx.Client(transport=httpx.MockTransport(handler)))
+
+    assert result.status == "succeeded"
+    assert [document.url for document in result.documents] == [
+        "https://example.com/resources/amazon-ads-keyword-update"
+    ]
+    assert result.documents[0].response_headers_json["x-intel-published-at"] == "2026-05-14T00:00:00+00:00"
+    assert result.metadata_json["candidate_items"] == 1
+    assert result.metadata_json["accepted_items"] == 1
+
+
 def test_html_list_adapter_extracts_sp_api_release_note_sections():
     now = datetime(2026, 5, 14, 10, 0, tzinfo=timezone.utc)
     escaped_release_notes = (

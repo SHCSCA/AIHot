@@ -206,11 +206,16 @@ class HtmlListAdapter:
         skipped_missing_date = 0
         skipped_invalid_original_url = 0
         skipped_over_limit = 0
+        seen_canonical_urls: set[str] = set()
         for block in _html_list_blocks_for_source(source, response.text, str(response.url)):
             title_url = _html_block_anchor(block, str(response.url))
             if title_url is None:
                 continue
             title, url = title_url
+            canonical_url = url if source.id == "amazon_sp_api_release_notes" and "#" in url else canonicalize_url(url)
+            if canonical_url in seen_canonical_urls:
+                continue
+            seen_canonical_urls.add(canonical_url)
             candidate_items += 1
             published_at = _html_block_datetime(block)
             if published_at is None:
@@ -227,7 +232,6 @@ class HtmlListAdapter:
                 continue
             summary = _html_block_summary(block)
             image_url, image_alt = _html_block_image(block, str(response.url))
-            canonical_url = canonicalize_url(url)
             document_headers = {
                 **dict(response.headers),
                 "x-intel-title": title,
@@ -476,10 +480,38 @@ def _html_list_blocks(document: str) -> list[str]:
     ]
     if blocks:
         return blocks
-    return [
-        match.group(0)
-        for match in re.finditer(r"<a\b[^>]+href=[\"'][^\"']+[\"'][^>]*>.*?</a>.{0,800}", document, flags=re.IGNORECASE | re.DOTALL)
-    ]
+    return _html_anchor_context_blocks(document)
+
+
+def _html_anchor_context_blocks(document: str) -> list[str]:
+    blocks: list[str] = []
+    seen_hrefs: set[str] = set()
+    for match in re.finditer(
+        r"<a\b[^>]+href=[\"']([^\"']+)[\"'][^>]*>.*?</a>",
+        document,
+        flags=re.IGNORECASE | re.DOTALL,
+    ):
+        href = html.unescape(match.group(1)).strip()
+        if not href or href in seen_hrefs:
+            continue
+        seen_hrefs.add(href)
+        blocks.append(_html_enclosing_block(document, match.start(), match.end()))
+    return blocks
+
+
+def _html_enclosing_block(document: str, anchor_start: int, anchor_end: int) -> str:
+    prefix = document[:anchor_start]
+    for tag in ("article", "li", "section", "div"):
+        openings = list(re.finditer(fr"<{tag}\b[^>]*>", prefix, flags=re.IGNORECASE | re.DOTALL))
+        if not openings:
+            continue
+        opening = openings[-1]
+        if anchor_start - opening.start() > 1200:
+            continue
+        close_match = re.search(fr"</{tag}>", document[anchor_end:], flags=re.IGNORECASE)
+        if close_match and anchor_end + close_match.end() - opening.start() <= 2600:
+            return document[opening.start() : anchor_end + close_match.end()]
+    return document[max(0, anchor_start - 500) : min(len(document), anchor_end + 900)]
 
 
 def _html_list_blocks_for_source(source: SourceRecord, document: str, base_url: str) -> list[str]:
@@ -539,6 +571,8 @@ def _html_block_datetime(block: str) -> datetime | None:
     patterns = [
         r"<time\b[^>]+datetime=[\"']([^\"']+)[\"']",
         r"datetime=[\"']([^\"']+)[\"']",
+        r"<meta\b[^>]+(?:property|name)=[\"'](?:article:published_time|date|dc\.date|pubdate|publishdate|publish_date)[\"'][^>]+content=[\"']([^\"']+)[\"']",
+        r"<meta\b[^>]+content=[\"']([^\"']+)[\"'][^>]+(?:property|name)=[\"'](?:article:published_time|date|dc\.date|pubdate|publishdate|publish_date)[\"']",
         r"datePublished[\"']?\s*[:=]\s*[\"']([^\"']+)[\"']",
     ]
     for pattern in patterns:
@@ -548,8 +582,12 @@ def _html_block_datetime(block: str) -> datetime | None:
             if parsed is not None:
                 return parsed
     text = collapse_whitespace(html.unescape(TAG_RE.sub(" ", block)))
-    for match in re.finditer(r"\b[A-Z][a-z]{2,8}\s+\d{1,2},\s+\d{4}\b", text):
+    for match in re.finditer(r"\b[A-Z][a-z]{2,8}\s+\d{1,2}(?:st|nd|rd|th)?,\s+\d{4}\b", text):
         parsed = _human_date_datetime(match.group(0)) or _rfc_datetime(match.group(0))
+        if parsed is not None:
+            return parsed
+    for match in re.finditer(r"\b\d{4}[-/]\d{1,2}[-/]\d{1,2}(?:[T\s]\d{1,2}:\d{2}(?::\d{2})?(?:Z|[+-]\d{2}:?\d{2})?)?\b", text):
+        parsed = _iso_datetime(match.group(0).replace("/", "-"))
         if parsed is not None:
             return parsed
     return None
@@ -592,6 +630,7 @@ def _iso_datetime(value: str) -> datetime | None:
 
 
 def _human_date_datetime(value: str) -> datetime | None:
+    value = re.sub(r"\b(\d{1,2})(st|nd|rd|th)\b", r"\1", value, flags=re.IGNORECASE)
     for fmt in ("%B %d, %Y", "%b %d, %Y"):
         try:
             return datetime.strptime(value, fmt).replace(tzinfo=timezone.utc)
