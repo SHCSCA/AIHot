@@ -8,6 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
 from intel_engine.clustering import ClusterCandidate, cluster_candidates
+from intel_engine.channel_config import get_channel_config
 from intel_engine.daily import generate_daily_digest
 from intel_engine.fetchers import get_fetch_adapter
 from intel_engine.llm import (
@@ -341,7 +342,7 @@ def _ensure_active_strategy(session: Session, channel: str) -> StrategyVersionRe
         prefilter_prompt_version="prefilter-v1",
         score_prompt_version="score-v1",
         rank_formula_version="rank-v1",
-        thresholds_json={"record": 70, "selected": 78 if channel == "amazon" else 80, "confidence": 80},
+        thresholds_json={"record": 70, "selected": _default_selected_threshold(channel), "confidence": 80},
         model_config_json={
             "provider": Settings().llm_provider,
             "screeningModel": Settings().llm_screening_model,
@@ -352,6 +353,16 @@ def _ensure_active_strategy(session: Session, channel: str) -> StrategyVersionRe
     session.add(strategy)
     session.flush()
     return strategy
+
+
+def _default_selected_threshold(channel: str) -> float:
+    try:
+        configured = get_channel_config(channel).scoring.get("selected_threshold")
+    except (FileNotFoundError, KeyError, ValueError):
+        configured = None
+    if isinstance(configured, (int, float)):
+        return float(configured)
+    return 80.0
 
 
 def _upsert_screening_result(

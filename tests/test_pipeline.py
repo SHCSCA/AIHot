@@ -21,6 +21,7 @@ from intel_engine.models import (
 )
 from intel_engine.pipeline import (
     _apply_screening_guardrails,
+    _ensure_active_strategy,
     _fake_score,
     _model_payload,
     _normalize_raw_document,
@@ -305,6 +306,17 @@ def test_amazon_screening_guardrail_repairs_schema_invalid_seller_signal():
     assert corrected.screen_bucket == "related"
     assert corrected.category == "fba_logistics"
     assert corrected.reason_code == "seller_ops_signal"
+
+
+def test_default_strategy_uses_channel_config_selected_threshold(tmp_path):
+    SessionLocal = _session_factory(tmp_path)
+
+    with SessionLocal() as session:
+        ai_strategy = _ensure_active_strategy(session, "ai")
+        amazon_strategy = _ensure_active_strategy(session, "amazon")
+
+    assert ai_strategy.thresholds_json["selected"] == 75
+    assert amazon_strategy.thresholds_json["selected"] == 72
 
 
 def test_pipeline_once_produces_public_event_and_isolates_failed_source(tmp_path):
