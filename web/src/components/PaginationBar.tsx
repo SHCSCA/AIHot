@@ -1,3 +1,5 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 type PaginationBarProps = {
   page: number;
   totalPages: number;
@@ -11,7 +13,8 @@ export function PaginationBar({ page, totalPages, onPageChange, disabled = false
   return (
     <nav className="pagination-bar" aria-label="分页">
       <button onClick={() => onPageChange(page - 1)} disabled={disabled || page <= 1}>
-        上一页
+        <ChevronLeft size={16} aria-hidden="true" />
+        <span>上一页</span>
       </button>
       {pages.map((item, index) =>
         item === "gap" ? (
@@ -28,7 +31,8 @@ export function PaginationBar({ page, totalPages, onPageChange, disabled = false
         )
       )}
       <button onClick={() => onPageChange(page + 1)} disabled={disabled || page >= totalPages}>
-        下一页
+        <span>下一页</span>
+        <ChevronRight size={16} aria-hidden="true" />
       </button>
     </nav>
   );

@@ -4,6 +4,7 @@ import {
   List,
   LockKeyhole,
   MessageCircle,
+  Monitor,
   Moon,
   Newspaper,
   Plus,
@@ -22,7 +23,6 @@ import {
   categoryLabel,
   channelLabel,
   collectionStatusLabel,
-  modeLabel,
   sellerActionLevelLabel,
   sourceGroupLabel,
   sourceTypeLabel
@@ -33,7 +33,8 @@ import { useAsyncData } from "../hooks";
 
 type PublicChannel = "ai" | "amazon";
 type PublicSection = "selected" | "all" | "daily" | "rss" | "sources" | "feedback";
-type Theme = "dark" | "light";
+type ResolvedTheme = "dark" | "light";
+type ThemePreference = ResolvedTheme | "system";
 
 const EVENT_PAGE_SIZE = 20;
 const SOURCE_PAGE_SIZE = 24;
@@ -63,13 +64,10 @@ const sectionItems: Array<{ id: PublicSection; label: string; Icon: typeof Zap }
 ];
 
 const sourceGroups = [
-  { value: "", label: "全部" },
-  { value: "official", label: "官方" },
-  { value: "first_party", label: "一手信源" },
+  { value: "", label: "全部信源" },
+  { value: "official,first_party", label: "官方/一手" },
   { value: "media", label: "资讯" },
-  { value: "social", label: "推文" },
-  { value: "community", label: "社区" },
-  { value: "vendor", label: "服务商" }
+  { value: "social,community", label: "社媒/社区" }
 ];
 
 const feedLinks: Array<PublicFeedLink & { channel: PublicChannel }> = [
@@ -92,7 +90,8 @@ export function PublicFrontPage({
 }) {
   const [channel, setChannel] = useState<PublicChannel>("ai");
   const [section, setSection] = useState<PublicSection>(() => sectionFromPath(window.location.pathname));
-  const [theme, setTheme] = useState<Theme>(() => loadTheme());
+  const [theme, setTheme] = useState<ThemePreference>(() => loadTheme());
+  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
   const [showLogin, setShowLogin] = useState(loginOpen);
   const [filters, setFilters] = useState({ q: "", category: "", date: "", sourceGroup: "" });
   const [events, setEvents] = useState<PublicEvent[]>([]);
@@ -103,11 +102,21 @@ export function PublicFrontPage({
   const [eventVersion, setEventVersion] = useState(0);
   const activeMode = section === "all" ? "all" : "selected";
   const activeChannel = channels[channel];
+  const resolvedTheme = theme === "system" ? systemTheme : theme;
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const syncSystemTheme = () => setSystemTheme(media.matches ? "dark" : "light");
+    syncSystemTheme();
+    media.addEventListener?.("change", syncSystemTheme);
+    return () => media.removeEventListener?.("change", syncSystemTheme);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = resolvedTheme;
     localStorage.setItem("publicTheme", theme);
-  }, [theme]);
+  }, [resolvedTheme, theme]);
 
   useEffect(() => {
     if (section === "daily" || section === "rss" || section === "sources" || section === "feedback") return;
@@ -192,22 +201,32 @@ export function PublicFrontPage({
           ))}
         </nav>
         <div className="aihot-sidebar-bottom">
-          <button
-            type="button"
-            className={theme === "dark" ? "theme-dot active" : "theme-dot"}
-            aria-label="深色模式"
-            onClick={() => setTheme("dark")}
-          >
-            <Moon size={16} />
-          </button>
-          <button
-            type="button"
-            className={theme === "light" ? "theme-dot active" : "theme-dot"}
-            aria-label="浅色模式"
-            onClick={() => setTheme("light")}
-          >
-            <Sun size={16} />
-          </button>
+          <div className="theme-switcher" role="group" aria-label="主题切换" data-active={theme}>
+            <button
+              type="button"
+              className={theme === "dark" ? "theme-dot active" : "theme-dot"}
+              aria-label="深色模式"
+              onClick={() => setTheme("dark")}
+            >
+              <Moon size={16} />
+            </button>
+            <button
+              type="button"
+              className={theme === "system" ? "theme-dot active" : "theme-dot"}
+              aria-label="跟随系统"
+              onClick={() => setTheme("system")}
+            >
+              <Monitor size={16} />
+            </button>
+            <button
+              type="button"
+              className={theme === "light" ? "theme-dot active" : "theme-dot"}
+              aria-label="浅色模式"
+              onClick={() => setTheme("light")}
+            >
+              <Sun size={16} />
+            </button>
+          </div>
           <button type="button" className="login-link" onClick={() => setShowLogin((current) => !current)}>
             <LockKeyhole size={16} />后台入口
           </button>
@@ -215,39 +234,30 @@ export function PublicFrontPage({
       </aside>
 
       <section className="aihot-workspace">
-        <header className="aihot-topbar">
-          <div>
-            <h1>{section === "selected" ? activeChannel.title : section === "all" ? activeChannel.heading : sectionTitle(section)}</h1>
-            <p>{sectionDescription(section, activeChannel.description)} · 当前展示最近 24 小时情报</p>
-          </div>
-          <div className="aihot-search">
-            <Search size={16} />
-            <input
-              value={filters.q}
-              onChange={(event) => {
-                setFilters({ ...filters, q: event.target.value });
-                setPage(1);
-              }}
-              placeholder="搜索标题/摘要..."
-            />
-            <button onClick={() => { setPage(1); setEventVersion((current) => current + 1); }}>搜索</button>
-          </div>
-          <button className="login-trigger dark" onClick={() => setShowLogin((current) => !current)}>
-            <LockKeyhole size={16} />运营登录
-          </button>
-        </header>
-
-        <section className="aihot-channel-context">
-          <div>
-            <strong>{activeChannel.title}</strong>
-            <span>{activeChannel.scope}</span>
-          </div>
-          <div className="hero-metrics dark">
-            <span><strong>{events.length}</strong>当前结果</span>
-            <span><strong>{modeLabel(activeMode)}</strong>当前模式</span>
-            <span><strong>24</strong>小时窗口</span>
-          </div>
-        </section>
+        {section !== "daily" && (
+          <header className="aihot-topbar">
+            <div>
+              <h1>{section === "selected" ? activeChannel.title : section === "all" ? activeChannel.heading : sectionTitle(section)}</h1>
+              <p>{sectionDescription(section, activeChannel.description)} · 当前展示最近 24 小时情报</p>
+              <span>{activeChannel.scope}</span>
+            </div>
+            <div className="aihot-search">
+              <Search size={16} />
+              <input
+                value={filters.q}
+                onChange={(event) => {
+                  setFilters({ ...filters, q: event.target.value });
+                  setPage(1);
+                }}
+                placeholder="搜索标题/摘要..."
+              />
+              <button onClick={() => { setPage(1); setEventVersion((current) => current + 1); }}>搜索</button>
+            </div>
+            <button className="login-trigger dark" onClick={() => setShowLogin((current) => !current)}>
+              <LockKeyhole size={16} />运营登录
+            </button>
+          </header>
+        )}
 
         {showLogin && <PublicLoginPanel error={loginError} onLogin={onLogin} />}
 
@@ -304,9 +314,10 @@ function FilterBar({
   onChange: (filters: Partial<{ category: string; date: string; sourceGroup: string }>) => void;
   onRefresh: () => void;
 }) {
+  const categories = categoryOptions(channel);
   return (
     <section className="aihot-filter-panel">
-      <div className="segmented-row" aria-label="信源类型筛选">
+      <div className="segmented-row source-tabs" aria-label="信源类型筛选">
         {sourceGroups.map((option) => (
           <button
             key={option.value || "all"}
@@ -317,19 +328,15 @@ function FilterBar({
           </button>
         ))}
       </div>
-      <div className="segmented-row wide" aria-label="分类筛选">
-        <button className={!filters.category ? "active" : ""} onClick={() => onChange({ category: "" })}>全部</button>
-        {categoryOptions(channel).map((option) => (
-          <button
-            key={option.value}
-            className={filters.category === option.value ? "active" : ""}
-            onClick={() => onChange({ category: option.value })}
-          >
-            {option.shortLabel}
-          </button>
-        ))}
-      </div>
-      <label className="date-filter">历史日期
+      <label className="filter-select">分类
+        <select aria-label="分类筛选" value={filters.category} onChange={(event) => onChange({ category: event.target.value })}>
+          <option value="">全部分类</option>
+          {categories.map((option) => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
+        </select>
+      </label>
+      <label className="filter-select date-filter">历史日期
         <input type="date" value={filters.date} onChange={(event) => onChange({ date: event.target.value })} />
       </label>
       <button className="ghost dark" onClick={onRefresh}><RefreshCw size={15} />刷新</button>
@@ -392,7 +399,7 @@ function PublicEventCard({ event, api, showDate }: { event: PublicEvent; api: Pu
           <strong className="score-badge">精选分 {Math.round(event.score)}</strong>
         </div>
         {event.mainItem?.imageUrl && (
-          <figure className="event-media">
+          <figure className="event-media event-media-natural">
             <img src={event.mainItem.imageUrl} alt={event.mainItem.imageAlt || event.title} loading="lazy" />
           </figure>
         )}
@@ -557,48 +564,80 @@ function DailyReader({ api, channel }: { api: PublicApi; channel: PublicChannel 
   );
   const sections = dailySections(daily);
   const storyCount = daily?.stats?.storyCount ?? sections.reduce((sum, section) => sum + section.items.length, 0);
+  const archiveBaseDate = archive.items[0]?.date ?? date;
 
   return (
     <section className="daily-reader dark">
       <aside className="daily-archive">
         <button className="latest" onClick={() => setDate(today())}>
-          最新一期<span>{today()}</span>
+          <strong>最新一期</strong><span>{today()}</span>
         </button>
-        {archive.items.map((item) => (
-          <button key={item.id} className={date === item.date ? "active" : ""} onClick={() => setDate(item.date)}>
-            <strong>{item.date.slice(5)}</strong>
-            <span>{item.leadTitle || item.title}</span>
-          </button>
-        ))}
+        <div className="daily-archive-month">
+          <span>{archiveMonthLabel(archiveBaseDate)}</span>
+          <em>{archive.items.length}</em>
+        </div>
+        <div className="daily-archive-list">
+          {archive.items.map((item) => (
+            <button key={item.id} className={date === item.date ? "active" : ""} onClick={() => setDate(item.date)}>
+              <strong>{item.date.slice(8)} 日</strong>
+              <span>{item.leadTitle || item.title}</span>
+            </button>
+          ))}
+        </div>
       </aside>
       {error && <p className="error">{error}</p>}
       {loading && !daily && <p className="hint">正在读取日报...</p>}
       {daily ? (
         <article className="daily-document dark">
-          <div className="daily-cover">
-            <p className="eyebrow">VOL.{daily.date.replaceAll("-", ".")} · {storyCount} STORIES · {channelLabel(daily.channel)} DAILY</p>
-            <h2><span>AIHOT</span> 日报</h2>
-            <div>
-              <strong>{daily.date}</strong>
-              <span>{daily.windowLabel || "基于最近 24 小时精选情报自动生成"}</span>
+          <header className="daily-cover">
+            <p className="daily-volume">VOL.{daily.date.replaceAll("-", ".")} · {storyCount} STORIES · {channelLabel(daily.channel)} DAILY</p>
+            <h2>
+              <span className="daily-logo-ai">AI</span>
+              <span className="daily-logo-hot">HOT</span>
+              <span className="daily-logo-title">日报</span>
+            </h2>
+            <div className="daily-cover-meta">
+              <strong>{dailyDateLabel(daily.date)}</strong>
+              <i aria-hidden="true" />
+              <span>DAILY · 每早八时</span>
               <button className="ghost dark" onClick={reload}>刷新日报</button>
             </div>
-          </div>
+            <p className="daily-cover-summary">{daily.windowLabel || "基于最近 24 小时精选情报自动生成"}</p>
+          </header>
+          {sections.length > 0 && (
+            <nav className="daily-toc" aria-label="日报目录">
+              <strong>目录</strong>
+              {sections.map((section, sectionIndex) => (
+                <a key={section.category} href={`#daily-${section.category}`}>
+                  {String(sectionIndex + 1).padStart(2, "0")} {section.label}<span>{section.count} 篇</span>
+                </a>
+              ))}
+            </nav>
+          )}
           {sections.length === 0 && <p className="hint">最近 24 小时暂无可发布精选情报。</p>}
           {sections.map((section, sectionIndex) => (
-            <section className="daily-section" key={section.category}>
+            <section className="daily-section" key={section.category} id={`daily-${section.category}`}>
               <div className="daily-section-title">
                 <strong>{String(sectionIndex + 1).padStart(2, "0")}</strong>
-                <h3>{section.label}</h3>
-                <span>{section.count} 篇</span>
+                <div>
+                  <h3>{section.label}</h3>
+                  <span>{sectionEnglishLabel(section.category)}</span>
+                </div>
+                <em>{section.count} 篇</em>
               </div>
               {section.items.map((item) => (
                 <article className="daily-story" key={item.eventId || item.title}>
-                  <h4>{item.title}</h4>
+                  <div className="daily-story-head">
+                    <h4>{item.title}</h4>
+                    {item.mainItem?.url && <a href={item.mainItem.url} target="_blank" rel="noreferrer"><ExternalLink size={15} />原文</a>}
+                  </div>
+                  <div className="daily-story-meta">
+                    <span>{categoryLabel(item.category)}</span>
+                    {item.mainItem?.sourceName && <span>{item.mainItem.sourceName}</span>}
+                    <span>精选分 {Math.round(Number(item.score ?? 0))}</span>
+                  </div>
                   <p>{item.summary || "待 AI 处理后生成中文摘要。"}</p>
-                  <span>{categoryLabel(item.category)} · 精选分 {Math.round(Number(item.score ?? 0))}</span>
                   {item.entryReason && <em>{formatReason(item.entryReason)}</em>}
-                  {item.mainItem?.url && <a href={item.mainItem.url} target="_blank" rel="noreferrer">查看原文</a>}
                 </article>
               ))}
             </section>
@@ -627,25 +666,45 @@ function RssLinks({ channel }: { channel: PublicChannel }) {
 function categoryOptions(channel: PublicChannel) {
   if (channel === "amazon") {
     return [
-      { value: "policy", label: "政策监管", shortLabel: "政策" },
-      { value: "account_health", label: "账号健康", shortLabel: "账号" },
-      { value: "fba_logistics", label: "FBA 物流", shortLabel: "FBA" },
-      { value: "ads_ppc", label: "广告投放", shortLabel: "广告" },
-      { value: "listing_seo", label: "Listing 与搜索", shortLabel: "Listing" },
-      { value: "fees_margin", label: "费用利润", shortLabel: "费用" },
-      { value: "product_research", label: "选品研究", shortLabel: "选品" },
-      { value: "tools", label: "卖家工具", shortLabel: "工具" },
-      { value: "compliance_trade", label: "合规贸易", shortLabel: "合规" }
+      { value: "policy,account_health,compliance_trade", label: "政策账号合规", shortLabel: "政策/账号" },
+      { value: "fba_logistics", label: "FBA 与物流", shortLabel: "FBA/物流" },
+      { value: "ads_ppc,listing_seo", label: "广告与 Listing", shortLabel: "广告/Listing" },
+      { value: "fees_margin,product_research", label: "费用与选品", shortLabel: "费用/选品" },
+      { value: "tools", label: "卖家工具", shortLabel: "工具" }
     ];
   }
   return [
-    { value: "ai_models", label: "AI 模型", shortLabel: "模型" },
-    { value: "ai_products", label: "AI 产品", shortLabel: "产品" },
-    { value: "industry", label: "行业观察", shortLabel: "行业" },
-    { value: "papers", label: "论文报告", shortLabel: "论文" },
-    { value: "agent_tools", label: "Agent 与工具", shortLabel: "技巧" },
-    { value: "monetization", label: "商业变现", shortLabel: "商业化" }
+    { value: "ai_models,papers", label: "模型与论文", shortLabel: "模型/论文" },
+    { value: "ai_products,agent_tools", label: "产品与 Agent", shortLabel: "产品/Agent" },
+    { value: "industry,monetization", label: "行业与商业化", shortLabel: "行业/商业化" }
   ];
+}
+
+function dailyDateLabel(value: string) {
+  const { year, month, day, date } = dateParts(value);
+  const weekday = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][date.getDay()];
+  return `${year}年${month}月${day}日　${weekday}`;
+}
+
+function archiveMonthLabel(value: string) {
+  const { year, month } = dateParts(value);
+  return `${year} 年 ${month} 月`;
+}
+
+function dateParts(value: string) {
+  const [year = 0, month = 1, day = 1] = value.split("-").map((part) => Number(part));
+  return { year, month, day, date: new Date(year, month - 1, day) };
+}
+
+function sectionEnglishLabel(category: string) {
+  if (/ai_models|papers/.test(category)) return "MODEL RELEASES";
+  if (/ai_products|agent_tools/.test(category)) return "PRODUCT & AGENTS";
+  if (/industry|monetization/.test(category)) return "INDUSTRY SIGNALS";
+  if (/policy|account|compliance/.test(category)) return "POLICY & ACCOUNT";
+  if (/fba|logistics/.test(category)) return "FBA & LOGISTICS";
+  if (/ads|listing/.test(category)) return "ADS & LISTING";
+  if (/fees|product/.test(category)) return "MARGIN & SELECTION";
+  return "DAILY BRIEF";
 }
 
 function dailySections(daily: PublicDaily | null): DailySection[] {
@@ -722,7 +781,13 @@ function sectionFromPath(pathname: string): PublicSection {
   return "selected";
 }
 
-function loadTheme(): Theme {
+function loadTheme(): ThemePreference {
   const stored = localStorage.getItem("publicTheme");
+  if (stored === "system") return "system";
   return stored === "light" ? "light" : "dark";
+}
+
+function getSystemTheme(): ResolvedTheme {
+  if (typeof window.matchMedia !== "function") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
