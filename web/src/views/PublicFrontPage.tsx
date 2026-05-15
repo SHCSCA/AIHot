@@ -37,7 +37,7 @@ type ResolvedTheme = "dark" | "light";
 type ThemePreference = ResolvedTheme | "system";
 
 const EVENT_PAGE_SIZE = 20;
-const SOURCE_PAGE_SIZE = 24;
+const SOURCE_PAGE_SIZE = 6;
 
 const channels: Record<PublicChannel, { title: string; heading: string; description: string; scope: string }> = {
   ai: {
@@ -328,14 +328,18 @@ function FilterBar({
           </button>
         ))}
       </div>
-      <label className="filter-select">分类
-        <select aria-label="分类筛选" value={filters.category} onChange={(event) => onChange({ category: event.target.value })}>
-          <option value="">全部分类</option>
-          {categories.map((option) => (
-            <option key={option.value} value={option.value}>{option.label}</option>
-          ))}
-        </select>
-      </label>
+      <div className="segmented-row category-tabs" aria-label="分类筛选">
+        <button className={!filters.category ? "active" : ""} onClick={() => onChange({ category: "" })}>全部分类</button>
+        {categories.map((option) => (
+          <button
+            key={option.value}
+            className={filters.category === option.value ? "active" : ""}
+            onClick={() => onChange({ category: option.value })}
+          >
+            {option.shortLabel ?? option.label}
+          </button>
+        ))}
+      </div>
       <label className="filter-select date-filter">历史日期
         <input type="date" value={filters.date} onChange={(event) => onChange({ date: event.target.value })} />
       </label>

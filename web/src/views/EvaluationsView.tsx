@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { AdminApi } from "../api";
+import { AdminChannelCards, usePersistedAdminChannel } from "../components/AdminChannelCards";
 import { MetricCard, MetricGrid } from "../components/MetricCard";
 import { Section, TableWrap } from "../components/Section";
 import { StatusLabel } from "../components/StatusLabel";
@@ -8,13 +9,14 @@ import type { EvaluationRun } from "../types";
 import { channelLabel, formatDateTime, jsonLabel } from "../utils";
 
 export function EvaluationsView({ api }: { api: AdminApi }) {
-  const [form, setForm] = useState({ channel: "ai", strategyVersion: "ai-default-v1", windowHours: "24" });
-  const { data: runs, reload, error } = useAsyncData(() => api.listEvaluationRuns({ channel: form.channel }), [] as EvaluationRun[]);
+  const [channel, setChannel] = usePersistedAdminChannel("admin-evaluations-channel");
+  const [form, setForm] = useState({ strategyVersion: "ai-default-v1", windowHours: "24" });
+  const { data: runs, reload, error } = useAsyncData(() => api.listEvaluationRuns({ channel }), [] as EvaluationRun[], [channel]);
   const latest = runs[0];
   const labels = latest?.metrics.labels ?? {};
   const values = latest?.metrics.values ?? {};
   async function createRun() {
-    await api.createEvaluationRun({ channel: form.channel, strategyVersion: form.strategyVersion, name: `${channelLabel(form.channel)} 策略评估`, request: { windowHours: Number(form.windowHours) } });
+    await api.createEvaluationRun({ channel, strategyVersion: form.strategyVersion, name: `${channelLabel(channel)} 策略评估`, request: { windowHours: Number(form.windowHours) } });
     reload();
   }
   async function runEvaluation(run: EvaluationRun) {
@@ -23,6 +25,7 @@ export function EvaluationsView({ api }: { api: AdminApi }) {
   }
   return (
     <div className="view-stack">
+      <AdminChannelCards value={channel} onChange={setChannel} metrics={[{ channel, metrics: { sourceCount: runs.length } }]} />
       <MetricGrid>
         <MetricCard label={labels.selectedEventCount ?? "精选事件数"} value={String(values.selectedEventCount ?? 0)} />
         <MetricCard label={labels.feedbackCount ?? "反馈总数"} value={String(values.feedbackCount ?? 0)} />
@@ -30,7 +33,6 @@ export function EvaluationsView({ api }: { api: AdminApi }) {
       </MetricGrid>
       <Section title="创建评估运行" error={error}>
         <div className="form-grid">
-          <label>频道<select value={form.channel} onChange={(event) => setForm({ ...form, channel: event.target.value })}><option value="ai">AI 热点</option><option value="amazon">Amazon 情报</option></select></label>
           <label>策略版本<input value={form.strategyVersion} onChange={(event) => setForm({ ...form, strategyVersion: event.target.value })} /></label>
           <label>样本窗口（小时）<input value={form.windowHours} onChange={(event) => setForm({ ...form, windowHours: event.target.value })} /></label>
         </div>

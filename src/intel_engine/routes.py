@@ -242,13 +242,15 @@ def public_events(
         stmt = select(EventClusterRecord).where(EventClusterRecord.review_status == "approved")
         if channel:
             stmt = stmt.where(EventClusterRecord.channel == channel)
-        if category:
-            stmt = stmt.where(EventClusterRecord.category == category)
-        if source_group:
+        category_values = _split_filter_values(category)
+        if category_values:
+            stmt = stmt.where(EventClusterRecord.category.in_(category_values))
+        source_group_values = _split_filter_values(source_group)
+        if source_group_values:
             stmt = (
                 stmt.join(NormalizedItemRecord, NormalizedItemRecord.id == EventClusterRecord.main_item_id)
                 .join(SourceRecord, SourceRecord.id == NormalizedItemRecord.source_id)
-                .where(SourceRecord.source_group == source_group)
+                .where(SourceRecord.source_group.in_(source_group_values))
             )
         if event_date is not None:
             start, end = operational_day_bounds_utc(event_date)
@@ -325,8 +327,9 @@ def public_sources(
         stmt = select(SourceRecord).where(SourceRecord.visibility == "public")
         if channel:
             stmt = stmt.where(SourceRecord.channel == channel)
-        if source_group:
-            stmt = stmt.where(SourceRecord.source_group == source_group)
+        source_group_values = _split_filter_values(source_group)
+        if source_group_values:
+            stmt = stmt.where(SourceRecord.source_group.in_(source_group_values))
         if page is not None:
             rows = list(session.scalars(stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc())).all())
             page_data = _numbered_page(rows, page=page, page_size=page_size)
@@ -525,50 +528,28 @@ ADMIN_DEPENDENCIES = [Depends(require_admin)]
 
 
 @router.get("/api/v1/internal/dashboard", dependencies=ADMIN_DEPENDENCIES)
-def internal_dashboard(request: Request) -> dict[str, object]:
+def internal_dashboard(request: Request, channel: str | None = None) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        metrics = {
-            "sourceCount": _count(session, select(func.count()).select_from(SourceRecord)),
-            "healthWarningCount": _count(
-                session,
-                select(func.count())
-                .select_from(SourceStateRecord)
-                .where((SourceStateRecord.error_streak > 0) | (SourceStateRecord.health_score < 80)),
-            ),
-            "pendingJobCount": _count(
-                session, select(func.count()).select_from(FetchJobRecord).where(FetchJobRecord.status == "pending")
-            ),
-            "failedJobCount": _count(
-                session,
-                select(func.count())
-                .select_from(FetchJobRecord)
-                .where(FetchJobRecord.status.in_(["failed", "dead", "pending"]))
-                .where(FetchJobRecord.last_error.is_not(None)),
-            ),
-            "pendingReviewEventCount": _count(
-                session,
-                select(func.count()).select_from(EventClusterRecord).where(EventClusterRecord.review_status == "pending"),
-            ),
-            "publishedDailyCount": _count(
-                session, select(func.count()).select_from(DailyDigestRecord).where(DailyDigestRecord.published.is_(True))
-            ),
-        }
+        failed_jobs_stmt = select(FetchJobRecord).where(FetchJobRecord.last_error.is_not(None))
+        if channel:
+            failed_jobs_stmt = failed_jobs_stmt.join(SourceRecord, SourceRecord.id == FetchJobRecord.source_id).where(
+                SourceRecord.channel == channel
+            )
         failed_jobs = session.scalars(
-            select(FetchJobRecord)
-            .where(FetchJobRecord.last_error.is_not(None))
-            .order_by(FetchJobRecord.updated_at.desc(), FetchJobRecord.id.desc())
-            .limit(5)
+            failed_jobs_stmt.order_by(FetchJobRecord.updated_at.desc(), FetchJobRecord.id.desc()).limit(5)
         ).all()
-        pending_events = session.scalars(
-            select(EventClusterRecord)
-            .where(EventClusterRecord.review_status == "pending")
-            .order_by(EventClusterRecord.last_seen_at.desc())
-            .limit(5)
-        ).all()
+        pending_events_stmt = select(EventClusterRecord).where(EventClusterRecord.review_status == "pending")
+        if channel:
+            pending_events_stmt = pending_events_stmt.where(EventClusterRecord.channel == channel)
+        pending_events = session.scalars(pending_events_stmt.order_by(EventClusterRecord.last_seen_at.desc()).limit(5)).all()
         pipeline_runs = session.scalars(select(PipelineRunRecord).order_by(PipelineRunRecord.started_at.desc()).limit(5)).all()
         return {
-            "metrics": metrics,
+            "metrics": _dashboard_metrics(session),
+            "channelMetrics": [
+                {"channel": channel_id, "metrics": _dashboard_metrics(session, channel=channel_id)}
+                for channel_id in _dashboard_channel_ids(session)
+            ],
             "recentFailedJobs": [_job_payload(job) for job in failed_jobs],
             "pendingReviewEvents": [_internal_event_payload(session, event) for event in pending_events],
             "recentPipelineRuns": [_pipeline_run_payload(run) for run in pipeline_runs],
@@ -599,6 +580,10 @@ def internal_quality_dashboard(
 def internal_sources(
     request: Request,
     channel: str | None = None,
+    q: str | None = None,
+    source_group: str | None = Query(default=None, alias="sourceGroup"),
+    collection_status: str | None = Query(default=None, alias="collectionStatus"),
+    enabled: bool | None = None,
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
     page: int | None = Query(default=None, ge=1),
@@ -606,19 +591,36 @@ def internal_sources(
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        stmt = select(SourceRecord)
-        if channel:
-            stmt = stmt.where(SourceRecord.channel == channel)
+        stmt = _apply_source_filters(
+            select(SourceRecord),
+            channel=channel,
+            q=q,
+            source_group=source_group,
+            collection_status=collection_status,
+            enabled=enabled,
+        )
+        metric_rows = list(session.scalars(stmt).all())
         if page is not None:
             rows = list(session.scalars(stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc())).all())
             page_data = _numbered_page(rows, page=page, page_size=page_size)
             sources = [_source_payload(source) for source in page_data["rows"]]
-            return {**_pagination_meta(page_data, len(sources)), "nextCursor": None, "sources": sources}
+            return {
+                **_pagination_meta(page_data, len(sources)),
+                "nextCursor": None,
+                "metrics": _source_list_metrics(metric_rows),
+                "sources": sources,
+            }
         stmt = _apply_cursor(stmt, SourceRecord.updated_at, SourceRecord.id, cursor)
         stmt = stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.scalars(stmt).all()), take, lambda source: source.updated_at, lambda source: source.id)
         sources = [_source_payload(source) for source in page["rows"]]
-        return {"count": len(sources), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "sources": sources}
+        return {
+            "count": len(sources),
+            "hasNext": page["hasNext"],
+            "nextCursor": page["nextCursor"],
+            "metrics": _source_list_metrics(metric_rows),
+            "sources": sources,
+        }
 
 
 @router.post("/api/v1/internal/sources", dependencies=ADMIN_DEPENDENCIES)
@@ -670,6 +672,12 @@ def internal_source_states(
 def internal_source_diagnostics(
     request: Request,
     channel: str | None = None,
+    q: str | None = None,
+    source_group: str | None = Query(default=None, alias="sourceGroup"),
+    collection_status: str | None = Query(default=None, alias="collectionStatus"),
+    free_access: bool | None = Query(default=None, alias="freeAccess"),
+    diagnostic_status: str | None = Query(default=None, alias="diagnosticStatus"),
+    sort: str = "updated_desc",
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
     page: int | None = Query(default=None, ge=1),
@@ -681,13 +689,27 @@ def internal_source_diagnostics(
             SourceStateRecord,
             SourceStateRecord.source_id == SourceRecord.id,
         )
-        if channel:
-            stmt = stmt.where(SourceRecord.channel == channel)
+        stmt = _apply_source_filters(
+            stmt,
+            channel=channel,
+            q=q,
+            source_group=source_group,
+            collection_status=collection_status,
+            free_access=free_access,
+        )
         if page is not None:
             rows = list(session.execute(stmt.order_by(SourceStateRecord.updated_at.desc(), SourceRecord.id.desc())).all())
-            page_data = _numbered_page(rows, page=page, page_size=page_size)
-            diagnostics = [_source_diagnostic_payload(session, source, state) for source, state in page_data["rows"]]
-            return {**_pagination_meta(page_data, len(diagnostics)), "nextCursor": None, "sourceDiagnostics": diagnostics}
+            diagnostics = [_source_diagnostic_payload(session, source, state) for source, state in rows]
+            diagnostics = _filter_diagnostics(diagnostics, diagnostic_status)
+            diagnostics = _sort_diagnostics(diagnostics, sort)
+            page_data = _numbered_page(diagnostics, page=page, page_size=page_size)
+            page_diagnostics = page_data["rows"]
+            return {
+                **_pagination_meta(page_data, len(page_diagnostics)),
+                "nextCursor": None,
+                "metrics": _diagnostic_list_metrics(diagnostics),
+                "sourceDiagnostics": page_diagnostics,
+            }
         stmt = _apply_cursor(stmt, SourceStateRecord.updated_at, SourceRecord.id, cursor)
         stmt = stmt.order_by(SourceStateRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
         page = _page_rows(list(session.execute(stmt).all()), take, lambda row: row[1].updated_at, lambda row: row[0].id)
@@ -696,6 +718,7 @@ def internal_source_diagnostics(
             "count": len(diagnostics),
             "hasNext": page["hasNext"],
             "nextCursor": page["nextCursor"],
+            "metrics": _diagnostic_list_metrics(diagnostics),
             "sourceDiagnostics": diagnostics,
         }
 
@@ -703,6 +726,7 @@ def internal_source_diagnostics(
 @router.get("/api/v1/internal/jobs", dependencies=ADMIN_DEPENDENCIES)
 def internal_jobs(
     request: Request,
+    channel: str | None = None,
     status: str | None = None,
     take: int = Query(default=50, ge=1, le=200),
     cursor: str | None = None,
@@ -712,6 +736,8 @@ def internal_jobs(
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         stmt = select(FetchJobRecord)
+        if channel:
+            stmt = stmt.join(SourceRecord, SourceRecord.id == FetchJobRecord.source_id).where(SourceRecord.channel == channel)
         if status:
             stmt = stmt.where(FetchJobRecord.status == status)
         if page is not None:
@@ -1124,6 +1150,133 @@ def _numbered_page(rows: list, *, page: int, page_size: int) -> dict[str, object
         "totalPages": total_pages,
         "hasPrev": page > 1 and total > 0,
         "hasNext": total_pages > page,
+    }
+
+
+def _split_filter_values(value: str | None) -> list[str]:
+    if not value:
+        return []
+    return [part.strip() for part in value.replace("|", ",").split(",") if part.strip()]
+
+
+def _apply_source_filters(
+    stmt,
+    *,
+    channel: str | None = None,
+    q: str | None = None,
+    source_group: str | None = None,
+    collection_status: str | None = None,
+    enabled: bool | None = None,
+    free_access: bool | None = None,
+):
+    if channel:
+        stmt = stmt.where(SourceRecord.channel == channel)
+    query_text = (q or "").strip()
+    if query_text:
+        pattern = f"%{query_text}%"
+        stmt = stmt.where(or_(SourceRecord.name.ilike(pattern), SourceRecord.id.ilike(pattern), SourceRecord.url.ilike(pattern)))
+    source_group_values = _split_filter_values(source_group)
+    if source_group_values:
+        stmt = stmt.where(SourceRecord.source_group.in_(source_group_values))
+    collection_values = _split_filter_values(collection_status)
+    if collection_values:
+        stmt = stmt.where(SourceRecord.collection_status.in_(collection_values))
+    if enabled is not None:
+        stmt = stmt.where(SourceRecord.enabled.is_(enabled))
+    if free_access is not None:
+        stmt = stmt.where(SourceRecord.free_access.is_(free_access))
+    return stmt
+
+
+def _source_list_metrics(sources: list[SourceRecord]) -> dict[str, int]:
+    return {
+        "sourceCount": len(sources),
+        "enabledSourceCount": sum(1 for source in sources if source.enabled),
+        "highAuthorityCount": sum(1 for source in sources if source.authority_weight >= 90),
+        "pendingSocialCount": sum(
+            1
+            for source in sources
+            if source.source_group == "social" and source.collection_status != "collectable"
+        ),
+    }
+
+
+def _filter_diagnostics(diagnostics: list[dict[str, object]], diagnostic_status: str | None) -> list[dict[str, object]]:
+    values = set(_split_filter_values(diagnostic_status))
+    if not values:
+        return diagnostics
+    return [diagnostic for diagnostic in diagnostics if diagnostic["diagnosticStatus"] in values]
+
+
+def _sort_diagnostics(diagnostics: list[dict[str, object]], sort: str) -> list[dict[str, object]]:
+    if sort == "updated_desc":
+        return diagnostics
+    if sort == "health_asc":
+        return sorted(diagnostics, key=lambda item: (float(item["healthScore"]), str(item["sourceId"])))
+    if sort == "error_desc":
+        return sorted(diagnostics, key=lambda item: (-int(item["errorStreak"]), str(item["sourceId"])))
+    if sort == "next_fetch":
+        return sorted(diagnostics, key=lambda item: (str(item["nextFetchAt"] or "9999"), str(item["sourceId"])))
+    if sort == "last_error":
+        return sorted(diagnostics, key=lambda item: (str(item["lastErrorAt"] or ""), str(item["sourceId"])), reverse=True)
+    return sorted(diagnostics, key=lambda item: (str(item["diagnosticStatus"]), str(item["sourceId"])))
+
+
+def _diagnostic_list_metrics(diagnostics: list[dict[str, object]]) -> dict[str, int]:
+    warning_count = sum(1 for item in diagnostics if item["diagnosticStatus"] not in {"usable", "waiting"})
+    if diagnostics:
+        average = round(sum(float(item["healthScore"]) for item in diagnostics) / len(diagnostics))
+    else:
+        average = 0
+    return {
+        "sourceCount": len(diagnostics),
+        "averageHealthScore": average,
+        "usableCount": sum(1 for item in diagnostics if item["diagnosticStatus"] == "usable"),
+        "warningCount": warning_count,
+        "missingDateCount": sum(1 for item in diagnostics if item["diagnosticStatus"] == "missing_publish_time"),
+        "waitingCount": sum(1 for item in diagnostics if item["diagnosticStatus"] == "waiting"),
+    }
+
+
+def _dashboard_channel_ids(session) -> list[str]:
+    configured = [config.id for config in load_channel_configs()]
+    stored = session.scalars(select(SourceRecord.channel).distinct().order_by(SourceRecord.channel)).all()
+    return sorted(set(configured) | set(stored))
+
+
+def _dashboard_metrics(session, channel: str | None = None) -> dict[str, int]:
+    source_stmt = select(func.count()).select_from(SourceRecord)
+    health_stmt = select(func.count()).select_from(SourceStateRecord).join(
+        SourceRecord, SourceRecord.id == SourceStateRecord.source_id
+    )
+    pending_job_stmt = select(func.count()).select_from(FetchJobRecord).join(SourceRecord, SourceRecord.id == FetchJobRecord.source_id)
+    failed_job_stmt = select(func.count()).select_from(FetchJobRecord).join(SourceRecord, SourceRecord.id == FetchJobRecord.source_id)
+    pending_event_stmt = select(func.count()).select_from(EventClusterRecord)
+    daily_stmt = select(func.count()).select_from(DailyDigestRecord)
+    if channel:
+        source_stmt = source_stmt.where(SourceRecord.channel == channel)
+        health_stmt = health_stmt.where(SourceRecord.channel == channel)
+        pending_job_stmt = pending_job_stmt.where(SourceRecord.channel == channel)
+        failed_job_stmt = failed_job_stmt.where(SourceRecord.channel == channel)
+        pending_event_stmt = pending_event_stmt.where(EventClusterRecord.channel == channel)
+        daily_stmt = daily_stmt.where(DailyDigestRecord.channel == channel)
+    return {
+        "sourceCount": _count(session, source_stmt),
+        "healthWarningCount": _count(
+            session,
+            health_stmt.where((SourceStateRecord.error_streak > 0) | (SourceStateRecord.health_score < 80)),
+        ),
+        "pendingJobCount": _count(session, pending_job_stmt.where(FetchJobRecord.status == "pending")),
+        "failedJobCount": _count(
+            session,
+            failed_job_stmt.where(FetchJobRecord.status.in_(["failed", "dead", "pending"])).where(
+                FetchJobRecord.last_error.is_not(None)
+            ),
+        ),
+        "pendingReviewEventCount": _count(
+            session, pending_event_stmt.where(EventClusterRecord.review_status == "pending")
+        ),
+        "publishedDailyCount": _count(session, daily_stmt.where(DailyDigestRecord.published.is_(True))),
     }
 
 
@@ -1940,6 +2093,7 @@ def _quality_channel_payload(session, *, channel: str, started_at: datetime) -> 
         },
         "bottlenecks": _quality_bottlenecks(metrics),
         "rejectionReasons": _quality_rejection_reasons(session, channel=channel, started_at=started_at),
+        "rejectionSamples": _quality_rejection_samples(session, channel=channel, started_at=started_at),
         "categoryBreakdown": _quality_category_breakdown(session, channel=channel, started_at=started_at),
         "sourceContributions": _quality_source_contributions(session, channel=channel, started_at=started_at),
     }
@@ -2090,6 +2244,39 @@ def _quality_rejection_reasons(session, *, channel: str, started_at: datetime) -
     return [
         {"reasonCode": reason_code, "bucket": bucket, "reason": reason or "", "count": count}
         for reason_code, bucket, reason, count in rows
+    ]
+
+
+def _quality_rejection_samples(session, *, channel: str, started_at: datetime) -> list[dict[str, object]]:
+    rows = session.execute(
+        select(RawScreeningResultRecord, RawDocumentRecord, SourceRecord)
+        .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+        .join(SourceRecord, SourceRecord.id == RawDocumentRecord.source_id)
+        .where(
+            SourceRecord.channel == channel,
+            RawScreeningResultRecord.created_at >= started_at,
+            RawScreeningResultRecord.screen_status == "rejected",
+        )
+        .order_by(RawScreeningResultRecord.created_at.desc(), RawScreeningResultRecord.id.desc())
+        .limit(20)
+    ).all()
+    return [
+        {
+            "rawDocumentId": str(raw.id),
+            "title": screening.title_cn,
+            "summary": screening.summary_cn,
+            "sourceId": source.id,
+            "sourceName": source.name,
+            "sourceGroup": source.source_group,
+            "category": screening.category,
+            "bucket": screening.screen_bucket,
+            "reasonCode": screening.reason_code,
+            "reason": screening.reason_cn,
+            "confidenceScore": screening.confidence_score,
+            "createdAt": _iso(screening.created_at),
+            "url": raw.url or raw.canonical_url,
+        }
+        for screening, raw, source in rows
     ]
 
 

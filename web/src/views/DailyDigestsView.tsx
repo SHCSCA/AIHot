@@ -1,6 +1,7 @@
 import { Rss } from "lucide-react";
 import { useState } from "react";
 import type { AdminApi } from "../api";
+import { AdminChannelCards, usePersistedAdminChannel } from "../components/AdminChannelCards";
 import { Section, TableWrap } from "../components/Section";
 import { StatusLabel } from "../components/StatusLabel";
 import { useAsyncData } from "../hooks";
@@ -9,21 +10,22 @@ import { categoryLabel } from "../labels";
 import { channelLabel, formatDateTime, today } from "../utils";
 
 export function DailyDigestsView({ api }: { api: AdminApi }) {
-  const [filters, setFilters] = useState({ channel: "ai", date: today() });
+  const [channel, setChannel] = usePersistedAdminChannel("admin-daily-channel");
+  const [filters, setFilters] = useState({ date: today() });
   const { data: digests, reload, error } = useAsyncData(
-    () => api.listDailyDigests({ channel: filters.channel, date: filters.date }),
+    () => api.listDailyDigests({ channel, date: filters.date }),
     [] as DailyDigest[],
-    [filters.channel, filters.date]
+    [channel, filters.date]
   );
 
   return (
     <div className="view-stack">
+      <AdminChannelCards value={channel} onChange={setChannel} metrics={[{ channel, metrics: { sourceCount: digests.length } }]} />
       <Section title="自动日报监控" description="日报由每小时流水线自动基于最近 24 小时精选情报生成并发布；这里仅查看结果和 RSS。">
         <div className="form-grid">
-          <label>频道<select value={filters.channel} onChange={(event) => setFilters({ ...filters, channel: event.target.value })}><option value="ai">AI 热点</option><option value="amazon">Amazon 情报</option></select></label>
           <label>日期<input type="date" value={filters.date} onChange={(event) => setFilters({ ...filters, date: event.target.value })} /></label>
         </div>
-        <div className="inline-actions"><a href={`/feed/${filters.channel}/daily.xml`}><Rss size={15} />RSS 链接</a><button onClick={reload}>刷新</button></div>
+        <div className="inline-actions"><a href={`/feed/${channel}/daily.xml`}><Rss size={15} />RSS 链接</a><button onClick={reload}>刷新</button></div>
       </Section>
       <Section title="日报发布" error={error} action={<button onClick={reload}>刷新</button>}>
         <TableWrap>

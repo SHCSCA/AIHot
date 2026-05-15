@@ -183,6 +183,7 @@ export type Page<T> = {
   hasPrev?: boolean;
   hasNext: boolean;
   nextCursor: string | null;
+  metrics?: Record<string, number>;
 };
 
 export type DailyItem = {
@@ -321,6 +322,10 @@ export type Dashboard = {
     pendingReviewEventCount?: number;
     publishedDailyCount?: number;
   };
+  channelMetrics?: Array<{
+    channel: string;
+    metrics: Dashboard["metrics"];
+  }>;
   recentFailedJobs: Job[];
   pendingReviewEvents: EventCluster[];
   recentPipelineRuns: PipelineRun[];
@@ -359,6 +364,21 @@ export type ChannelQuality = {
   };
   bottlenecks: string[];
   rejectionReasons: Array<{ reasonCode: string; bucket: string; reason: string; count: number }>;
+  rejectionSamples: Array<{
+    rawDocumentId: string;
+    title: string;
+    summary: string;
+    sourceId: string;
+    sourceName: string;
+    sourceGroup: string;
+    category: string;
+    bucket: string;
+    reasonCode: string;
+    reason: string;
+    confidenceScore: number;
+    createdAt: string | null;
+    url: string | null;
+  }>;
   categoryBreakdown: Array<{ category: string; scoredItems: number; selectedItems: number; approvedEvents: number }>;
   sourceContributions: Array<{
     sourceId: string;

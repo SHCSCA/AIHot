@@ -36,7 +36,11 @@ function apiStub(overrides: Partial<AdminApi> = {}) {
       },
       recentFailedJobs: [],
       pendingReviewEvents: [],
-      recentPipelineRuns: []
+      recentPipelineRuns: [],
+      channelMetrics: [
+        { channel: "ai", metrics: { sourceCount: 7, healthWarningCount: 1, pendingJobCount: 2, failedJobCount: 1, pendingReviewEventCount: 3, publishedDailyCount: 4 } },
+        { channel: "amazon", metrics: { sourceCount: 5, healthWarningCount: 0, pendingJobCount: 1, failedJobCount: 0, pendingReviewEventCount: 1, publishedDailyCount: 2 } }
+      ]
     }),
     listEvents: vi.fn().mockResolvedValue([
       {
@@ -96,6 +100,23 @@ function apiStub(overrides: Partial<AdminApi> = {}) {
           conversion: { fetchSuccessRate: 0.93, screenAcceptRate: 0.28, selectedRate: 0, approvedRate: 0.3 },
           bottlenecks: ["已有 AI 初筛通过项，但没有精选，优先校准精筛分数、置信度和精选阈值。"],
           rejectionReasons: [{ reasonCode: "low_confidence", bucket: "invalid", reason: "置信度不足", count: 8 }],
+          rejectionSamples: [
+            {
+              rawDocumentId: "101",
+              title: "旧教程内容",
+              summary: "这是一条没有新增事实的旧教程。",
+              sourceId: "simon_willison_blog",
+              sourceName: "Simon Willison Blog",
+              sourceGroup: "media",
+              category: "ai_models",
+              bucket: "invalid",
+              reasonCode: "low_confidence",
+              reason: "置信度不足",
+              confidenceScore: 42,
+              createdAt: "2026-05-13T08:00:00Z",
+              url: "https://example.com/old"
+            }
+          ],
           categoryBreakdown: [{ category: "ai_models", scoredItems: 11, selectedItems: 0, approvedEvents: 3 }],
           sourceContributions: [
             {
@@ -324,8 +345,9 @@ describe("后台产品化界面", () => {
     render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
 
     expect(await screen.findByText("OpenAI 发布新模型能力")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "一手信源" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "推文" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "官方/一手" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "社媒/社区" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "服务商" })).not.toBeInTheDocument();
     expect(screen.getByText("推荐理由：来自官方一手信源，模型能力变化会影响开发者选型。")).toBeInTheDocument();
     expect(screen.getByText("精选分 86")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "信源墙" }));
@@ -392,9 +414,81 @@ describe("后台产品化界面", () => {
 
     expect(await screen.findByText("Claude 工具更新")).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Claude 工具截图" })).toHaveAttribute("src", "https://anthropic.com/tool.png");
-    await userEvent.click(screen.getByRole("button", { name: "下一页" }));
+    expect(screen.getByRole("img", { name: "Claude 工具截图" }).closest("figure")).toHaveClass("event-media-natural");
+    await userEvent.click(screen.getAllByRole("button", { name: "下一页" })[0]);
 
     await waitFor(() => expect(publicApi.listEvents).toHaveBeenLastCalledWith(expect.objectContaining({ page: 2, pageSize: 20 })));
+  });
+
+  it("renders magazine style daily reader with archive and section document", async () => {
+    const publicApi = {
+      listEvents: vi.fn().mockResolvedValue({ items: [], count: 0, page: 1, pageSize: 20, total: 0, totalPages: 1, hasNext: false, nextCursor: null }),
+      listSources: vi.fn().mockResolvedValue([]),
+      getEventDetail: vi.fn(),
+      getDaily: vi.fn().mockResolvedValue({
+        id: "daily-1",
+        channel: "ai",
+        date: "2026-05-14",
+        generatedAt: "2026-05-14T08:00:00+08:00",
+        title: "AIHOT 日报",
+        windowLabel: "基于最近 24 小时精选情报自动生成",
+        stats: { storyCount: 2 },
+        sections: [
+          {
+            category: "ai_models",
+            label: "模型发布/更新",
+            count: 1,
+            items: [
+              {
+                eventId: "1",
+                title: "Hy3 预览版登陆 GMI",
+                summary: "Hy3 预览版开放使用，模型能力持续增强。",
+                category: "ai_models",
+                score: 88,
+                entryReason: "模型发布来自官方信源，值得关注。",
+                mainItem: { title: "Hy3 预览版登陆 GMI", url: "https://example.com/hy3" }
+              }
+            ]
+          },
+          {
+            category: "ai_products",
+            label: "产品发布/更新",
+            count: 1,
+            items: [
+              {
+                eventId: "2",
+                title: "Runway Agent 发布",
+                summary: "Runway 发布视频创作 Agent。",
+                category: "ai_products",
+                score: 82
+              }
+            ]
+          }
+        ]
+      }),
+      listDailies: vi.fn().mockResolvedValue({
+        items: [{ id: "daily-1", date: "2026-05-14", title: "AIHOT 日报", leadTitle: "Hy3 预览版登陆 GMI", storyCount: 2 }],
+        count: 1,
+        page: 1,
+        pageSize: 20,
+        total: 1,
+        totalPages: 1,
+        hasNext: false,
+        nextCursor: null
+      }),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
+    } as unknown as PublicApi;
+
+    render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
+
+    await userEvent.click(screen.getByRole("button", { name: "日报" }));
+
+    expect(await screen.findByText("VOL.2026.05.14 · 2 STORIES · AI 热点 DAILY")).toBeInTheDocument();
+    expect(screen.getByText("最新一期")).toBeInTheDocument();
+    expect(screen.getByText("模型发布/更新")).toBeInTheDocument();
+    expect(screen.getByText("产品发布/更新")).toBeInTheDocument();
+    expect(screen.getByText("目录")).toBeInTheDocument();
+    expect(screen.getAllByText("Hy3 预览版登陆 GMI").length).toBeGreaterThan(0);
   });
 
   it("switches between dark and light public themes", async () => {
@@ -497,10 +591,17 @@ describe("后台产品化界面", () => {
     render(<QualityView api={apiStub()} />);
 
     expect(await screen.findByText("AI 热点质量漏斗")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /AI 热点/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "拒绝样本" })).toBeInTheDocument();
     const funnel = screen.getByLabelText("AI 热点漏斗");
     expect(within(funnel).getByText("原始条目")).toBeInTheDocument();
     expect(within(funnel).getByText("58")).toBeInTheDocument();
     expect(screen.getByText("已有 AI 初筛通过项，但没有精选，优先校准精筛分数、置信度和精选阈值。")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "拒绝样本" }));
+    expect(await screen.findByText("旧教程内容")).toBeInTheDocument();
+    expect(screen.getByText("这是一条没有新增事实的旧教程。")).toBeInTheDocument();
+    expect(screen.getByText("置信度不足")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "信源贡献" }));
     expect(screen.getByText("Simon Willison Blog")).toBeInTheDocument();
   });
 
@@ -514,50 +615,95 @@ describe("后台产品化界面", () => {
 
   it("loads source pages in the admin source view", async () => {
     const api = apiStub({
-      listSourcesPage: vi
-        .fn()
-        .mockResolvedValueOnce({
+      listSourcesPage: vi.fn().mockImplementation(({ page = 1, pageSize = 50 }) => {
+        if (pageSize === 6) {
+          return Promise.resolve({
+            items: [{ id: "wall_a", name: "Wall Source", channel: "ai", sourceType: "rss", sourceGroup: "media", collectionStatus: "collectable", tier: "T2", fetchAdapter: "rss", fetchIntervalMinutes: 60, visibility: "public", enabled: true, authorityWeight: 80, noiseLevel: 0.1, parserType: "rss", defaultCategories: [], language: "en", region: "global", url: "https://example.com/wall.xml", freeAccess: true }],
+            count: 1,
+            page,
+            pageSize,
+            total: 7,
+            totalPages: 2,
+            hasNext: true,
+            nextCursor: null,
+            metrics: { sourceCount: 203, enabledSourceCount: 180, highAuthorityCount: 18, pendingSocialCount: 9 }
+          });
+        }
+        if (page === 2) {
+          return Promise.resolve({
+            items: [{ id: "source_b", name: "Source B", channel: "ai", sourceType: "rss", sourceGroup: "media", collectionStatus: "collectable", tier: "T2", fetchAdapter: "rss", fetchIntervalMinutes: 60, visibility: "public", enabled: true, authorityWeight: 80, noiseLevel: 0.1, parserType: "rss", defaultCategories: [], language: "en", region: "global", url: "https://example.com/b.xml", freeAccess: true }],
+            count: 1,
+            page,
+            pageSize,
+            total: 203,
+            totalPages: 41,
+            hasNext: true,
+            nextCursor: null,
+            metrics: { sourceCount: 203, enabledSourceCount: 180, highAuthorityCount: 18, pendingSocialCount: 9 }
+          });
+        }
+        return Promise.resolve({
           items: [{ id: "source_a", name: "Source A", channel: "ai", sourceType: "rss", sourceGroup: "media", collectionStatus: "collectable", tier: "T2", fetchAdapter: "rss", fetchIntervalMinutes: 60, visibility: "public", enabled: true, authorityWeight: 80, noiseLevel: 0.1, parserType: "rss", defaultCategories: [], language: "en", region: "global", url: "https://example.com/a.xml", freeAccess: true }],
           count: 1,
+          page,
+          pageSize,
+          total: 203,
+          totalPages: 41,
           hasNext: true,
-          nextCursor: "next-page"
-        })
-        .mockResolvedValueOnce({
-          items: [{ id: "source_b", name: "Source B", channel: "ai", sourceType: "rss", sourceGroup: "media", collectionStatus: "collectable", tier: "T2", fetchAdapter: "rss", fetchIntervalMinutes: 60, visibility: "public", enabled: true, authorityWeight: 80, noiseLevel: 0.1, parserType: "rss", defaultCategories: [], language: "en", region: "global", url: "https://example.com/b.xml", freeAccess: true }],
-          count: 1,
-          hasNext: false,
-          nextCursor: null
-        })
+          nextCursor: null,
+          metrics: { sourceCount: 203, enabledSourceCount: 180, highAuthorityCount: 18, pendingSocialCount: 9 }
+        });
+      })
     });
 
     render(<SourcesView api={api} />);
 
     expect(await screen.findByText("Source A")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "下一页" }));
+    expect(screen.getByText("203")).toBeInTheDocument();
+    expect(screen.getByText("Wall Source")).toBeInTheDocument();
+    expect(api.listSourcesPage).toHaveBeenCalledWith(expect.objectContaining({ channel: "ai", pageSize: 50 }));
+    expect(api.listSourcesPage).toHaveBeenCalledWith(expect.objectContaining({ channel: "ai", pageSize: 6 }));
+    await userEvent.click(screen.getAllByRole("button", { name: "下一页" })[0]);
     expect(await screen.findByText("Source B")).toBeInTheDocument();
   });
 
   it("loads source diagnostic pages in the health view", async () => {
     const api = apiStub({
-      listSourceDiagnosticsPage: vi
-        .fn()
-        .mockResolvedValueOnce({
+      listSourceDiagnosticsPage: vi.fn().mockImplementation(({ page = 1, pageSize = 50 }) => {
+        if (page === 2) {
+          return Promise.resolve({
+            items: [{ sourceId: "source_b", sourceName: "Source B", channel: "ai", tier: "T2", enabled: true, diagnosticStatus: "usable", diagnosticLabel: "可用", healthScore: 90, errorStreak: 0, duplicateRatio: 0, noiseRatio: 0, nextFetchAt: null, lastSuccessAt: null, lastErrorAt: null, backoffUntil: null, rawCount24h: 0, lastRun: null, lastJob: null, screening: { accepted24h: 0, rejected24h: 0, latestStatus: null, latestBucket: null, latestReasonCode: null, latestReason: null, latestAt: null } }],
+            count: 1,
+            page,
+            pageSize,
+            total: 12,
+            totalPages: 3,
+            hasNext: true,
+            nextCursor: null,
+            metrics: { sourceCount: 12, averageHealthScore: 87, usableCount: 9, warningCount: 3, missingDateCount: 1, waitingCount: 2 }
+          });
+        }
+        return Promise.resolve({
           items: [{ sourceId: "source_a", sourceName: "Source A", channel: "ai", tier: "T2", enabled: true, diagnosticStatus: "usable", diagnosticLabel: "可用", healthScore: 90, errorStreak: 0, duplicateRatio: 0, noiseRatio: 0, nextFetchAt: null, lastSuccessAt: null, lastErrorAt: null, backoffUntil: null, rawCount24h: 0, lastRun: null, lastJob: null, screening: { accepted24h: 0, rejected24h: 0, latestStatus: null, latestBucket: null, latestReasonCode: null, latestReason: null, latestAt: null } }],
           count: 1,
+          page,
+          pageSize,
+          total: 12,
+          totalPages: 3,
           hasNext: true,
-          nextCursor: "diag-page"
-        })
-        .mockResolvedValueOnce({
-          items: [{ sourceId: "source_b", sourceName: "Source B", channel: "ai", tier: "T2", enabled: true, diagnosticStatus: "usable", diagnosticLabel: "可用", healthScore: 90, errorStreak: 0, duplicateRatio: 0, noiseRatio: 0, nextFetchAt: null, lastSuccessAt: null, lastErrorAt: null, backoffUntil: null, rawCount24h: 0, lastRun: null, lastJob: null, screening: { accepted24h: 0, rejected24h: 0, latestStatus: null, latestBucket: null, latestReasonCode: null, latestReason: null, latestAt: null } }],
-          count: 1,
-          hasNext: false,
-          nextCursor: null
-        })
+          nextCursor: null,
+          metrics: { sourceCount: 12, averageHealthScore: 87, usableCount: 9, warningCount: 3, missingDateCount: 1, waitingCount: 2 }
+        });
+      })
     });
 
     render(<HealthView api={api} />);
 
     expect(await screen.findByText("Source A")).toBeInTheDocument();
+    expect(screen.getByText("87")).toBeInTheDocument();
+    expect(api.listSourceDiagnosticsPage).toHaveBeenCalledWith(expect.objectContaining({ channel: "ai", pageSize: 50 }));
+    fireEvent.change(screen.getByLabelText("健康状态"), { target: { value: "usable" } });
+    await waitFor(() => expect(api.listSourceDiagnosticsPage).toHaveBeenCalledWith(expect.objectContaining({ diagnosticStatus: "usable" })));
     await userEvent.click(screen.getByRole("button", { name: "下一页" }));
     expect(await screen.findByText("Source B")).toBeInTheDocument();
   });

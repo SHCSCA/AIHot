@@ -101,3 +101,67 @@ def test_public_sources_support_cursor_pagination(tmp_path):
     assert len(first_payload["sources"]) == 5
     assert first_payload["hasNext"] is True
     assert len(second_payload["sources"]) == 2
+
+
+def test_public_sources_support_grouped_source_filter(tmp_path):
+    app = app_with_admin_data(tmp_path)
+    _add_extra_sources(app)
+    client = TestClient(app)
+
+    response = client.get("/api/v1/public/sources?channel=ai&sourceGroup=official,media&page=1&pageSize=20")
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["total"] == 7
+    assert {source["sourceGroup"] for source in payload["sources"]} == {"official", "media"}
+
+
+def test_internal_sources_support_filters_and_full_result_metrics(tmp_path):
+    app = app_with_admin_data(tmp_path)
+    _add_extra_sources(app)
+    SessionLocal = app.state.production_sessionmaker
+    with SessionLocal() as session:
+        source = session.get(SourceRecord, "extra_ai_000")
+        assert source is not None
+        source.enabled = False
+        source.source_group = "social"
+        source.collection_status = "pending_api"
+        source.authority_weight = 91
+        session.commit()
+    client = TestClient(app)
+
+    response = client.get(
+        "/api/v1/internal/sources?channel=ai&q=Extra&sourceGroup=social&collectionStatus=pending_api&enabled=false&page=1&pageSize=50",
+        headers=auth_header(),
+    )
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["total"] == 1
+    assert payload["metrics"]["sourceCount"] == 1
+    assert payload["metrics"]["enabledSourceCount"] == 0
+    assert payload["metrics"]["highAuthorityCount"] == 1
+    assert payload["metrics"]["pendingSocialCount"] == 1
+    assert payload["sources"][0]["id"] == "extra_ai_000"
+
+
+def test_internal_source_diagnostics_support_filters_sort_and_metrics(tmp_path):
+    app = app_with_admin_data(tmp_path)
+    _add_extra_sources(app)
+    client = TestClient(app)
+
+    response = client.get(
+        "/api/v1/internal/source-diagnostics?channel=ai&q=Extra AI Source&sourceGroup=media&diagnosticStatus=waiting&sort=health_asc&page=1&pageSize=3",
+        headers=auth_header(),
+    )
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload["total"] == 6
+    assert payload["metrics"]["sourceCount"] == 6
+    assert payload["metrics"]["waitingCount"] == 6
+    assert [source["sourceId"] for source in payload["sourceDiagnostics"]] == [
+        "extra_ai_000",
+        "extra_ai_001",
+        "extra_ai_002",
+    ]

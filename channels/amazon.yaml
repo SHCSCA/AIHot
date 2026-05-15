@@ -397,9 +397,9 @@ sources:
     parser_type: website
     enabled: false
   - id: junglescout_blog
-    source_type: authority
+    source_type: rss
     name: Jungle Scout Blog
-    url: https://www.junglescout.com/blog/
+    url: https://www.junglescout.com/blog/feed/
     language: en
     region: global
     marketplace: global
@@ -408,8 +408,8 @@ sources:
     base_weight: 78
     default_categories: [product_research, listing_seo, ads_ppc]
     crawl_interval_minutes: 60
-    parser_type: website
-    enabled: false
+    parser_type: rss
+    enabled: true
   - id: amazon_seller_university
     source_type: official
     name: Amazon Seller University
@@ -467,9 +467,9 @@ sources:
     parser_type: website
     enabled: false
   - id: helium10_blog
-    source_type: authority
+    source_type: rss
     name: Helium 10 Blog
-    url: https://www.helium10.com/blog/
+    url: https://www.helium10.com/blog/feed/
     language: en
     region: global
     marketplace: global
@@ -478,12 +478,12 @@ sources:
     base_weight: 80
     default_categories: [product_research, listing_seo, ads_ppc, tools]
     crawl_interval_minutes: 60
-    parser_type: website
-    enabled: false
+    parser_type: rss
+    enabled: true
   - id: sellerapp_blog
-    source_type: authority
+    source_type: rss
     name: SellerApp Blog
-    url: https://www.sellerapp.com/blog/
+    url: https://www.sellerapp.com/blog/feed/
     language: en
     region: global
     marketplace: global
@@ -492,8 +492,8 @@ sources:
     base_weight: 76
     default_categories: [ads_ppc, listing_seo, product_research, tools]
     crawl_interval_minutes: 60
-    parser_type: website
-    enabled: false
+    parser_type: rss
+    enabled: true
   - id: carbon6_blog
     source_type: authority
     name: Carbon6 Blog
@@ -765,11 +765,15 @@ sources:
   - <<: *amazon_catalog_candidate
     id: pacvue_blog
     name: Pacvue Blog
-    url: https://pacvue.com/blog/
+    url: https://pacvue.com/blog/feed/
+    source_type: rss
     trust_level: authority
     base_weight: 76
     seller_area: ads
     default_categories: [ads_ppc, tools, product_research]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: skai_retail_media_blog
     name: Skai Retail Media Blog
@@ -797,11 +801,15 @@ sources:
   - <<: *amazon_catalog_candidate
     id: ad_badger_blog
     name: Ad Badger Blog
-    url: https://www.adbadger.com/blog/
+    url: https://www.adbadger.com/blog/feed/
+    source_type: rss
     trust_level: expert
     base_weight: 72
     seller_area: ads
     default_categories: [ads_ppc, listing_seo]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: ppc_entourage_blog
     name: PPC Entourage Blog
@@ -837,11 +845,15 @@ sources:
   - <<: *amazon_catalog_candidate
     id: datahawk_blog
     name: DataHawk Blog
-    url: https://datahawk.co/blog/
+    url: https://datahawk.co/blog/feed/
+    source_type: rss
     trust_level: authority
     base_weight: 72
     seller_area: tools
     default_categories: [tools, listing_seo, product_research]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
   - <<: *amazon_catalog_candidate
     id: zonguru_blog
     name: ZonGuru Blog

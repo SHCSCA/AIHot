@@ -1,4 +1,5 @@
 import type { AdminApi } from "../api";
+import { AdminChannelCards, usePersistedAdminChannel } from "../components/AdminChannelCards";
 import { MetricCard, MetricGrid } from "../components/MetricCard";
 import { Section, TableWrap } from "../components/Section";
 import { StatusLabel } from "../components/StatusLabel";
@@ -13,7 +14,10 @@ const emptyDashboard: Dashboard = {
 };
 
 export function DashboardView({ api, initialDashboard }: { api: AdminApi; initialDashboard?: Dashboard | null }) {
-  const { data, error, reload } = useAsyncData(() => api.getDashboard(), initialDashboard ?? emptyDashboard);
+  const [channel, setChannel] = usePersistedAdminChannel("admin-dashboard-channel");
+  const { data, error, reload } = useAsyncData(() => api.getDashboard({ channel }), initialDashboard ?? emptyDashboard, [
+    channel
+  ]);
   const metrics = data.metrics;
   return (
     <div className="view-stack">
@@ -25,6 +29,7 @@ export function DashboardView({ api, initialDashboard }: { api: AdminApi; initia
         <MetricCard label="待审核事件" value={metrics.pendingReviewEventCount ?? 0} tone="warn" />
         <MetricCard label="已发布日报" value={metrics.publishedDailyCount ?? 0} tone="good" />
       </MetricGrid>
+      <AdminChannelCards value={channel} onChange={setChannel} metrics={data.channelMetrics} />
       <Section title="最近失败任务" error={error} action={<button onClick={reload}>刷新</button>}>
         <TableWrap>
           <table>

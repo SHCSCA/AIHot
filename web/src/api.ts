@@ -64,6 +64,7 @@ export class PublicApi {
       total?: number;
       totalPages?: number;
       hasPrev?: boolean;
+      metrics?: Record<string, number>;
       events: PublicEvent[];
       hasNext: boolean;
       nextCursor: string | null;
@@ -77,7 +78,8 @@ export class PublicApi {
       totalPages: response.totalPages,
       hasPrev: response.hasPrev,
       hasNext: response.hasNext,
-      nextCursor: response.nextCursor
+      nextCursor: response.nextCursor,
+      metrics: response.metrics
     };
   }
 
@@ -98,6 +100,7 @@ export class PublicApi {
       total?: number;
       totalPages?: number;
       hasPrev?: boolean;
+      metrics?: Record<string, number>;
       hasNext: boolean;
       nextCursor: string | null;
     }>(`/api/v1/public/dailies${query(filters)}`);
@@ -110,7 +113,8 @@ export class PublicApi {
       totalPages: response.totalPages,
       hasPrev: response.hasPrev,
       hasNext: response.hasNext,
-      nextCursor: response.nextCursor
+      nextCursor: response.nextCursor,
+      metrics: response.metrics
     };
   }
 
@@ -127,6 +131,7 @@ export class PublicApi {
       total?: number;
       totalPages?: number;
       hasPrev?: boolean;
+      metrics?: Record<string, number>;
       hasNext: boolean;
       nextCursor: string | null;
     }>(`/api/v1/public/sources${query(filters)}`);
@@ -139,7 +144,8 @@ export class PublicApi {
       totalPages: response.totalPages,
       hasPrev: response.hasPrev,
       hasNext: response.hasNext,
-      nextCursor: response.nextCursor
+      nextCursor: response.nextCursor,
+      metrics: response.metrics
     };
   }
 
@@ -181,8 +187,8 @@ export class AdminApi {
     private onUnauthorized?: () => void
   ) {}
 
-  async getDashboard(): Promise<Dashboard> {
-    return this.request<Dashboard>("/api/v1/internal/dashboard");
+  async getDashboard(filters: { channel?: string } = {}): Promise<Dashboard> {
+    return this.request<Dashboard>(`/api/v1/internal/dashboard${query(filters)}`);
   }
 
   async getQualityDashboard(filters: { window?: number } = {}): Promise<QualityDashboard> {
@@ -193,7 +199,19 @@ export class AdminApi {
     return (await this.listSourcesPage({ channel, take: 200 })).items;
   }
 
-  async listSourcesPage(filters: { channel?: string; take?: number; cursor?: string | null; page?: number; pageSize?: number } = {}): Promise<Page<Source>> {
+  async listSourcesPage(
+    filters: {
+      channel?: string;
+      q?: string;
+      sourceGroup?: string;
+      collectionStatus?: string;
+      enabled?: boolean | string;
+      take?: number;
+      cursor?: string | null;
+      page?: number;
+      pageSize?: number;
+    } = {}
+  ): Promise<Page<Source>> {
     const response = await this.request<{
       count: number;
       page?: number;
@@ -203,6 +221,7 @@ export class AdminApi {
       hasPrev?: boolean;
       hasNext: boolean;
       nextCursor: string | null;
+      metrics?: Record<string, number>;
       sources: Source[];
     }>(`/api/v1/internal/sources${query(filters)}`);
     return {
@@ -214,7 +233,8 @@ export class AdminApi {
       totalPages: response.totalPages,
       hasPrev: response.hasPrev,
       hasNext: response.hasNext,
-      nextCursor: response.nextCursor
+      nextCursor: response.nextCursor,
+      metrics: response.metrics
     };
   }
 
@@ -242,7 +262,19 @@ export class AdminApi {
   }
 
   async listSourceDiagnosticsPage(
-    filters: { channel?: string; take?: number; cursor?: string | null; page?: number; pageSize?: number } = {}
+    filters: {
+      channel?: string;
+      q?: string;
+      sourceGroup?: string;
+      collectionStatus?: string;
+      freeAccess?: boolean | string;
+      diagnosticStatus?: string;
+      sort?: string;
+      take?: number;
+      cursor?: string | null;
+      page?: number;
+      pageSize?: number;
+    } = {}
   ): Promise<Page<SourceDiagnostic>> {
     const response = await this.request<{
       count: number;
@@ -253,6 +285,7 @@ export class AdminApi {
       hasPrev?: boolean;
       hasNext: boolean;
       nextCursor: string | null;
+      metrics?: Record<string, number>;
       sourceDiagnostics: SourceDiagnostic[];
     }>(`/api/v1/internal/source-diagnostics${query(filters)}`);
     return {
@@ -264,11 +297,12 @@ export class AdminApi {
       totalPages: response.totalPages,
       hasPrev: response.hasPrev,
       hasNext: response.hasNext,
-      nextCursor: response.nextCursor
+      nextCursor: response.nextCursor,
+      metrics: response.metrics
     };
   }
 
-  async listJobs(filters: { status?: string } = {}): Promise<Job[]> {
+  async listJobs(filters: { channel?: string; status?: string } = {}): Promise<Job[]> {
     return (await this.request<{ jobs: Job[] }>(`/api/v1/internal/jobs${query(filters)}`)).jobs;
   }
 

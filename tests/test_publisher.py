@@ -276,6 +276,25 @@ def test_public_events_support_numbered_pagination_metadata(tmp_path):
     assert [event["title"] for event in second["events"]] == ["OpenAI 发布 GPT-5"]
 
 
+def test_public_events_support_grouped_category_filter(tmp_path):
+    app = _app_with_event(tmp_path)
+    SessionLocal = app.state.production_sessionmaker
+    with SessionLocal() as session:
+        _add_public_event(
+            session,
+            event_id_suffix="2",
+            observed_at=datetime(2026, 5, 11, 11, 0, tzinfo=timezone.utc),
+            title="第二条事件",
+        )
+        session.commit()
+    client = TestClient(app)
+
+    response = client.get("/api/v1/public/events?channel=ai&date=2026-05-11&category=ai_models,papers&page=1&pageSize=10")
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 2
+
+
 def test_public_events_expose_safe_image_metadata(tmp_path):
     app = _app_with_event(tmp_path)
     SessionLocal = app.state.production_sessionmaker

@@ -1,13 +1,29 @@
-import { Power, PowerOff } from "lucide-react";
+import { Power, PowerOff, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AdminApi } from "../api";
+import { AdminChannelCards, type AdminChannel, usePersistedAdminChannel } from "../components/AdminChannelCards";
 import { MetricCard, MetricGrid } from "../components/MetricCard";
 import { PaginationBar } from "../components/PaginationBar";
 import { Section, TableWrap } from "../components/Section";
 import { StatusLabel } from "../components/StatusLabel";
 import { collectionStatusLabel, sourceGroupLabel, sourceTypeLabel } from "../labels";
-import type { Source } from "../types";
+import type { Page, Source } from "../types";
 import { adapterLabel, channelLabel, visibilityLabel } from "../utils";
+
+const TABLE_PAGE_SIZE = 50;
+const WALL_PAGE_SIZE = 6;
+
+const emptyPage: Page<Source> = {
+  items: [],
+  count: 0,
+  page: 1,
+  pageSize: TABLE_PAGE_SIZE,
+  total: 0,
+  totalPages: 1,
+  hasNext: false,
+  nextCursor: null,
+  metrics: {}
+};
 
 const newSource: Source = {
   id: "",
@@ -34,28 +50,44 @@ const newSource: Source = {
   notes: ""
 };
 
+type SourceFilters = {
+  q: string;
+  sourceGroup: string;
+  collectionStatus: string;
+  enabled: string;
+};
+
 export function SourcesView({ api }: { api: AdminApi }) {
-  const [sources, setSources] = useState<Source[]>([]);
+  const [channel, setChannel] = usePersistedAdminChannel("admin-sources-channel");
+  const [filters, setFilters] = useState<SourceFilters>({ q: "", sourceGroup: "", collectionStatus: "", enabled: "" });
+  const [sourcePage, setSourcePage] = useState<Page<Source>>(emptyPage);
+  const [wallPageData, setWallPageData] = useState<Page<Source>>({ ...emptyPage, pageSize: WALL_PAGE_SIZE });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [query, setQuery] = useState("");
+  const [wallPage, setWallPage] = useState(1);
   const [selected, setSelected] = useState<Source | null>(null);
-  const [form, setForm] = useState<Source>(newSource);
-  const filtered = sources.filter((source) => `${source.name} ${source.id}`.toLowerCase().includes(query.toLowerCase()));
+  const [form, setForm] = useState<Source>({ ...newSource, channel });
 
   useEffect(() => {
-    void loadPage(page);
-  }, [api, page]);
+    setPage(1);
+    setWallPage(1);
+    setForm((current) => ({ ...current, channel }));
+  }, [channel, filters.q, filters.sourceGroup, filters.collectionStatus, filters.enabled]);
 
-  async function loadPage(pageNumber = 1) {
+  useEffect(() => {
+    void loadTable(page);
+  }, [api, channel, filters.q, filters.sourceGroup, filters.collectionStatus, filters.enabled, page]);
+
+  useEffect(() => {
+    void loadWall(wallPage);
+  }, [api, channel, filters.q, filters.sourceGroup, filters.collectionStatus, filters.enabled, wallPage]);
+
+  async function loadTable(pageNumber = 1) {
     setLoading(true);
     try {
-      const sourcePage = await api.listSourcesPage({ page: pageNumber, pageSize: 50 });
-      setSources(sourcePage.items);
-      const resolvedPage = sourcePage.page ?? pageNumber;
-      setTotalPages(sourcePage.totalPages ?? (sourcePage.hasNext ? resolvedPage + 1 : resolvedPage));
+      const nextPage = await api.listSourcesPage({ ...apiFilters(channel, filters), page: pageNumber, pageSize: TABLE_PAGE_SIZE });
+      setSourcePage(nextPage);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "信源加载失败");
@@ -64,33 +96,57 @@ export function SourcesView({ api }: { api: AdminApi }) {
     }
   }
 
+  async function loadWall(pageNumber = 1) {
+    try {
+      const nextPage = await api.listSourcesPage({ ...apiFilters(channel, filters), page: pageNumber, pageSize: WALL_PAGE_SIZE });
+      setWallPageData(nextPage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "信源墙加载失败");
+    }
+  }
+
   async function toggle(source: Source) {
     await api.patchSource(source.id, { enabled: !source.enabled });
-    await loadPage(page);
+    await loadTable(page);
+    await loadWall(wallPage);
   }
 
   async function submit() {
     await api.createSource(form);
-    setForm(newSource);
+    setForm({ ...newSource, channel });
     setPage(1);
-    await loadPage(1);
+    setWallPage(1);
+    await loadTable(1);
+    await loadWall(1);
   }
+
+  const metrics = sourcePage.metrics ?? {};
+  const channelMetrics = [
+    { channel: "ai", metrics: channel === "ai" ? metrics : {} },
+    { channel: "amazon", metrics: channel === "amazon" ? metrics : {} }
+  ];
 
   return (
     <div className="view-stack split-layout">
       <div className="view-stack">
+        <AdminChannelCards value={channel} onChange={setChannel} metrics={channelMetrics} />
         <MetricGrid>
-          <MetricCard label="信源总数" value={sources.length} />
-          <MetricCard label="已启用" value={sources.filter((source) => source.enabled).length} tone="good" />
-          <MetricCard label="高权威源" value={sources.filter((source) => source.authorityWeight >= 90).length} />
-          <MetricCard label="待接入社媒" value={sources.filter((source) => source.sourceGroup === "social" && source.collectionStatus !== "collectable").length} tone="warn" />
+          <MetricCard label="信源总数" value={metrics.sourceCount ?? sourcePage.total ?? 0} />
+          <MetricCard label="已启用" value={metrics.enabledSourceCount ?? 0} tone="good" />
+          <MetricCard label="高权威源" value={metrics.highAuthorityCount ?? 0} />
+          <MetricCard label="待接入社媒" value={metrics.pendingSocialCount ?? 0} tone="warn" />
         </MetricGrid>
-        <Section title="信源列表" error={error} action={<input placeholder="搜索信源" value={query} onChange={(event) => setQuery(event.target.value)} />}>
+        <Section
+          title="信源列表"
+          description={`当前显示 ${channelLabel(channel)}，共 ${sourcePage.total ?? 0} 条匹配结果。`}
+          error={error}
+        >
+          <SourceFilterPanel filters={filters} onChange={(next) => setFilters({ ...filters, ...next })} />
           <TableWrap>
             <table>
               <thead><tr><th>信源</th><th>频道</th><th>类型</th><th>等级</th><th>采集方式</th><th>间隔</th><th>可见性</th><th>状态</th><th>操作</th></tr></thead>
               <tbody>
-                {filtered.map((source) => (
+                {sourcePage.items.map((source) => (
                   <tr key={source.id} onClick={() => setSelected(source)}>
                     <td><strong>{source.name}</strong><span>{source.id}</span></td>
                     <td>{channelLabel(source.channel)}</td>
@@ -111,13 +167,13 @@ export function SourcesView({ api }: { api: AdminApi }) {
               </tbody>
             </table>
           </TableWrap>
-          <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} disabled={loading} />
+          <PaginationBar page={page} totalPages={sourcePage.totalPages ?? 1} onPageChange={setPage} disabled={loading} />
         </Section>
-        <Section title="信源墙视图" description="公开前台展示的信源贡献卡片，包含编号、来源类型、接入状态和免费可读状态。">
+        <Section title="信源墙视图" description="公开前台展示的信源贡献卡片，固定 6 条一页，跟随当前频道和筛选条件。">
           <div className="admin-source-wall">
-            {filtered.map((source) => (
+            {wallPageData.items.map((source) => (
               <article key={source.id}>
-                <div><strong>信源：{source.name}</strong><span>{formatContributorNo(source.contributorNo)}</span></div>
+                <div><strong>{source.name}</strong><span>{formatContributorNo(source.contributorNo)}</span></div>
                 <p>{source.socialHandle ? `${source.socialHandle} · ` : ""}{sourceGroupLabel(source.sourceGroup)} · {sourceTypeLabel(source.sourceType)}</p>
                 <span>{source.tier}</span>
                 <span>{collectionStatusLabel(source.collectionStatus)}</span>
@@ -125,9 +181,10 @@ export function SourcesView({ api }: { api: AdminApi }) {
               </article>
             ))}
           </div>
+          <PaginationBar page={wallPage} totalPages={wallPageData.totalPages ?? 1} onPageChange={setWallPage} disabled={loading} />
         </Section>
       </div>
-      <Section title="新增/编辑信源" description={selected ? `当前查看：${selected.name}` : "新增信源会直接写入生产信源表。"}>
+      <Section title="新增/编辑信源" description={selected ? `当前查看：${selected.name}` : `新增信源会写入 ${channelLabel(channel)}。`}>
         {selected && <p className="hint">URL：{selected.url}</p>}
         <div className="form-grid">
           <label>信源 ID<input value={form.id} onChange={(event) => setForm({ ...form, id: event.target.value })} /></label>
@@ -145,6 +202,27 @@ export function SourcesView({ api }: { api: AdminApi }) {
       </Section>
     </div>
   );
+}
+
+function SourceFilterPanel({ filters, onChange }: { filters: SourceFilters; onChange: (filters: Partial<SourceFilters>) => void }) {
+  return (
+    <div className="admin-filter-panel">
+      <label className="admin-search"><Search size={16} /><input aria-label="搜索信源" placeholder="搜索名称 / ID / URL" value={filters.q} onChange={(event) => onChange({ q: event.target.value })} /></label>
+      <label>信源类型<select aria-label="信源类型" value={filters.sourceGroup} onChange={(event) => onChange({ sourceGroup: event.target.value })}><option value="">全部类型</option><option value="official,first_party">官方/一手</option><option value="media">资讯</option><option value="social,community">社媒/社区</option><option value="vendor">服务商</option></select></label>
+      <label>收集状态<select aria-label="收集状态" value={filters.collectionStatus} onChange={(event) => onChange({ collectionStatus: event.target.value })}><option value="">全部状态</option><option value="collectable">可抓取</option><option value="pending_api">待接入</option><option value="rate_limited">限流</option><option value="unavailable">不可用</option></select></label>
+      <label>启用状态<select aria-label="启用状态" value={filters.enabled} onChange={(event) => onChange({ enabled: event.target.value })}><option value="">全部</option><option value="true">启用</option><option value="false">停用</option></select></label>
+    </div>
+  );
+}
+
+function apiFilters(channel: AdminChannel, filters: SourceFilters) {
+  return {
+    channel,
+    q: filters.q || undefined,
+    sourceGroup: filters.sourceGroup || undefined,
+    collectionStatus: filters.collectionStatus || undefined,
+    enabled: filters.enabled || undefined
+  };
 }
 
 function formatContributorNo(value?: string | null) {

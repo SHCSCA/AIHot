@@ -134,6 +134,9 @@ def test_amazon_hourly_sources_prioritize_precise_official_or_seller_feeds():
     assert sources["amazon_sp_api_release_notes"].parser_type == "html_list"
     assert sources["amazon_ads_updates"].enabled is True
     assert sources["amazon_ads_updates"].parser_type == "html_list"
+    for precise_feed in ("junglescout_blog", "helium10_blog", "sellerapp_blog", "pacvue_blog", "ad_badger_blog", "datahawk_blog"):
+        assert sources[precise_feed].enabled is True
+        assert sources[precise_feed].parser_type == "rss"
     assert sources["retail_dive"].enabled is False
     assert sources["modern_retail"].enabled is False
     assert sources["retail_dive"].metadata.get("collection_status") == "watch"

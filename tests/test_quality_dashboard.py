@@ -87,3 +87,8 @@ def test_quality_dashboard_surfaces_rejection_reasons(tmp_path):
     assert channel["metrics"]["rejectedScreenings"] == 1
     assert channel["rejectionReasons"][0]["reasonCode"] == "evergreen_tutorial"
     assert channel["rejectionReasons"][0]["count"] == 1
+    assert channel["rejectionSamples"][0]["title"] == "旧教程"
+    assert channel["rejectionSamples"][0]["summary"] == "旧教程无新增事件。"
+    assert channel["rejectionSamples"][0]["sourceName"] == "OpenAI News"
+    assert channel["rejectionSamples"][0]["url"] == "https://openai.com/news/old-tutorial"
+    assert channel["rejectionSamples"][0]["reason"] == "常青教程或旧知识。"
