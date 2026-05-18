@@ -104,7 +104,7 @@ export function PublicFrontPage({
         sourceGroup: filters.sourceGroup || undefined,
         q: filters.q || undefined,
         date: filters.date || undefined,
-        window: filters.date ? undefined : 24,
+        window: filters.date || channel === "amazon" ? undefined : 24,
         page,
         pageSize: EVENT_PAGE_SIZE
       })
@@ -186,6 +186,7 @@ export function PublicFrontPage({
 
   const activeChannel = channelInfo[channel];
   const activeSection = sectionInfo[section];
+  const activeWindowLabel = channel === "amazon" ? "最近 7 天" : "最近 24 小时";
 
   return (
     <main className="aihot-public-shell">
@@ -211,7 +212,7 @@ export function PublicFrontPage({
           <header className="aihot-topbar">
             <div>
               <h1>{activeSection.title}</h1>
-              <p>{activeSection.desc} · 当前展示最近 24 小时情报</p>
+              <p>{activeSection.desc} · 当前展示{activeWindowLabel}情报</p>
               <span>{activeChannel.scope}</span>
             </div>
             {!hideLoginControls && (
@@ -254,7 +255,7 @@ export function PublicFrontPage({
               {!eventLoading && events.length === 0 && (
                 <p className="hint">
                   {channel === "amazon"
-                    ? "Amazon 情报最近 24 小时暂无通过质量筛选的公开事件，可切换日期或查看信源墙。"
+                    ? "Amazon 情报最近 7 天暂无通过质量筛选的公开事件，可切换日期或查看信源墙。"
                     : "暂无符合条件的信息。"}
                 </p>
               )}

@@ -45,7 +45,7 @@ export function FilterBar({ channel, filters, onChange, onRefresh }: FilterBarPr
 
   return (
     <section className="aihot-filter-panel">
-      <div className="filter-capsules" aria-label="分类筛选">
+      <div className="filter-capsules" aria-label="信源和分类筛选">
         <span className="filter-label">信源</span>
         {sourceGroups.map((option) => (
           <motion.button

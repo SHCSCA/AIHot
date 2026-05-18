@@ -24,9 +24,9 @@ const channelItems = [
 
 const sectionItems = [
   { id: "selected" as const, label: "精选" },
-  { id: "all" as const, label: "全部" },
+  { id: "all" as const, label: "全部热点" },
   { id: "daily" as const, label: "日报" },
-  { id: "rss" as const, label: "RSS" },
+  { id: "rss" as const, label: "RSS 订阅" },
   { id: "sources" as const, label: "信源墙" },
   { id: "feedback" as const, label: "反馈" }
 ];
@@ -49,7 +49,22 @@ export function TopNav({
         <span>AI</span><i />HOT
       </div>
 
-      <nav className="topnav-sections" aria-label="导航分区">
+      <nav className="unified-channel-switch" aria-label="频道分区">
+        {channelItems.map(({ id, label, Icon }) => (
+          <motion.button
+            key={id}
+            className={channel === id ? "active" : ""}
+            onClick={() => onChannelChange(id)}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <Icon size={15} />
+            <span>{label}</span>
+          </motion.button>
+        ))}
+      </nav>
+
+      <nav className="topnav-sections" aria-label="频道内功能">
         {sectionItems.map(({ id, label }) => (
           <motion.button
             key={id}

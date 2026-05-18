@@ -50,12 +50,12 @@ export function EventCard({ event, api, showDate }: EventCardProps) {
         <div className="event-title-row">
           <h2>{event.title}</h2>
           <span className={`score-badge ${scoreClass}`}>
-            {Math.round(event.score)}
+            精选分 {Math.round(event.score)}
           </span>
         </div>
 
         {event.mainItem?.imageUrl && (
-          <figure className="event-media">
+          <figure className="event-media event-media-natural">
             <img src={event.mainItem.imageUrl} alt={event.mainItem.imageAlt || event.title} loading="lazy" />
           </figure>
         )}
