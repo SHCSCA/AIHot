@@ -11,7 +11,7 @@ interface BentoCardProps {
 function BentoCard({ children, className = "", span = "" }: BentoCardProps) {
   return (
     <motion.div
-      className={`bento-card ${span} ${className}`}
+      className={`bento-card breathing-bento ${span} ${className}`}
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.24, ease: "easeOut" }}
@@ -80,12 +80,18 @@ export function HeroSection({ channel }: { channel: "ai" | "amazon" }) {
   const sourceCount = channel === "amazon" ? 44 : 147;
   const eventCount = channel === "amazon" ? 7 : 23;
   return (
-    <section className="hero-section" aria-label="AIHOT 情报总览">
+    <section className="hero-section breathing-hero" aria-label="AIHOT 情报总览">
+      <div className="ambient-breathing-field" data-testid="ambient-breathing-field" aria-hidden="true">
+        <span />
+        <span />
+        <span />
+        <i />
+      </div>
       <div className="bento-grid">
         {/* Main 2x2 card - 今日热点 */}
-        <BentoCard span="bento-main" className="bento-card-main">
+        <BentoCard span="bento-main" className="bento-card-main breathing-idle">
           <div className="bento-main-bg" aria-hidden="true">
-            <svg className="bento-wave" viewBox="0 0 500 220" preserveAspectRatio="none">
+            <svg className="bento-wave breathing-wave" viewBox="0 0 500 220" preserveAspectRatio="none">
               <path d="M0,110 C80,40 120,180 200,110 C280,40 320,180 400,110 C440,70 460,150 500,110 L500,220 L0,220 Z" fill="rgba(6,182,212,0.12)" />
               <path d="M0,140 C60,80 140,200 220,140 C300,80 360,200 440,140 C470,110 490,160 500,140 L500,220 L0,220 Z" fill="rgba(6,182,212,0.08)" />
               <path d="M0,170 C100,120 200,220 300,170 C400,120 450,200 500,170 L500,220 L0,220 Z" fill="rgba(6,182,212,0.05)" />

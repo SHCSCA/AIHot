@@ -269,8 +269,14 @@ export function App() {
   return (
     <main className="unified-shell">
       <aside className="unified-sidebar">
-        <button className="unified-brand" onClick={() => activate(publicItems[0])} aria-label="AIHOT 首页">
-          <span>AI</span><i />HOT
+        <button className="unified-brand" data-motion="brand-breathing" onClick={() => activate(publicItems[0])} aria-label="AIHOT 首页">
+          <span className="brand-word brand-word-ai">AI</span>
+          <span className="brand-mark-wrap" aria-hidden="true">
+            <span className="brand-glow" aria-hidden="true" />
+            <i className="brand-orbit" aria-hidden="true" />
+            <span className="brand-core" aria-hidden="true" />
+          </span>
+          <span className="brand-word brand-word-hot">HOT</span>
         </button>
         <nav className="unified-channel-switch unified-channel-nav" aria-label="频道切换">
           <button className={channel === "ai" ? "active" : ""} onClick={() => switchChannel("ai")}><Sparkles size={16} /><span>AI 热点</span></button>

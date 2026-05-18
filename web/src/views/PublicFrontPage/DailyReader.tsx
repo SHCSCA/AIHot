@@ -111,12 +111,16 @@ export function DailyReader({ api, channel }: DailyReaderProps) {
 
   return (
     <motion.div
-      className="daily-reader dark"
+      className="daily-reader dark breathing-reader"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
     >
+          <div className="daily-breathing-field" data-testid="daily-breathing-field" aria-hidden="true">
+            <span />
+            <span />
+          </div>
           <motion.aside className="daily-archive" variants={itemVariants}>
             <button className="latest" onClick={() => setDate(latestArchiveDate ?? today())}>
               <strong>最新一期</strong><span>{latestArchiveDate ?? today()}</span>
@@ -190,7 +194,7 @@ export function DailyReader({ api, channel }: DailyReaderProps) {
                     </div>
                     {section.items.map((item) => (
                       <motion.article
-                        className="daily-story"
+                        className="daily-story breathing-reveal"
                         key={item.eventId || item.title}
                         variants={itemVariants}
                       >

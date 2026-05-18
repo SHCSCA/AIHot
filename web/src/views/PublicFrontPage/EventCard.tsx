@@ -38,7 +38,8 @@ export function EventCard({ event, api, showDate }: EventCardProps) {
         <strong>{formatTime(event.lastSeenAt)}</strong>
       </div>
 
-      <div className="aihot-event-card glass">
+      <div className="aihot-event-card glass breathing-card breathing-idle">
+        <span className="event-card-breath" aria-hidden="true" />
         <div className="event-meta dark">
           <span>{event.mainItem?.sourceName ?? "未知来源"}</span>
           {event.socialHandle && <span>{event.socialHandle}</span>}

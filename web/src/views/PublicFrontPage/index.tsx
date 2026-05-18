@@ -131,7 +131,7 @@ export function PublicFrontPage({
   const activeWindowLabel = channel === "amazon" ? "最近 7 天" : "最近 24 小时";
 
   return (
-    <main className="aihot-public-shell">
+    <main className="aihot-public-shell" data-motion="breathing">
       {!embedded && (
         <TopNav
           channel={channel}

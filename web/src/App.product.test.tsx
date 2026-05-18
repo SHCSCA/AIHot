@@ -535,6 +535,96 @@ describe("后台产品化界面", () => {
     expect(screen.queryByLabelText("专注阅读模式")).not.toBeInTheDocument();
   });
 
+  it("adds a calm breathing motion layer to the public intelligence surfaces", async () => {
+    const publicApi = {
+      listEvents: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "1",
+            channel: "ai",
+            title: "OpenAI 发布新模型能力",
+            summary: "OpenAI 发布模型能力更新，开发者需要关注 API 能力变化。",
+            category: "ai_models",
+            score: 86,
+            sourceCount: 1,
+            memberCount: 1,
+            lastSeenAt: "2026-05-13T06:13:00Z",
+            sourceGroup: "official",
+            sourceType: "rss",
+            sourceTier: "T1",
+            entryReason: "来自官方一手信源，模型能力变化会影响开发者选型。",
+            tags: ["OpenAI", "模型发布", "API 变化"],
+            mainItem: { title: "OpenAI 发布新模型能力", sourceName: "OpenAI News", url: "https://openai.com/news/model" }
+          }
+        ],
+        count: 1,
+        page: 1,
+        pageSize: 20,
+        total: 1,
+        totalPages: 1,
+        hasNext: false,
+        nextCursor: null
+      }),
+      listSources: vi.fn().mockResolvedValue([]),
+      getEventDetail: vi.fn().mockResolvedValue({ event: { id: "1" }, members: [] }),
+      getDaily: vi.fn().mockResolvedValue({
+        id: "daily-1",
+        channel: "ai",
+        date: "2026-05-14",
+        generatedAt: "2026-05-14T08:00:00+08:00",
+        title: "AIHOT 日报",
+        windowLabel: "基于最近 24 小时精选情报自动生成",
+        stats: { storyCount: 1 },
+        sections: [
+          {
+            category: "ai_models",
+            label: "模型发布/更新",
+            count: 1,
+            items: [
+              {
+                eventId: "1",
+                title: "Hy3 预览版登陆 GMI",
+                summary: "Hy3 预览版开放使用，模型能力持续增强。",
+                category: "ai_models",
+                score: 88,
+                entryReason: "模型发布来自官方信源，值得关注。"
+              }
+            ]
+          }
+        ]
+      }),
+      listDailies: vi.fn().mockResolvedValue({
+        items: [{ id: "daily-1", date: "2026-05-14", title: "AIHOT 日报", leadTitle: "Hy3 预览版登陆 GMI", storyCount: 1 }],
+        count: 1,
+        page: 1,
+        pageSize: 20,
+        total: 1,
+        totalPages: 1,
+        hasNext: false,
+        nextCursor: null
+      }),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
+    } as unknown as PublicApi;
+
+    const { container } = render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
+
+    expect(container.querySelector(".aihot-public-shell")).toHaveAttribute("data-motion", "breathing");
+    expect(await screen.findByTestId("ambient-breathing-field")).toBeInTheDocument();
+    expect(container.querySelector(".bento-wave")).toHaveClass("breathing-wave");
+    expect(container.querySelector(".bento-card-main")).toHaveClass("breathing-idle");
+
+    await userEvent.click(screen.getByRole("button", { name: "精选" }));
+    const eventCard = (await screen.findByText("OpenAI 发布新模型能力")).closest(".aihot-event-card");
+    expect(eventCard).toHaveClass("breathing-card");
+    expect(eventCard).toHaveClass("breathing-idle");
+    expect(eventCard?.querySelector(".event-card-breath")).toHaveAttribute("aria-hidden", "true");
+
+    await userEvent.click(screen.getByRole("button", { name: "日报" }));
+    expect(await screen.findByTestId("daily-breathing-field")).toBeInTheDocument();
+    const dailyStory = screen.getAllByText("Hy3 预览版登陆 GMI").find((node) => node.closest(".daily-story"));
+    expect(dailyStory?.closest(".daily-story")).toHaveClass("breathing-reveal");
+  });
+
   it("opens the command palette with keyboard navigation from the unified shell", async () => {
     const fetchMock = vi.fn().mockImplementation((url: string) => {
       if (String(url).startsWith("/api/v1/me")) {
@@ -572,6 +662,7 @@ describe("后台产品化界面", () => {
 
     expect(await screen.findByRole("dialog", { name: "命令面板" })).toBeInTheDocument();
     expect(screen.getByPlaceholderText("搜索或快速跳转...")).toHaveFocus();
+    expect(screen.getByTestId("cmdk-breathing-frame")).toHaveAttribute("aria-hidden", "true");
     expect(screen.getByText("快速跳转")).toBeInTheDocument();
     expect(screen.getByText("热门情报")).toBeInTheDocument();
   });
@@ -614,6 +705,47 @@ describe("后台产品化界面", () => {
     expect(screen.queryByRole("button", { name: "打开智能体专家面板" })).not.toBeInTheDocument();
     expect(container.querySelector(".unified-sidebar")).toBeInTheDocument();
     expect(container.querySelector(".unified-global-nav")).not.toBeInTheDocument();
+  });
+
+  it("renders the sidebar brand as an animated artistic wordmark", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (String(url).startsWith("/api/v1/me")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            user: null,
+            roles: ["guest"],
+            permissions: ["feedback.create", "public.read"],
+            preferences: { theme: "dark", defaultChannel: "ai", compactMode: false },
+            authenticated: false
+          })
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          events: [],
+          count: 0,
+          page: 1,
+          pageSize: 20,
+          total: 0,
+          totalPages: 1,
+          hasNext: false,
+          nextCursor: null
+        })
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { container } = render(<App />);
+
+    const brand = await screen.findByRole("button", { name: "AIHOT 首页" });
+    expect(brand).toHaveClass("unified-brand");
+    expect(brand).toHaveAttribute("data-motion", "brand-breathing");
+    expect(within(brand).getByText("AI")).toHaveClass("brand-word");
+    expect(within(brand).getByText("HOT")).toHaveClass("brand-word");
+    expect(container.querySelector(".brand-orbit")).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelector(".brand-glow")).toHaveAttribute("aria-hidden", "true");
   });
 
   it("falls back to the newest archived daily when today's daily payload is empty", async () => {

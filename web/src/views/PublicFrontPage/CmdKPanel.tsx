@@ -185,13 +185,14 @@ export function CmdKPanel({ open, onClose, onSelect }: CmdKPanelProps) {
           onClick={onClose}
         >
           <motion.div
-            className="cmdk-panel"
+            className="cmdk-panel breathing-command"
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
             transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
             onClick={(e) => e.stopPropagation()}
           >
+            <span className="cmdk-breathing-frame" data-testid="cmdk-breathing-frame" aria-hidden="true" />
             <div className="cmdk-input-wrap">
               <svg className="cmdk-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="8" />

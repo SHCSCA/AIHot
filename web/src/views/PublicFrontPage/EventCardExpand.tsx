@@ -58,7 +58,8 @@ export function EventCardExpand({ event, api, showDate, index }: EventCardExpand
         <strong>{formatTime(event.lastSeenAt)}</strong>
         <i aria-hidden="true" />
       </div>
-      <motion.div layoutId={`event-card-${event.id}`} className="aihot-event-card">
+      <motion.div layoutId={`event-card-${event.id}`} className="aihot-event-card breathing-card breathing-idle">
+        <span className="event-card-breath" aria-hidden="true" />
         <motion.div layoutId={`event-meta-${event.id}`} className="event-meta dark">
           <span>{event.mainItem?.sourceName ?? "未知来源"}</span>
           {event.socialHandle && <span>{event.socialHandle}</span>}
