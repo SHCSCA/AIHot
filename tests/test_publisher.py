@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 
 from intel_engine.main import create_app
 from intel_engine.models import (
@@ -274,6 +275,47 @@ def test_public_events_support_numbered_pagination_metadata(tmp_path):
     assert second["hasPrev"] is True
     assert second["hasNext"] is False
     assert [event["title"] for event in second["events"]] == ["OpenAI 发布 GPT-5"]
+
+
+def test_public_events_use_week_window_for_amazon_by_default(tmp_path):
+    app = _app_with_event(tmp_path)
+    SessionLocal = app.state.production_sessionmaker
+    observed_at = datetime.now(timezone.utc) - timedelta(days=4)
+    with SessionLocal() as session:
+        source = session.get(SourceRecord, "openai_news")
+        source.channel = "amazon"
+        source.default_categories = ["fba_logistics"]
+        item = session.get(NormalizedItemRecord, 1)
+        item.channel = "amazon"
+        item.title_cn = "亚马逊FBA库存赔付提醒"
+        item.title_original = "Amazon FBA inventory reimbursement update"
+        item.summary_cn = "内容涉及FBA卖家在库存丢失后申请赔付的处理动作。"
+        item.published_at = observed_at
+        item.fetched_at = observed_at
+        screening = session.scalar(select(RawScreeningResultRecord))
+        screening.category = "fba_logistics"
+        screening.title_cn = item.title_cn
+        screening.summary_cn = item.summary_cn
+        screening.tags_json = ["FBA", "库存赔付"]
+        score = session.scalar(select(ModelScoreRecord))
+        score.category = "fba_logistics"
+        score.reason = "该内容对亚马逊卖家库存赔付和利润保护有直接操作价值。"
+        cluster = session.scalar(select(EventClusterRecord))
+        cluster.channel = "amazon"
+        cluster.category = "fba_logistics"
+        cluster.canonical_title = item.title_cn
+        cluster.first_seen_at = observed_at
+        cluster.last_seen_at = observed_at
+        session.commit()
+    client = TestClient(app)
+
+    response = client.get("/api/v1/public/events?channel=amazon&mode=selected")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["count"] == 1
+    assert payload["windowLabel"] == "最近 7 天"
+    assert payload["events"][0]["title"] == "亚马逊FBA库存赔付提醒"
 
 
 def test_public_events_support_grouped_category_filter(tmp_path):

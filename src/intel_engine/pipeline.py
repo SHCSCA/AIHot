@@ -43,6 +43,7 @@ from intel_engine.review import (
     ACCEPTED_BUCKETS,
     adjusted_selected_threshold,
     auto_review_decision,
+    channel_rolling_window_hours,
     validate_model_score,
     validate_screening_result,
 )
@@ -297,8 +298,12 @@ def _normalize_raw_document(
         return None
 
     title = raw_document.response_headers_json.get("x-intel-title") or source.name
-    published_at = _parse_datetime(raw_document.response_headers_json.get("x-intel-published-at"))
-    if not is_within_recent_hours(published_at, raw_document.fetched_at):
+    published_at = _effective_published_at(source, raw_document, screening)
+    if not is_within_recent_hours(
+        published_at,
+        raw_document.fetched_at,
+        hours=channel_rolling_window_hours(source.channel),
+    ):
         return None
     if screening is not None and (
         screening.screen_status != "accepted" or screening.screen_bucket not in ACCEPTED_BUCKETS
@@ -382,7 +387,12 @@ def _upsert_screening_result(
     )
     result = _screen_raw_document(raw_document, source, now=now, screening_provider=screening_provider)
     result = _apply_screening_guardrails(result, raw_document, source)
-    published_at = _parse_datetime(raw_document.response_headers_json.get("x-intel-published-at"))
+    published_at = _effective_published_at(source, raw_document, result)
+    published_was_inferred = (
+        source.channel == "amazon"
+        and raw_document.response_headers_json.get("x-intel-published-at") is None
+        and published_at is not None
+    )
     validation = validate_screening_result(
         result,
         channel=source.channel,
@@ -399,6 +409,10 @@ def _upsert_screening_result(
                 "reason_code": validation.reason_code or result.reason_code,
                 "reason_cn": validation.reason_cn or result.reason_cn,
             }
+        )
+    elif published_was_inferred:
+        result = result.model_copy(
+            update={"raw_json": {**dict(result.raw_json), "publishedAtInferred": "fetched_at"}}
         )
     raw_json = dict(result.raw_json)
     provider = str(raw_json.get("provider") or "unknown")
@@ -505,7 +519,10 @@ AMAZON_SELLER_CONTEXT_TERMS = (
 AMAZON_OPERATIONAL_TERMS = (
     "account health",
     "advertising",
+    "api",
     "campaign",
+    "coupon",
+    "deprecation",
     "fee",
     "fulfillment center",
     "inbound",
@@ -514,8 +531,13 @@ AMAZON_OPERATIONAL_TERMS = (
     "lost",
     "missing",
     "placement",
+    "pricing",
+    "prime day",
     "reimbursement",
+    "release notes",
+    "review",
     "return",
+    "seller central",
     "storage",
 )
 
@@ -572,6 +594,54 @@ def _apply_screening_guardrails(
             "raw_json": raw_json,
         }
     )
+
+
+def _effective_published_at(
+    source: SourceRecord,
+    raw_document: RawDocumentRecord,
+    screening: ScreeningResult | RawScreeningResultRecord | None = None,
+) -> datetime | None:
+    published_at = _parse_datetime(raw_document.response_headers_json.get("x-intel-published-at"))
+    if published_at is not None:
+        return published_at
+    if _can_infer_amazon_published_at(source, raw_document, screening):
+        return raw_document.fetched_at
+    return None
+
+
+def _can_infer_amazon_published_at(
+    source: SourceRecord,
+    raw_document: RawDocumentRecord,
+    screening: ScreeningResult | RawScreeningResultRecord | None,
+) -> bool:
+    if source.channel != "amazon":
+        return False
+    if screening is None:
+        return False
+    if getattr(screening, "screen_status", None) != "accepted":
+        return False
+    if getattr(screening, "screen_bucket", None) not in ACCEPTED_BUCKETS:
+        return False
+    if getattr(screening, "category", None) not in AMAZON_SCREENING_CATEGORIES:
+        return False
+    text = _amazon_signal_text(raw_document)
+    return _has_amazon_seller_ops_signal(text)
+
+
+def _amazon_signal_text(raw_document: RawDocumentRecord) -> str:
+    return " ".join(
+        [
+            str(raw_document.response_headers_json.get("x-intel-title") or ""),
+            raw_document.body_text or "",
+            raw_document.canonical_url or "",
+        ]
+    ).lower()
+
+
+def _has_amazon_seller_ops_signal(text: str) -> bool:
+    has_seller_context = any(term in text for term in AMAZON_SELLER_CONTEXT_TERMS)
+    has_operational_signal = any(term in text for term in AMAZON_OPERATIONAL_TERMS)
+    return has_seller_context and has_operational_signal
 
 
 def _amazon_guardrail_category(text: str) -> str:

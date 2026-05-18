@@ -16,7 +16,9 @@ from intel_engine.quality import is_publishable_original_url
 
 
 ROLLING_WINDOW_HOURS = 24
+AMAZON_ROLLING_WINDOW_HOURS = 168
 PUBLIC_WINDOW_LABEL = "最近 24 小时"
+AMAZON_PUBLIC_WINDOW_LABEL = "最近 7 天"
 
 AI_CATEGORIES = {"ai_models", "ai_products", "agent_tools", "papers", "industry", "monetization"}
 AMAZON_CATEGORIES = {
@@ -61,6 +63,18 @@ class AutoReviewDecision:
     note: str
 
 
+def channel_rolling_window_hours(channel: str | None) -> int:
+    return AMAZON_ROLLING_WINDOW_HOURS if channel == "amazon" else ROLLING_WINDOW_HOURS
+
+
+def public_window_label(channel: str | None, *, window: int | None = None) -> str:
+    if window is not None:
+        if window % 24 == 0:
+            return f"最近 {window // 24} 天"
+        return f"最近 {window} 小时"
+    return AMAZON_PUBLIC_WINDOW_LABEL if channel == "amazon" else PUBLIC_WINDOW_LABEL
+
+
 def is_within_rolling_window(published_at: datetime | None, observed_at: datetime, *, hours: int = ROLLING_WINDOW_HOURS) -> bool:
     if published_at is None:
         return False
@@ -84,8 +98,9 @@ def validate_screening_result(
 ) -> ScreeningValidation:
     if published_at is None:
         return ScreeningValidation(False, "missing_publish_time", "缺少明确发布时间。")
-    if not is_within_rolling_window(published_at, observed_at):
-        return ScreeningValidation(False, "not_current_window", "不在最近 24 小时窗口内。")
+    rolling_hours = channel_rolling_window_hours(channel)
+    if not is_within_rolling_window(published_at, observed_at, hours=rolling_hours):
+        return ScreeningValidation(False, "not_current_window", f"不在最近 {rolling_hours} 小时窗口内。")
     if not is_publishable_original_url(original_url, source_url):
         return ScreeningValidation(False, "invalid_original_url", "原文链接不是具体文章页。")
     if result.screen_status != "accepted" or result.screen_bucket not in ACCEPTED_BUCKETS:
