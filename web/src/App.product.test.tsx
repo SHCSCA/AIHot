@@ -571,7 +571,7 @@ describe("后台产品化界面", () => {
     expect(screen.getByText("热门情报")).toBeInTheDocument();
   });
 
-  it("uses a real top navigation shell instead of the old sidebar shell", async () => {
+  it("uses a stable sidebar navigation shell with a focused top toolbar", async () => {
     const fetchMock = vi.fn().mockImplementation((url: string) => {
       if (String(url).startsWith("/api/v1/me")) {
         return Promise.resolve({
@@ -603,11 +603,65 @@ describe("后台产品化界面", () => {
 
     const { container } = render(<App />);
 
-    expect(await screen.findByRole("navigation", { name: "全局顶部导航" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "频道分区" })).toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: "频道内功能" })).toBeInTheDocument();
+    expect(await screen.findByRole("navigation", { name: "公共情报" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "频道切换" })).toBeInTheDocument();
+    expect(screen.getByRole("banner", { name: "当前页面工具栏" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "打开智能体专家面板" })).toBeInTheDocument();
-    expect(container.querySelector(".unified-sidebar")).not.toBeInTheDocument();
+    expect(container.querySelector(".unified-sidebar")).toBeInTheDocument();
+    expect(container.querySelector(".unified-global-nav")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the newest archived daily when today's daily payload is empty", async () => {
+    const publicApi = {
+      listEvents: vi.fn().mockResolvedValue({ items: [], count: 0, hasNext: false, nextCursor: null }),
+      listSources: vi.fn().mockResolvedValue([]),
+      getEventDetail: vi.fn(),
+      getDaily: vi.fn().mockImplementation(({ date }: { date?: string }) => {
+        if (date !== "2026-05-17") return Promise.resolve(null);
+        return Promise.resolve({
+          id: "daily-7",
+          channel: "ai",
+          date: "2026-05-17",
+          generatedAt: "2026-05-17T04:00:25+00:00",
+          title: "AI 日报",
+          windowLabel: "最近 24 小时",
+          stats: { storyCount: 1 },
+          sections: [
+            {
+              category: "ai_models",
+              label: "AI 模型",
+              count: 1,
+              items: [
+                {
+                  eventId: "132",
+                  title: "Claude 5天攻破Apple M5 macOS内核漏洞",
+                  summary: "Claude 协助安全团队快速构建提权利用链。",
+                  category: "ai_models",
+                  score: 89.7,
+                  entryReason: "该事件展示了 AI 安全研究能力的明显提升。"
+                }
+              ]
+            }
+          ]
+        });
+      }),
+      listDailies: vi.fn().mockResolvedValue({
+        items: [{ id: "daily-7", date: "2026-05-17", title: "AI 日报", leadTitle: "Claude 5天攻破Apple M5 macOS内核漏洞", storyCount: 1 }],
+        count: 1,
+        page: 1,
+        pageSize: 20,
+        total: 1,
+        totalPages: 1,
+        hasNext: false,
+        nextCursor: null
+      }),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
+    } as unknown as PublicApi;
+
+    render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} sectionValue="daily" />);
+
+    expect(await screen.findByText("Claude 协助安全团队快速构建提权利用链。")).toBeInTheDocument();
+    await waitFor(() => expect(publicApi.getDaily).toHaveBeenLastCalledWith({ channel: "ai", date: "2026-05-17" }));
   });
 
   it("shows AIHOT-style source filters, contributor wall, and highlighted recommendation reason", async () => {

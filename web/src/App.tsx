@@ -276,35 +276,28 @@ export function App() {
 
   return (
     <main className="unified-shell">
-      <header className="unified-global-nav-wrap">
-        <nav className="unified-global-nav" aria-label="全局顶部导航">
-          <button className="unified-brand" onClick={() => activate(publicItems[0])} aria-label="AIHOT 首页">
+      <aside className="unified-sidebar">
+        <button className="unified-brand" onClick={() => activate(publicItems[0])} aria-label="AIHOT 首页">
           <span>AI</span><i />HOT
         </button>
-          <div className="unified-global-nav-scroll">
-            <nav className="unified-channel-switch unified-channel-nav" aria-label="频道分区">
-              <button className={channel === "ai" ? "active" : ""} onClick={() => switchChannel("ai")}><Sparkles size={16} /><span>AI 热点</span></button>
-              <button className={channel === "amazon" ? "active" : ""} onClick={() => switchChannel("amazon")}><Heart size={16} /><span>Amazon</span></button>
-            </nav>
-            <NavGroup label="频道内功能" items={publicItems} activeView={activeView} onActivate={activate} />
-            {visibleOps.length > 0 && <NavGroup label="运营能力" items={visibleOps} activeView={activeView} onActivate={activate} />}
-            {visibleAdmin.length > 0 && <NavGroup label="系统管理" items={visibleAdmin} activeView={activeView} onActivate={activate} />}
-          </div>
-          <div className="unified-nav-utility">
-            <button className="unified-agent-trigger" type="button" onClick={() => setAgentPanelOpen(true)} aria-label="打开智能体专家面板">
-              <Sparkles size={16} /><span>智能体</span>
-            </button>
-            <ThemeToggle value={theme} onChange={switchTheme} />
-            {session.authenticated ? (
-              <button className="unified-user" onClick={logout}><LogOut size={16} /><span>{session.user?.displayName ?? session.user?.username}</span></button>
-            ) : (
-              <button className="unified-user" onClick={() => setLoginOpen(true)}><LockKeyhole size={16} /><span>登录账号</span></button>
-            )}
-          </div>
+        <nav className="unified-channel-switch unified-channel-nav" aria-label="频道切换">
+          <button className={channel === "ai" ? "active" : ""} onClick={() => switchChannel("ai")}><Sparkles size={16} /><span>AI 热点</span></button>
+          <button className={channel === "amazon" ? "active" : ""} onClick={() => switchChannel("amazon")}><Heart size={16} /><span>Amazon</span></button>
         </nav>
-      </header>
+        <NavGroup label="公共情报" items={publicItems} activeView={activeView} onActivate={activate} />
+        {visibleOps.length > 0 && <NavGroup label="运营能力" items={visibleOps} activeView={activeView} onActivate={activate} />}
+        {visibleAdmin.length > 0 && <NavGroup label="系统管理" items={visibleAdmin} activeView={activeView} onActivate={activate} />}
+        <div className="unified-sidebar-footer">
+          <ThemeToggle value={theme} onChange={switchTheme} />
+          {session.authenticated ? (
+            <button className="unified-user" onClick={logout}><LogOut size={16} /><span>{session.user?.displayName ?? session.user?.username}</span></button>
+          ) : (
+            <button className="unified-user" onClick={() => setLoginOpen(true)}><LockKeyhole size={16} /><span>登录账号</span></button>
+          )}
+        </div>
+      </aside>
       <section className="unified-main">
-        <header className="unified-topbar">
+        <header className="unified-topbar" role="banner" aria-label="当前页面工具栏">
           <div>
             <p className="eyebrow">{isAdminView ? "运营控制台" : channel === "ai" ? "AI 热点" : "Amazon 情报"}</p>
             <h1>{activeItem.title}</h1>
@@ -322,6 +315,9 @@ export function App() {
             </label>
             <button className="command-k-trigger" type="button" onClick={() => setCommandOpen(true)} aria-label="打开命令面板">
               Ctrl K
+            </button>
+            <button className="unified-agent-trigger" type="button" onClick={() => setAgentPanelOpen(true)} aria-label="打开智能体专家面板">
+              <Sparkles size={16} /><span>智能体</span>
             </button>
             {sessionLoading && <span className="session-chip">同步身份...</span>}
             {session.authenticated && <span className="session-chip">{session.roles.map(roleLabel).join(" / ")}</span>}

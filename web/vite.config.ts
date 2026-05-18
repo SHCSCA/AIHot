@@ -6,15 +6,7 @@ export default defineConfig({
   base: "/",
   plugins: [tailwindcss(), react()],
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          motion: ["framer-motion"],
-          virtuoso: ["react-virtuoso"],
-          icons: ["lucide-react"]
-        }
-      }
-    }
+    chunkSizeWarningLimit: 600
   },
   test: {
     environment: "jsdom",

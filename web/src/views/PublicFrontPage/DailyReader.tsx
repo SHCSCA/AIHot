@@ -87,6 +87,7 @@ export function DailyReader({ api, channel, zenMode = false }: DailyReaderProps)
   const sections = dailySections(daily);
   const storyCount = daily?.stats?.storyCount ?? sections.reduce((sum, section) => sum + section.items.length, 0);
   const archiveBaseDate = archive.items[0]?.date ?? date;
+  const latestArchiveDate = archive.items[0]?.date;
 
   useEffect(() => {
     if (zenMode) {
@@ -95,6 +96,11 @@ export function DailyReader({ api, channel, zenMode = false }: DailyReaderProps)
       return () => clearTimeout(t);
     }
   }, [zenMode]);
+
+  useEffect(() => {
+    if (loading || error || daily || !latestArchiveDate || latestArchiveDate === date) return;
+    setDate(latestArchiveDate);
+  }, [daily, date, error, latestArchiveDate, loading]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -223,6 +229,14 @@ export function DailyReader({ api, channel, zenMode = false }: DailyReaderProps)
                 ))}
               </>
             )}
+            {!loading && !daily && !error && (
+              <section className="daily-document dark daily-empty">
+                <p className="daily-volume">AIHOT DAILY</p>
+                <h2>暂无日报</h2>
+                <p className="daily-cover-summary">当前日期没有已发布日报，请从左侧归档选择其他日期，或稍后刷新。</p>
+                <button className="ghost dark" onClick={reload}>刷新日报</button>
+              </section>
+            )}
           </motion.article>
         </motion.div>
       ) : (
@@ -237,8 +251,8 @@ export function DailyReader({ api, channel, zenMode = false }: DailyReaderProps)
             <button className="ghost dark" type="button" onClick={() => setZenOpen(true)}>专注阅读</button>
           </motion.div>
           <motion.aside className="daily-archive" variants={itemVariants}>
-            <button className="latest" onClick={() => setDate(today())}>
-              <strong>最新一期</strong><span>{today()}</span>
+            <button className="latest" onClick={() => setDate(latestArchiveDate ?? today())}>
+              <strong>最新一期</strong><span>{latestArchiveDate ?? today()}</span>
             </button>
             <div className="daily-archive-month">
               <span>{archiveMonthLabel(archiveBaseDate)}</span>
@@ -333,6 +347,14 @@ export function DailyReader({ api, channel, zenMode = false }: DailyReaderProps)
                   </motion.section>
                 ))}
               </motion.article>
+            )}
+            {!loading && !daily && !error && (
+              <section className="daily-document dark daily-empty">
+                <p className="daily-volume">AIHOT DAILY</p>
+                <h2>暂无日报</h2>
+                <p className="daily-cover-summary">当前日期没有已发布日报，请从左侧归档选择其他日期，或稍后刷新。</p>
+                <button className="ghost dark" onClick={reload}>刷新日报</button>
+              </section>
             )}
           </motion.div>
         </motion.div>
