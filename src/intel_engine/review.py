@@ -130,7 +130,7 @@ def adjusted_selected_threshold(
         threshold += 4.0
     if source_count >= 2:
         threshold -= 2.0
-    if risk_flags and not (channel == "amazon" and any(flag in {"compliance", "account_health"} for flag in risk_flags)):
+    if risk_flags and channel != "amazon":
         threshold += 5.0
     return max(0.0, min(100.0, threshold))
 

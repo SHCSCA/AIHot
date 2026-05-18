@@ -343,6 +343,28 @@ def test_adjusted_selected_threshold_honors_channel_base_threshold():
         )
         == 72
     )
+    assert (
+        adjusted_selected_threshold(
+            channel="amazon",
+            base_threshold=72,
+            source_tier="T2",
+            screen_bucket="core",
+            source_count=1,
+            risk_flags=["竞争加剧可能导致利润压缩"],
+        )
+        == 72
+    )
+    assert (
+        adjusted_selected_threshold(
+            channel="ai",
+            base_threshold=75,
+            source_tier="T2",
+            screen_bucket="core",
+            source_count=1,
+            risk_flags=["模型效果存在不确定性"],
+        )
+        == 80
+    )
 
 
 def test_pipeline_once_produces_public_event_and_isolates_failed_source(tmp_path):
