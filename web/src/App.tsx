@@ -464,7 +464,7 @@ function renderContent({
         sectionValue={section}
         searchValue={globalQuery}
         onChannelChange={setChannel}
-        onSectionChange={(next) => setActiveView(`public:${next}`)}
+        onSectionChange={(next: PublicSection) => setActiveView(`public:${next}` as ActiveView)}
       />
     );
   }

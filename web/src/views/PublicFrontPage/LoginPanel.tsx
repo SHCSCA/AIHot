@@ -1,0 +1,72 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { ShieldCheck, LockKeyhole } from "lucide-react";
+import type { Credentials } from "../../api";
+
+interface LoginPanelProps {
+  error: string | null;
+  onLogin: (credentials: Credentials) => Promise<void>;
+}
+
+export function LoginPanel({ error, onLogin }: LoginPanelProps) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  async function submit() {
+    setSubmitting(true);
+    try {
+      await onLogin({ username, password });
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <motion.section
+      className="public-login-panel dark glass"
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <div className="login-panel-info">
+        <ShieldCheck size={19} />
+        <strong>运营后台登录</strong>
+        <span>登录后进入信源、事件、日报和策略管理台。</span>
+      </div>
+
+      <label>
+        <span>管理员账号</span>
+        <input
+          aria-label="管理员账号"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="用户名"
+        />
+      </label>
+
+      <label>
+        <span>管理员密码</span>
+        <input
+          aria-label="管理员密码"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="密码"
+        />
+      </label>
+
+      {error && <p className="error">{error}</p>}
+
+      <motion.button
+        className="primary login-btn"
+        onClick={submit}
+        disabled={submitting}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+      >
+        {submitting ? "登录中..." : "登录"}
+      </motion.button>
+    </motion.section>
+  );
+}
