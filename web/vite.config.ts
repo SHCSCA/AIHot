@@ -5,6 +5,17 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   base: "/",
   plugins: [tailwindcss(), react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          motion: ["framer-motion"],
+          virtuoso: ["react-virtuoso"],
+          icons: ["lucide-react"]
+        }
+      }
+    }
+  },
   test: {
     environment: "jsdom",
     fileParallelism: false,

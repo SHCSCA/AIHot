@@ -446,6 +446,170 @@ describe("后台产品化界面", () => {
     await waitFor(() => expect(publicApi.listEvents).toHaveBeenCalledWith(expect.objectContaining({ channel: "amazon" })));
   });
 
+  it("wires the PRD visual systems into the real public interface", async () => {
+    const publicApi = {
+      listEvents: vi.fn().mockResolvedValue({
+        items: [
+          {
+            id: "1",
+            channel: "ai",
+            title: "OpenAI 发布新模型能力",
+            summary: "OpenAI 发布模型能力更新，开发者需要关注 API 能力变化。",
+            category: "ai_models",
+            score: 86,
+            sourceCount: 1,
+            memberCount: 1,
+            lastSeenAt: "2026-05-13T06:13:00Z",
+            sourceGroup: "official",
+            sourceType: "rss",
+            sourceTier: "T1",
+            entryReason: "来自官方一手信源，模型能力变化会影响开发者选型。",
+            tags: ["OpenAI", "模型发布", "API 变化"],
+            mainItem: { title: "OpenAI 发布新模型能力", sourceName: "OpenAI News", url: "https://openai.com/news/model" }
+          }
+        ],
+        count: 1,
+        page: 1,
+        pageSize: 20,
+        total: 1,
+        totalPages: 1,
+        hasNext: false,
+        nextCursor: null
+      }),
+      listSources: vi.fn().mockResolvedValue([]),
+      getEventDetail: vi.fn().mockResolvedValue({ event: { id: "1" }, members: [] }),
+      getDaily: vi.fn().mockResolvedValue({
+        id: "daily-1",
+        channel: "ai",
+        date: "2026-05-14",
+        generatedAt: "2026-05-14T08:00:00+08:00",
+        title: "AIHOT 日报",
+        windowLabel: "基于最近 24 小时精选情报自动生成",
+        stats: { storyCount: 1 },
+        sections: [
+          {
+            category: "ai_models",
+            label: "模型发布/更新",
+            count: 1,
+            items: [
+              {
+                eventId: "1",
+                title: "Hy3 预览版登陆 GMI",
+                summary: "Hy3 预览版开放使用，模型能力持续增强。",
+                category: "ai_models",
+                score: 88,
+                entryReason: "模型发布来自官方信源，值得关注。"
+              }
+            ]
+          }
+        ]
+      }),
+      listDailies: vi.fn().mockResolvedValue({
+        items: [{ id: "daily-1", date: "2026-05-14", title: "AIHOT 日报", leadTitle: "Hy3 预览版登陆 GMI", storyCount: 1 }],
+        count: 1,
+        page: 1,
+        pageSize: 20,
+        total: 1,
+        totalPages: 1,
+        hasNext: false,
+        nextCursor: null
+      }),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
+    } as unknown as PublicApi;
+
+    render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
+
+    expect(await screen.findByLabelText("AIHOT 情报仪表盘")).toBeInTheDocument();
+    expect(screen.getByText("情报热度趋势")).toBeInTheDocument();
+    expect(await screen.findByLabelText("虚拟化情报流")).toBeInTheDocument();
+    expect(await screen.findByText("OpenAI 发布新模型能力")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "日报" }));
+    expect(await screen.findByRole("button", { name: "专注阅读" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "专注阅读" }));
+    expect(await screen.findByLabelText("专注阅读模式")).toBeInTheDocument();
+  });
+
+  it("opens the command palette with keyboard navigation from the unified shell", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (String(url).startsWith("/api/v1/me")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            user: null,
+            roles: ["guest"],
+            permissions: ["feedback.create", "public.read"],
+            preferences: { theme: "dark", defaultChannel: "ai", compactMode: false },
+            authenticated: false
+          })
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          events: [],
+          count: 0,
+          page: 1,
+          pageSize: 20,
+          total: 0,
+          totalPages: 1,
+          hasNext: false,
+          nextCursor: null
+        })
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: "精选" })).toBeInTheDocument();
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+
+    expect(await screen.findByRole("dialog", { name: "命令面板" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("搜索或快速跳转...")).toHaveFocus();
+    expect(screen.getByText("快速跳转")).toBeInTheDocument();
+    expect(screen.getByText("热门情报")).toBeInTheDocument();
+  });
+
+  it("uses a real top navigation shell instead of the old sidebar shell", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      if (String(url).startsWith("/api/v1/me")) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            user: null,
+            roles: ["guest"],
+            permissions: ["feedback.create", "public.read"],
+            preferences: { theme: "dark", defaultChannel: "ai", compactMode: false },
+            authenticated: false
+          })
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          events: [],
+          count: 0,
+          page: 1,
+          pageSize: 20,
+          total: 0,
+          totalPages: 1,
+          hasNext: false,
+          nextCursor: null
+        })
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { container } = render(<App />);
+
+    expect(await screen.findByRole("navigation", { name: "全局顶部导航" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "频道分区" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "频道内功能" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "打开智能体专家面板" })).toBeInTheDocument();
+    expect(container.querySelector(".unified-sidebar")).not.toBeInTheDocument();
+  });
+
   it("shows AIHOT-style source filters, contributor wall, and highlighted recommendation reason", async () => {
     const publicApi = {
       listEvents: vi.fn().mockResolvedValue({

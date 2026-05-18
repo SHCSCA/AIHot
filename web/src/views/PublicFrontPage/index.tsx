@@ -1,27 +1,21 @@
 import { useEffect, useState } from "react";
 import type { Credentials, PublicApi } from "../../api";
-import { PaginationBar } from "../../components/PaginationBar";
-import { useAsyncData } from "../../hooks";
-import { today } from "../../utils";
-import type { DailyArchiveItem, DailySection, PublicDaily, PublicEvent, PublicEventDetail, PublicFeedLink, Source } from "../../types";
-import { categoryLabel, channelLabel, collectionStatusLabel, sellerActionLevelLabel, sourceGroupLabel, sourceTypeLabel } from "../../labels";
 
 import { TopNav } from "./TopNav";
 import { HeroSection } from "./HeroSection";
 import { FilterBar } from "./FilterBar";
-import { EventCard } from "./EventCard";
+import { EventTimeline } from "./EventTimeline";
 import { DailyReader } from "./DailyReader";
 import { SourceWall } from "./SourceWall";
 import { RssLinks } from "./RssLinks";
 import { LoginPanel } from "./LoginPanel";
+import { AgentPanel, useAgentPanelShortcut } from "./AgentPanel";
+import type { AgentDefinition } from "../../types/agents";
 
 export type PublicChannel = "ai" | "amazon";
 export type PublicSection = "selected" | "all" | "daily" | "rss" | "sources" | "feedback";
 type ResolvedTheme = "dark" | "light";
 type ThemePreference = ResolvedTheme | "system";
-
-const EVENT_PAGE_SIZE = 20;
-const SOURCE_PAGE_SIZE = 6;
 
 export function PublicFrontPage({
   api,
@@ -37,7 +31,8 @@ export function PublicFrontPage({
   onChannelChange,
   onSectionChange,
   onSearchChange,
-  onThemeChange
+  onThemeChange,
+  disableAgentPanel = false
 }: {
   api: PublicApi;
   loginError: string | null;
@@ -53,6 +48,7 @@ export function PublicFrontPage({
   onSectionChange?: (section: PublicSection) => void;
   onSearchChange?: (query: string) => void;
   onThemeChange?: (theme: ThemePreference) => void;
+  disableAgentPanel?: boolean;
 }) {
   const [internalChannel, setInternalChannel] = useState<PublicChannel>("ai");
   const [internalSection, setInternalSection] = useState<PublicSection>(() => sectionFromPath(window.location.pathname));
@@ -60,17 +56,22 @@ export function PublicFrontPage({
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
   const [showLogin, setShowLogin] = useState(loginOpen);
   const [filters, setFilters] = useState({ q: "", category: "", date: "", sourceGroup: "" });
-  const [events, setEvents] = useState<PublicEvent[]>([]);
-  const [eventError, setEventError] = useState<string | null>(null);
-  const [eventLoading, setEventLoading] = useState(false);
   const [page, setPage] = useState(1);
-  const [pageInfo, setPageInfo] = useState({ totalPages: 1, total: 0 });
   const [eventVersion, setEventVersion] = useState(0);
+  const [agentPanelOpen, setAgentPanelOpen] = useState(false);
   const channel = channelValue ?? internalChannel;
   const section = sectionValue ?? internalSection;
   const theme = themeValue ?? internalTheme;
   const activeMode = section === "all" ? "all" : "selected";
   const resolvedTheme = theme === "system" ? systemTheme : theme;
+
+  useAgentPanelShortcut(() => {
+    if (!disableAgentPanel) setAgentPanelOpen((o) => !o);
+  });
+
+  function handleAgentActivate(agent: AgentDefinition) {
+    console.log("[智能体] 激活专家:", agent.name, "ID:", agent.id);
+  }
 
   useEffect(() => {
     if (searchValue === undefined) return;
@@ -88,57 +89,10 @@ export function PublicFrontPage({
   }, []);
 
   useEffect(() => {
+    if (embedded) return;
     document.documentElement.dataset.theme = resolvedTheme;
     localStorage.setItem("publicTheme", theme);
-  }, [resolvedTheme, theme]);
-
-  useEffect(() => {
-    if (section === "daily" || section === "rss" || section === "sources" || section === "feedback") return;
-    let active = true;
-    setEventLoading(true);
-    api
-      .listEvents({
-        channel,
-        mode: activeMode,
-        category: filters.category || undefined,
-        sourceGroup: filters.sourceGroup || undefined,
-        q: filters.q || undefined,
-        date: filters.date || undefined,
-        window: filters.date || channel === "amazon" ? undefined : 24,
-        page,
-        pageSize: EVENT_PAGE_SIZE
-      })
-      .then((page) => {
-        if (!active) return;
-        setEvents(page.items);
-        const resolvedPage = page.page ?? 1;
-        setPageInfo({
-          totalPages: page.totalPages ?? (page.hasNext ? resolvedPage + 1 : resolvedPage),
-          total: page.total ?? page.count
-        });
-        setEventError(null);
-      })
-      .catch((err: unknown) => {
-        if (active) setEventError(err instanceof Error ? err.message : "请求失败");
-      })
-      .finally(() => {
-        if (active) setEventLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [
-    api,
-    channel,
-    section,
-    activeMode,
-    filters.q,
-    filters.category,
-    filters.date,
-    filters.sourceGroup,
-    page,
-    eventVersion
-  ]);
+  }, [embedded, resolvedTheme, theme]);
 
   function switchChannel(next: PublicChannel) {
     setInternalChannel(next);
@@ -190,22 +144,25 @@ export function PublicFrontPage({
 
   return (
     <main className="aihot-public-shell">
-      <TopNav
-        channel={channel}
-        section={section}
-        theme={theme}
-        filters={filters}
-        onChannelChange={switchChannel}
-        onSectionChange={switchSection}
-        onThemeChange={switchTheme}
-        onSearchChange={(q) => {
-          setFilters((prev) => ({ ...prev, q }));
-          onSearchChange?.(q);
-          setPage(1);
-        }}
-        onLoginClick={() => setShowLogin((prev) => !prev)}
-        hideLoginControls={hideLoginControls}
-      />
+      {!embedded && (
+        <TopNav
+          channel={channel}
+          section={section}
+          theme={theme}
+          filters={filters}
+          onChannelChange={switchChannel}
+          onSectionChange={switchSection}
+          onThemeChange={switchTheme}
+          onSearchChange={(q) => {
+            setFilters((prev) => ({ ...prev, q }));
+            onSearchChange?.(q);
+            setPage(1);
+          }}
+          onLoginClick={() => setShowLogin((prev) => !prev)}
+          onAgentClick={disableAgentPanel ? undefined : () => setAgentPanelOpen(true)}
+          hideLoginControls={hideLoginControls}
+        />
+      )}
 
       <section className={embedded ? "aihot-workspace unified-public-workspace" : "aihot-workspace"}>
         {section !== "daily" && !embedded && (
@@ -235,40 +192,33 @@ export function PublicFrontPage({
           <PublicFeedback api={api} channel={channel} />
         ) : (
           <>
+            {section === "selected" && <HeroSection channel={channel} />}
             <FilterBar
               channel={channel}
               filters={filters}
               onChange={(next) => { setPage(1); setFilters({ ...filters, ...next }); }}
               onRefresh={() => { setPage(1); setEventVersion((current) => current + 1); }}
             />
-            <section className="aihot-timeline" aria-label="热点信息流">
-              {eventError && <p className="error">{eventError}</p>}
-              {eventLoading && events.length === 0 && <p className="hint">正在加载中文情报...</p>}
-              {events.map((event, index) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  api={api}
-                  showDate={index === 0 || formatMonthDay(events[index - 1]?.lastSeenAt) !== formatMonthDay(event.lastSeenAt)}
-                />
-              ))}
-              {!eventLoading && events.length === 0 && (
-                <p className="hint">
-                  {channel === "amazon"
-                    ? "Amazon 情报最近 7 天暂无通过质量筛选的公开事件，可切换日期或查看信源墙。"
-                    : "暂无符合条件的信息。"}
-                </p>
-              )}
-              <PaginationBar
-                page={page}
-                totalPages={pageInfo.totalPages}
-                onPageChange={setPage}
-                disabled={eventLoading}
-              />
-            </section>
+            <EventTimeline
+              api={api}
+              channel={channel}
+              activeMode={activeMode}
+              filters={filters}
+              page={page}
+              eventVersion={eventVersion}
+              onPageChange={setPage}
+            />
           </>
         )}
       </section>
+
+      {!disableAgentPanel && (
+        <AgentPanel
+          open={agentPanelOpen}
+          onClose={() => setAgentPanelOpen(false)}
+          onActivate={handleAgentActivate}
+        />
+      )}
     </main>
   );
 }

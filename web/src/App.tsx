@@ -42,10 +42,13 @@ import { HealthView } from "./views/HealthView";
 import { JobsView } from "./views/JobsView";
 import { PipelineRunsView } from "./views/PipelineRunsView";
 import { PublicFrontPage, type PublicChannel, type PublicSection } from "./views/PublicFrontPage";
+import { AgentPanel, useAgentPanelShortcut } from "./views/PublicFrontPage/AgentPanel";
+import { CmdKPanel, useCmdKShortcut } from "./views/PublicFrontPage/CmdKPanel";
 import { QualityView } from "./views/QualityView";
 import { SourcesView } from "./views/SourcesView";
 import { StrategiesView } from "./views/StrategiesView";
 import { roleLabel } from "./labels";
+import type { AgentDefinition } from "./types/agents";
 import "./styles.css";
 
 export { SourcesView } from "./views/SourcesView";
@@ -127,6 +130,8 @@ export function App() {
   const [activeView, setActiveView] = useState<ActiveView>(() => viewFromPath(window.location.pathname));
   const [channel, setChannel] = useState<PublicChannel>(() => (localStorage.getItem("aihotChannel") === "amazon" ? "amazon" : "ai"));
   const [globalQuery, setGlobalQuery] = useState("");
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [agentPanelOpen, setAgentPanelOpen] = useState(false);
   const [theme, setTheme] = useState<ThemePreference>(() => loadTheme());
   const [systemTheme, setSystemTheme] = useState<"dark" | "light">(() => getSystemTheme());
   const [initialDashboard, setInitialDashboard] = useState<Dashboard | null>(null);
@@ -144,6 +149,9 @@ export function App() {
   const activeItem = [...publicItems, ...opsItems, ...adminItems].find((item) => item.id === activeView) ?? publicItems[0];
   const isAdminView = activeView.startsWith("admin:");
   const resolvedTheme = theme === "system" ? systemTheme : theme;
+
+  useCmdKShortcut(() => setCommandOpen((open) => !open));
+  useAgentPanelShortcut(() => setAgentPanelOpen((open) => !open));
 
   useEffect(() => {
     let active = true;
@@ -225,6 +233,27 @@ export function App() {
     }
   }
 
+  function handleCommandSelect(id: string, label: string) {
+    if (id.startsWith("pub:")) {
+      const section = id.replace("pub:", "") as PublicSection;
+      const item = publicItems.find((entry) => entry.id === `public:${section}`);
+      if (item) activate(item);
+      return;
+    }
+    if (id.startsWith("admin:")) {
+      const view = id.replace("admin:", "") as AdminView;
+      const item = [...opsItems, ...adminItems].find((entry) => entry.id === `admin:${view}`);
+      if (item) activate(item);
+      return;
+    }
+    setGlobalQuery(label);
+  }
+
+  function handleAgentActivate(agent: AgentDefinition) {
+    setGlobalQuery(agent.name);
+    setAgentPanelOpen(false);
+  }
+
   function leaveLoginGate() {
     setLoginOpen(false);
     setLoginError(null);
@@ -247,26 +276,33 @@ export function App() {
 
   return (
     <main className="unified-shell">
-      <aside className="unified-sidebar">
-        <button className="unified-brand" onClick={() => activate(publicItems[0])} aria-label="AIHOT 首页">
+      <header className="unified-global-nav-wrap">
+        <nav className="unified-global-nav" aria-label="全局顶部导航">
+          <button className="unified-brand" onClick={() => activate(publicItems[0])} aria-label="AIHOT 首页">
           <span>AI</span><i />HOT
         </button>
-        <div className="unified-channel-switch" role="group" aria-label="频道切换">
-          <button className={channel === "ai" ? "active" : ""} onClick={() => switchChannel("ai")}><Sparkles size={16} />AI 热点</button>
-          <button className={channel === "amazon" ? "active" : ""} onClick={() => switchChannel("amazon")}><Heart size={16} />Amazon</button>
-        </div>
-        <NavGroup label="公共情报" items={publicItems} activeView={activeView} onActivate={activate} />
-        {visibleOps.length > 0 && <NavGroup label="运营能力" items={visibleOps} activeView={activeView} onActivate={activate} />}
-        {visibleAdmin.length > 0 && <NavGroup label="系统管理" items={visibleAdmin} activeView={activeView} onActivate={activate} />}
-        <div className="unified-sidebar-footer">
-          <ThemeToggle value={theme} onChange={switchTheme} />
-          {session.authenticated ? (
-            <button className="unified-user" onClick={logout}><LogOut size={16} /><span>{session.user?.displayName ?? session.user?.username}</span></button>
-          ) : (
-            <button className="unified-user" onClick={() => setLoginOpen(true)}><LockKeyhole size={16} /><span>登录账号</span></button>
-          )}
-        </div>
-      </aside>
+          <div className="unified-global-nav-scroll">
+            <nav className="unified-channel-switch unified-channel-nav" aria-label="频道分区">
+              <button className={channel === "ai" ? "active" : ""} onClick={() => switchChannel("ai")}><Sparkles size={16} /><span>AI 热点</span></button>
+              <button className={channel === "amazon" ? "active" : ""} onClick={() => switchChannel("amazon")}><Heart size={16} /><span>Amazon</span></button>
+            </nav>
+            <NavGroup label="频道内功能" items={publicItems} activeView={activeView} onActivate={activate} />
+            {visibleOps.length > 0 && <NavGroup label="运营能力" items={visibleOps} activeView={activeView} onActivate={activate} />}
+            {visibleAdmin.length > 0 && <NavGroup label="系统管理" items={visibleAdmin} activeView={activeView} onActivate={activate} />}
+          </div>
+          <div className="unified-nav-utility">
+            <button className="unified-agent-trigger" type="button" onClick={() => setAgentPanelOpen(true)} aria-label="打开智能体专家面板">
+              <Sparkles size={16} /><span>智能体</span>
+            </button>
+            <ThemeToggle value={theme} onChange={switchTheme} />
+            {session.authenticated ? (
+              <button className="unified-user" onClick={logout}><LogOut size={16} /><span>{session.user?.displayName ?? session.user?.username}</span></button>
+            ) : (
+              <button className="unified-user" onClick={() => setLoginOpen(true)}><LockKeyhole size={16} /><span>登录账号</span></button>
+            )}
+          </div>
+        </nav>
+      </header>
       <section className="unified-main">
         <header className="unified-topbar">
           <div>
@@ -284,6 +320,9 @@ export function App() {
                 placeholder={isAdminView ? "搜索当前运营页面..." : "搜索标题、摘要、信源..."}
               />
             </label>
+            <button className="command-k-trigger" type="button" onClick={() => setCommandOpen(true)} aria-label="打开命令面板">
+              Ctrl K
+            </button>
             {sessionLoading && <span className="session-chip">同步身份...</span>}
             {session.authenticated && <span className="session-chip">{session.roles.map(roleLabel).join(" / ")}</span>}
             {!session.authenticated && <button className="ghost" onClick={() => setLoginOpen(true)}><LockKeyhole size={16} />运营登录</button>}
@@ -314,6 +353,8 @@ export function App() {
         })}
         {(visibleOps[0] ?? null) && <button className={activeView.startsWith("admin:") ? "active" : ""} onClick={() => activate(visibleOps[0])}><Database size={18} /><span>工作台</span></button>}
       </nav>
+      <CmdKPanel open={commandOpen} onClose={() => setCommandOpen(false)} onSelect={handleCommandSelect} />
+      <AgentPanel open={agentPanelOpen} onClose={() => setAgentPanelOpen(false)} onActivate={handleAgentActivate} />
     </main>
   );
 }
@@ -465,6 +506,7 @@ function renderContent({
         searchValue={globalQuery}
         onChannelChange={setChannel}
         onSectionChange={(next: PublicSection) => setActiveView(`public:${next}` as ActiveView)}
+        disableAgentPanel
       />
     );
   }

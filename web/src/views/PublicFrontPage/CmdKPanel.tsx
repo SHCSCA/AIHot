@@ -1,6 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import { useNavigate } from "react-router-dom";
 
 interface SearchResult {
   id: string;
@@ -44,10 +43,10 @@ function saveHistory(history: string[]) {
 interface CmdKPanelProps {
   open: boolean;
   onClose: () => void;
+  onSelect?: (id: string, label: string) => void;
 }
 
-export function CmdKPanel({ open, onClose }: CmdKPanelProps) {
-  const navigate = useNavigate();
+export function CmdKPanel({ open, onClose, onSelect }: CmdKPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -80,7 +79,7 @@ export function CmdKPanel({ open, onClose }: CmdKPanelProps) {
     if (open) {
       setQuery("");
       setSelectedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
+      inputRef.current?.focus();
     }
   }, [open]);
 
@@ -106,12 +105,13 @@ export function CmdKPanel({ open, onClose }: CmdKPanelProps) {
   }
 
   function selectItem(item: SearchResult) {
+    onSelect?.(item.id, item.label);
     if (item.id.startsWith("pub:")) {
       const section = item.id.replace("pub:", "");
-      navigate(section === "selected" ? "/" : `/${section}`);
+      window.history.replaceState(null, "", section === "selected" ? "/" : `/${section}`);
     } else if (item.id.startsWith("admin:")) {
       const view = item.id.replace("admin:", "");
-      navigate(`/admin/${view}`);
+      window.history.replaceState(null, "", `/admin/${view}`);
     } else {
       const existing = loadHistory();
       saveHistory([item.label, ...existing.filter((h) => h !== item.label)]);
@@ -174,6 +174,9 @@ export function CmdKPanel({ open, onClose }: CmdKPanelProps) {
       {open && (
         <motion.div
           className="cmdk-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="命令面板"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
@@ -239,7 +242,7 @@ export function CmdKPanel({ open, onClose }: CmdKPanelProps) {
 export function useCmdKShortcut(onToggle: () => void) {
   useEffect(() => {
     function handleKeyDown(e: globalThis.KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         onToggle();
       }

@@ -73,6 +73,7 @@ interface DailyReaderProps {
 export function DailyReader({ api, channel, zenMode = false }: DailyReaderProps) {
   const [date, setDate] = useState(today());
   const [entering, setEntering] = useState(zenMode);
+  const [zenOpen, setZenOpen] = useState(zenMode);
   const { data: daily, error, loading, reload } = useAsyncData<PublicDaily | null>(
     () => api.getDaily({ channel, date }),
     null,
@@ -89,6 +90,7 @@ export function DailyReader({ api, channel, zenMode = false }: DailyReaderProps)
 
   useEffect(() => {
     if (zenMode) {
+      setZenOpen(true);
       const t = setTimeout(() => setEntering(false), 50);
       return () => clearTimeout(t);
     }
@@ -120,17 +122,21 @@ export function DailyReader({ api, channel, zenMode = false }: DailyReaderProps)
 
   return (
     <AnimatePresence mode="wait">
-      {zenMode ? (
+      {zenOpen ? (
         <motion.div
           className="zen-overlay"
+          aria-label="专注阅读模式"
+          role="dialog"
+          aria-modal="true"
           variants={overlayVariants}
           initial="hidden"
           animate="visible"
           exit="exit"
         >
+          <button className="zen-close" type="button" onClick={() => setZenOpen(false)}>退出专注</button>
           <motion.div
             className="zen-sidebar"
-            initial={{ opacity: 0.2 }}
+            initial={{ opacity: entering ? 0 : 0.2 }}
             animate={{ opacity: 0.2 }}
             transition={{ duration: 0.5 }}
           />
@@ -227,6 +233,9 @@ export function DailyReader({ api, channel, zenMode = false }: DailyReaderProps)
           animate="visible"
           exit="exit"
         >
+          <motion.div className="daily-reader-actions" variants={itemVariants}>
+            <button className="ghost dark" type="button" onClick={() => setZenOpen(true)}>专注阅读</button>
+          </motion.div>
           <motion.aside className="daily-archive" variants={itemVariants}>
             <button className="latest" onClick={() => setDate(today())}>
               <strong>最新一期</strong><span>{today()}</span>

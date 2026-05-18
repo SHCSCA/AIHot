@@ -3,6 +3,7 @@ import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import type { PublicApi } from "../../api";
 import type { PublicEvent } from "../../types";
 import { PaginationBar } from "../../components/PaginationBar";
+import { EventCardExpand } from "./EventCardExpand";
 
 export interface EventTimelineProps {
   api: PublicApi;
@@ -59,7 +60,7 @@ export function EventTimeline({
         sourceGroup: filters.sourceGroup || undefined,
         q: filters.q || undefined,
         date: filters.date || undefined,
-        window: filters.date ? undefined : 24,
+        window: filters.date || channel === "amazon" ? undefined : 24,
         page,
         pageSize: EVENT_PAGE_SIZE,
       })
@@ -106,7 +107,7 @@ export function EventTimeline({
   );
 
   return (
-    <section className="aihot-timeline" aria-label="热点信息流">
+    <section className="aihot-timeline" aria-label="虚拟化情报流" data-testid="virtualized-event-feed">
       {eventError && <p className="error" role="alert">{eventError}</p>}
       {eventLoading && events.length === 0 && (
         <div className="skeleton-timeline" aria-label="正在加载" aria-live="polite">
@@ -129,7 +130,7 @@ export function EventTimeline({
       {!eventLoading && events.length === 0 && (
         <p className="hint" role="status">
           {channel === "amazon"
-            ? "Amazon 情报最近 24 小时暂无通过质量筛选的公开事件，可切换日期或查看信源墙。"
+            ? "Amazon 情报最近 7 天暂无通过质量筛选的公开事件，可切换日期或查看信源墙。"
             : "暂无符合条件的信息。"}
         </p>
       )}
@@ -138,15 +139,18 @@ export function EventTimeline({
           ref={virtuosoRef}
           data={itemData}
           itemContent={(index, item) => (
-            <EventItem
+            <EventCardExpand
               key={item.event.id}
               event={item.event}
-              showDateSeparator={index === 0 || !item.prevLastSeenAt || !sameDay(item.prevLastSeenAt, item.event.lastSeenAt ?? "")}
+              api={api}
+              index={index}
+              showDate={index === 0 || !item.prevLastSeenAt || !sameDay(item.prevLastSeenAt, item.event.lastSeenAt ?? "")}
             />
           )}
           useWindowScroll
           increaseViewportBy={{ top: 400, bottom: 400 }}
           defaultItemHeight={260}
+          initialItemCount={Math.min(itemData.length, EVENT_PAGE_SIZE)}
         />
       )}
       {events.length > 0 && (

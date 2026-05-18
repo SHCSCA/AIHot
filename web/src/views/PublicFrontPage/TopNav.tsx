@@ -14,6 +14,7 @@ interface TopNavProps {
   onThemeChange: (theme: ThemePreference) => void;
   onSearchChange: (q: string) => void;
   onLoginClick: () => void;
+  onAgentClick?: () => void;
   hideLoginControls?: boolean;
 }
 
@@ -41,6 +42,7 @@ export function TopNav({
   onThemeChange,
   onSearchChange,
   onLoginClick,
+  onAgentClick,
   hideLoginControls
 }: TopNavProps) {
   return (
@@ -92,6 +94,19 @@ export function TopNav({
       </div>
 
       <div className="topnav-right">
+        {onAgentClick && (
+          <motion.button
+            type="button"
+            className="agent-trigger-btn"
+            onClick={onAgentClick}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            aria-label="打开智能体面板"
+          >
+            <Sparkles size={16} />
+            <span>智能体</span>
+          </motion.button>
+        )}
         <div className="theme-switcher" role="group" aria-label="主题切换" data-active={theme}>
           <button
             type="button"

@@ -93,8 +93,15 @@ function SmoothLineChart({ data, color = "#06b6d4" }: { data: number[]; color?: 
   );
 }
 
-export function HeroSection() {
-  const trendData = [42, 68, 55, 79, 63, 88, 72, 95, 81, 103, 89, 118];
+export function HeroSection({ channel }: { channel: "ai" | "amazon" }) {
+  const trendData = channel === "amazon" ? [8, 11, 9, 14, 10, 16, 13, 18, 15, 21, 17, 24] : [42, 68, 55, 79, 63, 88, 72, 95, 81, 103, 89, 118];
+  const headline = channel === "amazon" ? "Amazon 卖家情报聚合" : "AI 与 Amazon 情报聚合";
+  const description = channel === "amazon"
+    ? "聚合平台政策、FBA、广告、Listing、费用和选品变化，保留卖家真正需要跟进的信号。"
+    : "实时追踪 AI 模型、产品、Agent 工具与亚马逊卖家运营动态，基于信源质量、内容相关性和时效性多维评分精选。";
+  const mainCount = channel === "amazon" ? 24 : 128;
+  const sourceCount = channel === "amazon" ? 44 : 147;
+  const eventCount = channel === "amazon" ? 7 : 23;
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -103,7 +110,7 @@ export function HeroSection() {
   }, []);
 
   return (
-    <section className="hero-section">
+    <section className="hero-section" aria-label="AIHOT 情报仪表盘">
       <div className="bento-grid">
         {/* Main 2x2 card - 今日热点 */}
         <BentoCard span="bento-main" className="bento-card-main">
@@ -119,28 +126,28 @@ export function HeroSection() {
               <Sparkles size={13} />
               今日热点
             </span>
-            <h2 className="bento-main-title">AI 与 Amazon 情报聚合</h2>
+            <h2 className="bento-main-title">{headline}</h2>
             <p className="bento-main-desc">
-              实时追踪 AI 模型、产品、Agent 工具与亚马逊卖家运营动态，基于信源质量、内容相关性和时效性多维评分精选。
+              {description}
             </p>
             <div className="bento-main-stats">
               <div className="bento-stat">
                 <span className="bento-stat-value">
-                  <AnimatedCounter target={128} />
+                  <AnimatedCounter target={mainCount} />
                 </span>
                 <span className="bento-stat-label">今日情报</span>
               </div>
               <div className="bento-stat">
                 <span className="bento-stat-value">
-                  <AnimatedCounter target={47} />
+                  <AnimatedCounter target={sourceCount} />
                 </span>
                 <span className="bento-stat-label">来源数</span>
               </div>
               <div className="bento-stat">
                 <span className="bento-stat-value">
-                  <AnimatedCounter target={23} />
+                  <AnimatedCounter target={eventCount} />
                 </span>
-                <span className="bento-stat-label">AI 事件</span>
+                <span className="bento-stat-label">{channel === "amazon" ? "卖家事件" : "AI 事件"}</span>
               </div>
             </div>
           </div>
