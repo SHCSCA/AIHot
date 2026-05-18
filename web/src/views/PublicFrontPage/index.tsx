@@ -9,11 +9,9 @@ import { DailyReader } from "./DailyReader";
 import { SourceWall } from "./SourceWall";
 import { RssLinks } from "./RssLinks";
 import { LoginPanel } from "./LoginPanel";
-import { AgentPanel, useAgentPanelShortcut } from "./AgentPanel";
-import type { AgentDefinition } from "../../types/agents";
 
 export type PublicChannel = "ai" | "amazon";
-export type PublicSection = "selected" | "all" | "daily" | "rss" | "sources" | "feedback";
+export type PublicSection = "overview" | "selected" | "all" | "daily" | "rss" | "sources" | "feedback";
 type ResolvedTheme = "dark" | "light";
 type ThemePreference = ResolvedTheme | "system";
 
@@ -31,8 +29,7 @@ export function PublicFrontPage({
   onChannelChange,
   onSectionChange,
   onSearchChange,
-  onThemeChange,
-  disableAgentPanel = false
+  onThemeChange
 }: {
   api: PublicApi;
   loginError: string | null;
@@ -48,7 +45,6 @@ export function PublicFrontPage({
   onSectionChange?: (section: PublicSection) => void;
   onSearchChange?: (query: string) => void;
   onThemeChange?: (theme: ThemePreference) => void;
-  disableAgentPanel?: boolean;
 }) {
   const [internalChannel, setInternalChannel] = useState<PublicChannel>("ai");
   const [internalSection, setInternalSection] = useState<PublicSection>(() => sectionFromPath(window.location.pathname));
@@ -58,20 +54,11 @@ export function PublicFrontPage({
   const [filters, setFilters] = useState({ q: "", category: "", date: "", sourceGroup: "" });
   const [page, setPage] = useState(1);
   const [eventVersion, setEventVersion] = useState(0);
-  const [agentPanelOpen, setAgentPanelOpen] = useState(false);
   const channel = channelValue ?? internalChannel;
   const section = sectionValue ?? internalSection;
   const theme = themeValue ?? internalTheme;
   const activeMode = section === "all" ? "all" : "selected";
   const resolvedTheme = theme === "system" ? systemTheme : theme;
-
-  useAgentPanelShortcut(() => {
-    if (!disableAgentPanel) setAgentPanelOpen((o) => !o);
-  });
-
-  function handleAgentActivate(agent: AgentDefinition) {
-    console.log("[智能体] 激活专家:", agent.name, "ID:", agent.id);
-  }
 
   useEffect(() => {
     if (searchValue === undefined) return;
@@ -106,7 +93,7 @@ export function PublicFrontPage({
     setInternalSection(next);
     onSectionChange?.(next);
     setPage(1);
-    window.history.replaceState(null, "", next === "selected" ? "/" : `/${next}`);
+    window.history.replaceState(null, "", next === "overview" ? "/" : `/${next}`);
   }
 
   function switchTheme(next: ThemePreference) {
@@ -130,6 +117,7 @@ export function PublicFrontPage({
   };
 
   const sectionInfo = {
+    overview: { title: "总览", desc: "AI 与 Amazon 情报聚合" },
     selected: { title: "精选", desc: "AI 自动挑选的高价值内容" },
     all: { title: "全部热点", desc: channelInfo[channel].description },
     daily: { title: "AI 日报", desc: "基于最近 24 小时精选情报自动生成" },
@@ -159,7 +147,6 @@ export function PublicFrontPage({
             setPage(1);
           }}
           onLoginClick={() => setShowLogin((prev) => !prev)}
-          onAgentClick={disableAgentPanel ? undefined : () => setAgentPanelOpen(true)}
           hideLoginControls={hideLoginControls}
         />
       )}
@@ -182,7 +169,9 @@ export function PublicFrontPage({
 
         {showLogin && <LoginPanel error={loginError} onLogin={onLogin} />}
 
-        {section === "daily" ? (
+        {section === "overview" ? (
+          <HeroSection channel={channel} />
+        ) : section === "daily" ? (
           <DailyReader api={api} channel={channel} />
         ) : section === "rss" ? (
           <RssLinks channel={channel} />
@@ -192,7 +181,6 @@ export function PublicFrontPage({
           <PublicFeedback api={api} channel={channel} />
         ) : (
           <>
-            {section === "selected" && <HeroSection channel={channel} />}
             <FilterBar
               channel={channel}
               filters={filters}
@@ -211,14 +199,6 @@ export function PublicFrontPage({
           </>
         )}
       </section>
-
-      {!disableAgentPanel && (
-        <AgentPanel
-          open={agentPanelOpen}
-          onClose={() => setAgentPanelOpen(false)}
-          onActivate={handleAgentActivate}
-        />
-      )}
     </main>
   );
 }
@@ -347,7 +327,8 @@ function sectionFromPath(pathname: string): PublicSection {
   if (pathname.includes("/sources")) return "sources";
   if (pathname.includes("/feedback")) return "feedback";
   if (pathname.includes("/all")) return "all";
-  return "selected";
+  if (pathname.includes("/selected")) return "selected";
+  return "overview";
 }
 
 function loadTheme(): ThemePreference {

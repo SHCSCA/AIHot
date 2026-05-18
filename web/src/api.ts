@@ -172,6 +172,7 @@ export class PublicApi {
     const response = await fetch(`${this.baseUrl}${path}`, {
       method: init.method,
       body: init.body,
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
         ...(init.headers ?? {})

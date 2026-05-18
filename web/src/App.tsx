@@ -23,10 +23,10 @@ import {
   Settings,
   ShieldCheck,
   SlidersHorizontal,
-  Sparkles,
   Sun,
   UserCog,
   Users,
+  Sparkles,
   Zap
 } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
@@ -42,13 +42,11 @@ import { HealthView } from "./views/HealthView";
 import { JobsView } from "./views/JobsView";
 import { PipelineRunsView } from "./views/PipelineRunsView";
 import { PublicFrontPage, type PublicChannel, type PublicSection } from "./views/PublicFrontPage";
-import { AgentPanel, useAgentPanelShortcut } from "./views/PublicFrontPage/AgentPanel";
 import { CmdKPanel, useCmdKShortcut } from "./views/PublicFrontPage/CmdKPanel";
 import { QualityView } from "./views/QualityView";
 import { SourcesView } from "./views/SourcesView";
 import { StrategiesView } from "./views/StrategiesView";
 import { roleLabel } from "./labels";
-import type { AgentDefinition } from "./types/agents";
 import "./styles.css";
 
 export { SourcesView } from "./views/SourcesView";
@@ -91,6 +89,7 @@ const guestSession: SessionInfo = {
 };
 
 const publicItems: NavItem[] = [
+  { id: "public:overview", label: "总览", title: "总览", description: "AI 与 Amazon 情报聚合", icon: LayoutDashboard },
   { id: "public:selected", label: "精选", title: "精选", description: "自动挑选的高价值情报", icon: Zap },
   { id: "public:all", label: "全部动态", title: "全部动态", description: "AI 与 Amazon 全量情报流", icon: List },
   { id: "public:daily", label: "日报", title: "日报", description: "杂志式每日摘要", icon: Newspaper },
@@ -131,7 +130,6 @@ export function App() {
   const [channel, setChannel] = useState<PublicChannel>(() => (localStorage.getItem("aihotChannel") === "amazon" ? "amazon" : "ai"));
   const [globalQuery, setGlobalQuery] = useState("");
   const [commandOpen, setCommandOpen] = useState(false);
-  const [agentPanelOpen, setAgentPanelOpen] = useState(false);
   const [theme, setTheme] = useState<ThemePreference>(() => loadTheme());
   const [systemTheme, setSystemTheme] = useState<"dark" | "light">(() => getSystemTheme());
   const [initialDashboard, setInitialDashboard] = useState<Dashboard | null>(null);
@@ -151,7 +149,6 @@ export function App() {
   const resolvedTheme = theme === "system" ? systemTheme : theme;
 
   useCmdKShortcut(() => setCommandOpen((open) => !open));
-  useAgentPanelShortcut(() => setAgentPanelOpen((open) => !open));
 
   useEffect(() => {
     let active = true;
@@ -209,7 +206,7 @@ export function App() {
     await authApi.logout().catch(() => undefined);
     setSession(guestSession);
     setInitialDashboard(null);
-    setActiveView("public:selected");
+    setActiveView("public:overview");
     window.history.replaceState(null, "", "/");
   }
 
@@ -227,7 +224,7 @@ export function App() {
     setActiveView(item.id);
     if (item.id.startsWith("public:")) {
       const section = item.id.replace("public:", "") as PublicSection;
-      window.history.replaceState(null, "", section === "selected" ? "/" : `/${section}`);
+      window.history.replaceState(null, "", section === "overview" ? "/" : `/${section}`);
     } else {
       window.history.replaceState(null, "", `/admin/${item.id.replace("admin:", "")}`);
     }
@@ -249,16 +246,11 @@ export function App() {
     setGlobalQuery(label);
   }
 
-  function handleAgentActivate(agent: AgentDefinition) {
-    setGlobalQuery(agent.name);
-    setAgentPanelOpen(false);
-  }
-
   function leaveLoginGate() {
     setLoginOpen(false);
     setLoginError(null);
     if (activeView.startsWith("admin:")) {
-      setActiveView("public:selected");
+      setActiveView("public:overview");
       window.history.replaceState(null, "", "/");
     }
   }
@@ -316,9 +308,6 @@ export function App() {
             <button className="command-k-trigger" type="button" onClick={() => setCommandOpen(true)} aria-label="打开命令面板">
               Ctrl K
             </button>
-            <button className="unified-agent-trigger" type="button" onClick={() => setAgentPanelOpen(true)} aria-label="打开智能体专家面板">
-              <Sparkles size={16} /><span>智能体</span>
-            </button>
             {sessionLoading && <span className="session-chip">同步身份...</span>}
             {session.authenticated && <span className="session-chip">{session.roles.map(roleLabel).join(" / ")}</span>}
             {!session.authenticated && <button className="ghost" onClick={() => setLoginOpen(true)}><LockKeyhole size={16} />运营登录</button>}
@@ -350,7 +339,6 @@ export function App() {
         {(visibleOps[0] ?? null) && <button className={activeView.startsWith("admin:") ? "active" : ""} onClick={() => activate(visibleOps[0])}><Database size={18} /><span>工作台</span></button>}
       </nav>
       <CmdKPanel open={commandOpen} onClose={() => setCommandOpen(false)} onSelect={handleCommandSelect} />
-      <AgentPanel open={agentPanelOpen} onClose={() => setAgentPanelOpen(false)} onActivate={handleAgentActivate} />
     </main>
   );
 }
@@ -502,7 +490,6 @@ function renderContent({
         searchValue={globalQuery}
         onChannelChange={setChannel}
         onSectionChange={(next: PublicSection) => setActiveView(`public:${next}` as ActiveView)}
-        disableAgentPanel
       />
     );
   }
@@ -562,7 +549,8 @@ function viewFromPath(pathname: string): ActiveView {
   if (pathname.includes("/sources")) return "public:sources";
   if (pathname.includes("/feedback")) return "public:feedback";
   if (pathname.includes("/all")) return "public:all";
-  return "public:selected";
+  if (pathname.includes("/selected")) return "public:selected";
+  return "public:overview";
 }
 
 function loadTheme(): ThemePreference {

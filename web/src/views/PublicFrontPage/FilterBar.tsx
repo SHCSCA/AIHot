@@ -45,34 +45,48 @@ export function FilterBar({ channel, filters, onChange, onRefresh }: FilterBarPr
 
   return (
     <section className="aihot-filter-panel">
-      <div className="filter-capsules" aria-label="信源和分类筛选">
-        <span className="filter-label">信源</span>
-        {sourceGroups.map((option) => (
-          <motion.button
-            key={option.value || "all"}
-            className={filters.sourceGroup === option.value ? "active" : ""}
-            onClick={() => onChange({ sourceGroup: option.value })}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {option.label}
-          </motion.button>
-        ))}
+      <div className="filter-groups" aria-label="信源和分类筛选">
+        <div className="filter-group filter-group-source" aria-label="信源筛选">
+          <span className="filter-group-title">信源</span>
+          <div className="filter-pill-row">
+            {sourceGroups.map((option) => (
+              <motion.button
+                key={option.value || "all"}
+                className={filters.sourceGroup === option.value ? "active" : ""}
+                onClick={() => onChange({ sourceGroup: option.value })}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {option.label}
+              </motion.button>
+            ))}
+          </div>
+        </div>
 
-        <span className="filter-divider" />
-
-        <span className="filter-label">分类</span>
-        {categories.map((option) => (
-          <motion.button
-            key={option.value}
-            className={filters.category === option.value ? "active" : ""}
-            onClick={() => onChange({ category: option.value })}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            {option.shortLabel ?? option.label}
-          </motion.button>
-        ))}
+        <div className="filter-group filter-group-category" aria-label="分类筛选">
+          <span className="filter-group-title">分类</span>
+          <div className="filter-pill-row">
+            <motion.button
+              className={filters.category === "" ? "active" : ""}
+              onClick={() => onChange({ category: "" })}
+              whileHover={{ y: -1 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              全部分类
+            </motion.button>
+            {categories.map((option) => (
+              <motion.button
+                key={option.value}
+                className={filters.category === option.value ? "active" : ""}
+                onClick={() => onChange({ category: option.value })}
+                whileHover={{ y: -1 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {option.shortLabel ?? option.label}
+              </motion.button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <label className="date-filter">

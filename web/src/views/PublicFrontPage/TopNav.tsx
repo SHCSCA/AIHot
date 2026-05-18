@@ -14,7 +14,6 @@ interface TopNavProps {
   onThemeChange: (theme: ThemePreference) => void;
   onSearchChange: (q: string) => void;
   onLoginClick: () => void;
-  onAgentClick?: () => void;
   hideLoginControls?: boolean;
 }
 
@@ -24,6 +23,7 @@ const channelItems = [
 ];
 
 const sectionItems = [
+  { id: "overview" as const, label: "总览" },
   { id: "selected" as const, label: "精选" },
   { id: "all" as const, label: "全部热点" },
   { id: "daily" as const, label: "日报" },
@@ -42,7 +42,6 @@ export function TopNav({
   onThemeChange,
   onSearchChange,
   onLoginClick,
-  onAgentClick,
   hideLoginControls
 }: TopNavProps) {
   return (
@@ -94,19 +93,6 @@ export function TopNav({
       </div>
 
       <div className="topnav-right">
-        {onAgentClick && (
-          <motion.button
-            type="button"
-            className="agent-trigger-btn"
-            onClick={onAgentClick}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            aria-label="打开智能体面板"
-          >
-            <Sparkles size={16} />
-            <span>智能体</span>
-          </motion.button>
-        )}
         <div className="theme-switcher" role="group" aria-label="主题切换" data-active={theme}>
           <button
             type="button"

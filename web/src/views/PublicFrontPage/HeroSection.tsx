@@ -1,43 +1,20 @@
-import { motion, useMotionValue, useTransform, type MotionValue } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import { Heart, Sparkles, TrendingUp, Zap } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
 
 interface BentoCardProps {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
   span?: string;
 }
 
 function BentoCard({ children, className = "", span = "" }: BentoCardProps) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-
-  function handleMouseMove(e: React.MouseEvent<HTMLDivElement>) {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    const rotateX = (e.clientY - centerY) / 12;
-    const rotateY = (centerX - e.clientX) / 12;
-    x.set(rotateY);
-    y.set(rotateX);
-  }
-
-  function handleMouseLeave() {
-    x.set(0);
-    y.set(0);
-  }
-
   return (
     <motion.div
-      ref={cardRef}
       className={`bento-card ${span} ${className}`}
-      style={{ x, y, rotateX: y, rotateY: x }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.24, ease: "easeOut" }}
     >
       {children}
     </motion.div>
@@ -102,15 +79,8 @@ export function HeroSection({ channel }: { channel: "ai" | "amazon" }) {
   const mainCount = channel === "amazon" ? 24 : 128;
   const sourceCount = channel === "amazon" ? 44 : 147;
   const eventCount = channel === "amazon" ? 7 : 23;
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 100);
-    return () => clearTimeout(t);
-  }, []);
-
   return (
-    <section className="hero-section" aria-label="AIHOT 情报仪表盘">
+    <section className="hero-section" aria-label="AIHOT 情报总览">
       <div className="bento-grid">
         {/* Main 2x2 card - 今日热点 */}
         <BentoCard span="bento-main" className="bento-card-main">
@@ -242,8 +212,6 @@ export function HeroSection({ channel }: { channel: "ai" | "amazon" }) {
           border: 1px solid rgba(148,163,184,0.16);
           box-shadow: 0 24px 70px rgba(0,0,0,0.22);
           backdrop-filter: blur(18px);
-          transform-style: preserve-3d;
-          will-change: transform;
           cursor: default;
         }
 

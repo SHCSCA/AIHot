@@ -287,7 +287,7 @@ describe("后台产品化界面", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: "精选" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "总览" })).toBeInTheDocument();
     expect(screen.queryByText("信源管理")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "运营登录" }));
     expect(await screen.findByRole("heading", { name: "AIHOT 运营入口" })).toBeInTheDocument();
@@ -371,7 +371,7 @@ describe("后台产品化界面", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: "精选" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "总览" })).toBeInTheDocument();
     await waitFor(() => expect(document.documentElement.dataset.theme).toBe("light"));
     expect(localStorage.getItem("publicTheme")).toBe("light");
   });
@@ -437,12 +437,14 @@ describe("后台产品化界面", () => {
     await userEvent.click(screen.getByRole("button", { name: "亚马逊情报" }));
 
     expect(screen.getByRole("button", { name: "亚马逊情报" })).toHaveClass("active");
+    expect(screen.getByRole("button", { name: "总览" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "精选" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "全部热点" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "日报" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "RSS 订阅" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "信源墙" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "反馈" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "精选" }));
     await waitFor(() => expect(publicApi.listEvents).toHaveBeenCalledWith(expect.objectContaining({ channel: "amazon" })));
   });
 
@@ -519,15 +521,18 @@ describe("后台产品化界面", () => {
 
     render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
 
-    expect(await screen.findByLabelText("AIHOT 情报仪表盘")).toBeInTheDocument();
+    expect(await screen.findByLabelText("AIHOT 情报总览")).toBeInTheDocument();
     expect(screen.getByText("情报热度趋势")).toBeInTheDocument();
+    expect(screen.queryByLabelText("虚拟化情报流")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "精选" }));
     expect(await screen.findByLabelText("虚拟化情报流")).toBeInTheDocument();
     expect(await screen.findByText("OpenAI 发布新模型能力")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "日报" }));
-    expect(await screen.findByRole("button", { name: "专注阅读" })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "专注阅读" }));
-    expect(await screen.findByLabelText("专注阅读模式")).toBeInTheDocument();
+    expect(await screen.findByText("VOL.2026.05.14 · 1 STORIES · AI 热点 DAILY")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "专注阅读" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("专注阅读模式")).not.toBeInTheDocument();
   });
 
   it("opens the command palette with keyboard navigation from the unified shell", async () => {
@@ -562,7 +567,7 @@ describe("后台产品化界面", () => {
 
     render(<App />);
 
-    expect(await screen.findByRole("heading", { name: "精选" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "总览" })).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
 
     expect(await screen.findByRole("dialog", { name: "命令面板" })).toBeInTheDocument();
@@ -606,7 +611,7 @@ describe("后台产品化界面", () => {
     expect(await screen.findByRole("navigation", { name: "公共情报" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "频道切换" })).toBeInTheDocument();
     expect(screen.getByRole("banner", { name: "当前页面工具栏" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "打开智能体专家面板" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "打开智能体专家面板" })).not.toBeInTheDocument();
     expect(container.querySelector(".unified-sidebar")).toBeInTheDocument();
     expect(container.querySelector(".unified-global-nav")).not.toBeInTheDocument();
   });
@@ -720,6 +725,7 @@ describe("后台产品化界面", () => {
       submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
     } as unknown as PublicApi;
 
+    window.history.replaceState(null, "", "/selected");
     render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
 
     expect(await screen.findByText("OpenAI 发布新模型能力")).toBeInTheDocument();
@@ -788,6 +794,7 @@ describe("后台产品化界面", () => {
       submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
     } as unknown as PublicApi;
 
+    window.history.replaceState(null, "", "/selected");
     render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
 
     expect(await screen.findByText("Claude 工具更新")).toBeInTheDocument();
@@ -808,12 +815,15 @@ describe("后台产品化界面", () => {
       submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
     } as unknown as PublicApi;
 
-    render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
+    render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} sectionValue="selected" />);
 
-    const row = screen.getByLabelText("信源和分类筛选");
-    expect(within(row).getByRole("button", { name: "官方/一手" })).toBeInTheDocument();
-    expect(within(row).getByRole("button", { name: "模型/论文" })).toBeInTheDocument();
-    expect(screen.queryByLabelText("分类筛选")).not.toBeInTheDocument();
+    const sourceGroup = screen.getByLabelText("信源筛选");
+    const categoryGroup = screen.getByLabelText("分类筛选");
+    expect(within(sourceGroup).getByText("信源")).toBeInTheDocument();
+    expect(within(sourceGroup).getByRole("button", { name: "官方/一手" })).toBeInTheDocument();
+    expect(within(categoryGroup).getByText("分类")).toBeInTheDocument();
+    expect(within(categoryGroup).getByRole("button", { name: "全部分类" })).toBeInTheDocument();
+    expect(within(categoryGroup).getByRole("button", { name: "模型/论文" })).toBeInTheDocument();
   });
 
   it("renders magazine style daily reader with archive and section document", async () => {
