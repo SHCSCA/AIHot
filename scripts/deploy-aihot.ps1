@@ -71,7 +71,14 @@ git clean -fd
 
 systemctl restart aihot-web.service
 systemctl is-active --quiet aihot-web.service
-curl -fsS http://127.0.0.1:8003/health
+for i in `$(seq 1 15); do
+  if curl -fsS http://127.0.0.1:8003/health; then
+    exit 0
+  fi
+  sleep 2
+done
+systemctl status aihot-web.service --no-pager -l || true
+exit 1
 "@
 
 $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remoteScript))
