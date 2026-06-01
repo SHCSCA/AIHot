@@ -1,4 +1,4 @@
-import { Moon, Monitor, Sun, Sparkles, Heart, LockKeyhole } from "lucide-react";
+import { Heart, LockKeyhole, Moon, Monitor, Search, Sparkles, Sun } from "lucide-react";
 import { motion } from "framer-motion";
 import type { PublicChannel, PublicSection } from "./index";
 
@@ -45,7 +45,7 @@ export function TopNav({
   hideLoginControls
 }: TopNavProps) {
   return (
-    <header className="aihot-topnav">
+    <header className="aihot-topnav liquid-glass-panel">
       <div className="topnav-logo">
         <span>AI</span><i />HOT
       </div>
@@ -129,6 +129,3 @@ export function TopNav({
     </header>
   );
 }
-
-// Import Search locally to avoid circular deps
-import { Search } from "lucide-react";

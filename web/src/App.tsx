@@ -89,9 +89,9 @@ const guestSession: SessionInfo = {
 };
 
 const publicItems: NavItem[] = [
-  { id: "public:overview", label: "总览", title: "总览", description: "AI 与 Amazon 情报聚合", icon: LayoutDashboard },
+  { id: "public:overview", label: "总览", title: "总览", description: "按频道查看情报总览", icon: LayoutDashboard },
   { id: "public:selected", label: "精选", title: "精选", description: "自动挑选的高价值情报", icon: Zap },
-  { id: "public:all", label: "全部动态", title: "全部动态", description: "AI 与 Amazon 全量情报流", icon: List },
+  { id: "public:all", label: "全部动态", title: "全部动态", description: "按频道查看全量情报流", icon: List },
   { id: "public:daily", label: "日报", title: "日报", description: "杂志式每日摘要", icon: Newspaper },
   { id: "public:rss", label: "RSS 订阅", title: "RSS 订阅", description: "订阅事件流和日报", icon: Rss },
   { id: "public:sources", label: "信源墙", title: "信源墙", description: "可信公开信源", icon: RadioTower },
@@ -107,9 +107,12 @@ const opsItems: NavItem[] = [
   { id: "admin:events", label: "事件审核", title: "事件审核", description: "审核事件簇与成员来源", icon: ShieldCheck, permission: "events.read" },
   { id: "admin:daily", label: "日报发布", title: "日报发布", description: "生成、预览和发布日报", icon: CalendarDays, permission: "daily.read" },
   { id: "admin:pipeline", label: "流水线", title: "流水线", description: "查看和触发生产流水线", icon: Play, permission: "ops.dashboard.read" },
-  { id: "admin:strategies", label: "策略版本", title: "策略版本", description: "管理频道级筛选和精选策略", icon: GitBranch, permission: "strategies.read" },
-  { id: "admin:feedback", label: "人工反馈", title: "人工反馈", description: "处理误选、漏选和提权反馈", icon: Heart, permission: "feedback.read" },
-  { id: "admin:evaluations", label: "评估运行", title: "评估运行", description: "执行策略评估并比较结果", icon: BarChart3, permission: "evaluations.read" }
+  { id: "admin:feedback", label: "人工反馈", title: "人工反馈", description: "处理误选、漏选和提权反馈", icon: Heart, permission: "feedback.read" }
+];
+
+const labItems: NavItem[] = [
+  { id: "admin:strategies", label: "策略版本", title: "策略版本", description: "Lab Mode 初版：管理频道级筛选和精选策略", icon: GitBranch, permission: "strategies.read" },
+  { id: "admin:evaluations", label: "评估运行", title: "评估运行", description: "Lab Mode 初版：复用现有评估能力查看粗粒度统计", icon: BarChart3, permission: "evaluations.read" }
 ];
 
 const adminItems: NavItem[] = [
@@ -143,10 +146,13 @@ export function App() {
   );
   const permissions = useMemo(() => new Set(session.permissions), [session.permissions]);
   const visibleOps = opsItems.filter((item) => !item.permission || permissions.has(item.permission));
+  const visibleLab = labItems.filter((item) => !item.permission || permissions.has(item.permission));
   const visibleAdmin = adminItems.filter((item) => !item.permission || permissions.has(item.permission));
-  const activeItem = [...publicItems, ...opsItems, ...adminItems].find((item) => item.id === activeView) ?? publicItems[0];
+  const activeItem = [...publicItems, ...opsItems, ...labItems, ...adminItems].find((item) => item.id === activeView) ?? publicItems[0];
   const isAdminView = activeView.startsWith("admin:");
+  const isLabView = labItems.some((item) => item.id === activeView);
   const resolvedTheme = theme === "system" ? systemTheme : theme;
+  const activeDescription = !isAdminView ? publicDescriptionForChannel(activeItem, channel) : activeItem.description;
 
   useCmdKShortcut(() => setCommandOpen((open) => !open));
 
@@ -239,7 +245,7 @@ export function App() {
     }
     if (id.startsWith("admin:")) {
       const view = id.replace("admin:", "") as AdminView;
-      const item = [...opsItems, ...adminItems].find((entry) => entry.id === `admin:${view}`);
+      const item = [...opsItems, ...labItems, ...adminItems].find((entry) => entry.id === `admin:${view}`);
       if (item) activate(item);
       return;
     }
@@ -282,8 +288,9 @@ export function App() {
           <button className={channel === "ai" ? "active" : ""} onClick={() => switchChannel("ai")}><Sparkles size={16} /><span>AI 热点</span></button>
           <button className={channel === "amazon" ? "active" : ""} onClick={() => switchChannel("amazon")}><Heart size={16} /><span>Amazon</span></button>
         </nav>
-        <NavGroup label="公共情报" items={publicItems} activeView={activeView} onActivate={activate} />
-        {visibleOps.length > 0 && <NavGroup label="运营能力" items={visibleOps} activeView={activeView} onActivate={activate} />}
+        <NavGroup label="Reader Mode" items={publicItems} activeView={activeView} onActivate={activate} />
+        {visibleOps.length > 0 && <NavGroup label="Ops Mode" items={visibleOps} activeView={activeView} onActivate={activate} />}
+        {visibleLab.length > 0 && <NavGroup label="Lab Mode" items={visibleLab} activeView={activeView} onActivate={activate} />}
         {visibleAdmin.length > 0 && <NavGroup label="系统管理" items={visibleAdmin} activeView={activeView} onActivate={activate} />}
         <div className="unified-sidebar-footer">
           <ThemeToggle value={theme} onChange={switchTheme} />
@@ -297,9 +304,9 @@ export function App() {
       <section className="unified-main">
         <header className="unified-topbar" role="banner" aria-label="当前页面工具栏">
           <div>
-            <p className="eyebrow">{isAdminView ? "运营控制台" : channel === "ai" ? "AI 热点" : "Amazon 情报"}</p>
+            <p className="eyebrow">{isLabView ? "Lab Mode" : isAdminView ? "Ops Mode" : channel === "ai" ? "Reader Mode · AI 热点" : "Reader Mode · Amazon 情报"}</p>
             <h1>{activeItem.title}</h1>
-            <span>{activeItem.description}</span>
+            <span>{activeDescription}</span>
           </div>
           <div className="unified-topbar-actions">
             <label className="unified-command">
@@ -342,7 +349,7 @@ export function App() {
           const Icon = item.icon;
           return <button key={item.id} className={activeView === item.id ? "active" : ""} onClick={() => activate(item)}><Icon size={18} /><span>{item.label}</span></button>;
         })}
-        {(visibleOps[0] ?? null) && <button className={activeView.startsWith("admin:") ? "active" : ""} onClick={() => activate(visibleOps[0])}><Database size={18} /><span>工作台</span></button>}
+        {(visibleOps[0] ?? visibleLab[0] ?? null) && <button className={activeView.startsWith("admin:") ? "active" : ""} onClick={() => activate(visibleOps[0] ?? visibleLab[0])}><Database size={18} /><span>后台</span></button>}
       </nav>
       <CmdKPanel open={commandOpen} onClose={() => setCommandOpen(false)} onSelect={handleCommandSelect} />
     </main>
@@ -501,7 +508,7 @@ function renderContent({
   }
 
   const view = activeView.replace("admin:", "") as AdminView;
-  const required = [...opsItems, ...adminItems].find((item) => item.id === activeView)?.permission;
+  const required = [...opsItems, ...labItems, ...adminItems].find((item) => item.id === activeView)?.permission;
   if (!session.authenticated) return <PermissionState title="需要登录" description="登录后可在同一界面解锁运营菜单和管理操作。" />;
   if (required && !session.permissions.includes(required)) return <PermissionState title="无权限" description="当前账号没有访问此功能的权限。" />;
 
@@ -522,6 +529,22 @@ function renderContent({
   if (view === "system") return <PermissionState title="系统设置" description="系统配置入口已纳入管理员菜单，具体高风险配置将在后续版本接入。" />;
   setInitialDashboard(null);
   return null;
+}
+
+function publicDescriptionForChannel(item: NavItem, channel: PublicChannel): string {
+  if (item.id === "public:overview") {
+    return channel === "ai" ? "AI 热点情报聚合" : "Amazon 卖家情报聚合";
+  }
+  if (item.id === "public:selected") {
+    return channel === "ai" ? "AI 自动挑选的高价值情报" : "Amazon 自动挑选的卖家情报";
+  }
+  if (item.id === "public:all") {
+    return channel === "ai" ? "AI 全量情报流" : "Amazon 卖家全量情报流";
+  }
+  if (item.id === "public:daily") {
+    return channel === "ai" ? "AI 杂志式每日摘要" : "Amazon 卖家每日摘要";
+  }
+  return item.description;
 }
 
 function PermissionState({ title, description }: { title: string; description: string }) {

@@ -66,7 +66,22 @@ function apiStub(overrides: Partial<AdminApi> = {}) {
       event: { id: "1", title: "OpenAI 发布 GPT-5" },
       members: [{ id: "1", title: "OpenAI 发布 GPT-5", sourceName: "OpenAI News", isMain: true }]
     }),
-    reviewEvent: vi.fn().mockResolvedValue({ id: "1", reviewStatus: "approved" }),
+    reviewEvent: vi.fn().mockResolvedValue({
+      id: "1",
+      channel: "ai",
+      title: "OpenAI 发布 GPT-5",
+      category: "ai_models",
+      score: 91,
+      sourceCount: 1,
+      memberCount: 1,
+      firstSeenAt: "2026-05-11T10:00:00Z",
+      lastSeenAt: "2026-05-11T10:00:00Z",
+      reviewStatus: "approved",
+      reviewNote: null,
+      reviewedBy: "operator",
+      reviewedAt: "2026-05-11T10:05:00Z",
+      mainItem: { title: "OpenAI 发布 GPT-5", sourceName: "OpenAI News", url: "https://example.com" }
+    }),
     listDailyDigests: vi.fn().mockResolvedValue([]),
     generateDailyDigest: vi.fn().mockResolvedValue({
       dailyDigest: { id: "1", title: "AI 日报", published: true },
@@ -155,6 +170,7 @@ function apiStub(overrides: Partial<AdminApi> = {}) {
     runEvaluationRun: vi.fn(),
     listFeedbackEvents: vi.fn().mockResolvedValue([]),
     createFeedback: vi.fn(),
+    updateFeedbackStatus: vi.fn().mockResolvedValue({ id: "fb-1", status: "accepted" }),
     listUsers: vi.fn().mockResolvedValue([
       {
         id: "1",
@@ -448,6 +464,52 @@ describe("后台产品化界面", () => {
     await waitFor(() => expect(publicApi.listEvents).toHaveBeenCalledWith(expect.objectContaining({ channel: "amazon" })));
   });
 
+  it("keeps overview metrics scoped to the selected channel", async () => {
+    const publicApi = {
+      listEvents: vi.fn().mockResolvedValue({ items: [], count: 0, hasNext: false, nextCursor: null }),
+      listSources: vi.fn().mockResolvedValue([]),
+      getEventDetail: vi.fn(),
+      getDaily: vi.fn().mockResolvedValue(null),
+      listDailies: vi.fn().mockResolvedValue({ items: [], count: 0, page: 1, pageSize: 20, total: 0, totalPages: 1 }),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
+    } as unknown as PublicApi;
+
+    render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
+
+    let overview = await screen.findByLabelText("AIHOT 情报总览");
+    expect(within(overview).getByText("今日 AI 情报 Brief")).toBeInTheDocument();
+    expect(within(overview).queryByText("AI 与 Amazon 情报聚合")).not.toBeInTheDocument();
+    expect(within(overview).queryByText("今日 Amazon 卖家 Brief")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "亚马逊情报" }));
+    overview = await screen.findByLabelText("AIHOT 情报总览");
+    expect(within(overview).getByText("今日 Amazon 卖家 Brief")).toBeInTheDocument();
+    expect(within(overview).queryByText("今日 AI 情报 Brief")).not.toBeInTheDocument();
+    expect(within(overview).queryByText("AI 相关事件")).not.toBeInTheDocument();
+  });
+
+  it("uses live public channel source counts in the overview hero", async () => {
+    const publicApi = {
+      listChannels: vi.fn().mockResolvedValue([
+        { id: "ai", name: "AI 情报", description: "AI", categories: [], sourceCount: 147 },
+        { id: "amazon", name: "Amazon 情报", description: "Amazon", categories: [], sourceCount: 105 }
+      ]),
+      listEvents: vi.fn().mockResolvedValue({ items: [], count: 0, hasNext: false, nextCursor: null }),
+      listSources: vi.fn().mockResolvedValue([]),
+      getEventDetail: vi.fn(),
+      getDaily: vi.fn().mockResolvedValue(null),
+      listDailies: vi.fn().mockResolvedValue({ items: [], count: 0, page: 1, pageSize: 20, total: 0, totalPages: 1 }),
+      submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
+    } as unknown as PublicApi;
+
+    render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} channelValue="amazon" />);
+
+    const overview = await screen.findByLabelText("AIHOT 情报总览");
+    await waitFor(() => expect(within(overview).getByText("105")).toBeInTheDocument());
+    expect(publicApi.listChannels).toHaveBeenCalledTimes(1);
+    expect(within(overview).queryByText("44")).not.toBeInTheDocument();
+  });
+
   it("wires the PRD visual systems into the real public interface", async () => {
     const publicApi = {
       listEvents: vi.fn().mockResolvedValue({
@@ -522,7 +584,7 @@ describe("后台产品化界面", () => {
     render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
 
     expect(await screen.findByLabelText("AIHOT 情报总览")).toBeInTheDocument();
-    expect(screen.getByText("情报热度趋势")).toBeInTheDocument();
+    expect(screen.getByText("本轮关注")).toBeInTheDocument();
     expect(screen.queryByLabelText("虚拟化情报流")).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "精选" }));
@@ -610,8 +672,8 @@ describe("后台产品化界面", () => {
 
     expect(container.querySelector(".aihot-public-shell")).toHaveAttribute("data-motion", "breathing");
     expect(await screen.findByTestId("ambient-breathing-field")).toBeInTheDocument();
-    expect(container.querySelector(".bento-wave")).toHaveClass("breathing-wave");
-    expect(container.querySelector(".bento-card-main")).toHaveClass("breathing-idle");
+    expect(container.querySelector(".brief-primary")).toHaveClass("liquid-glass-floating");
+    expect(container.querySelector(".brief-side-card")).toHaveClass("liquid-glass-panel");
 
     await userEvent.click(screen.getByRole("button", { name: "精选" }));
     const eventCard = (await screen.findByText("OpenAI 发布新模型能力")).closest(".aihot-event-card");
@@ -699,7 +761,7 @@ describe("后台产品化界面", () => {
 
     const { container } = render(<App />);
 
-    expect(await screen.findByRole("navigation", { name: "公共情报" })).toBeInTheDocument();
+    expect(await screen.findByRole("navigation", { name: "Reader Mode" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "频道切换" })).toBeInTheDocument();
     expect(screen.getByRole("banner", { name: "当前页面工具栏" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "打开智能体专家面板" })).not.toBeInTheDocument();
@@ -1027,6 +1089,9 @@ describe("后台产品化界面", () => {
     expect(screen.getByText("产品发布/更新")).toBeInTheDocument();
     expect(screen.getByText("目录")).toBeInTheDocument();
     expect(screen.getAllByText("Hy3 预览版登陆 GMI").length).toBeGreaterThan(0);
+    expect(screen.getByText("VOL.2026.05.14 · 2 STORIES · AI 热点 DAILY").closest(".daily-cover")).not.toHaveStyle({ opacity: "0" });
+    const visibleStory = screen.getAllByText("Hy3 预览版登陆 GMI").find((node) => node.closest(".daily-story"));
+    expect(visibleStory?.closest(".daily-story")).not.toHaveStyle({ opacity: "0" });
   });
 
   it("switches between dark and light public themes", async () => {
@@ -1058,7 +1123,7 @@ describe("后台产品化界面", () => {
     render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
 
     await userEvent.click(screen.getByRole("button", { name: "反馈" }));
-    fireEvent.change(screen.getByLabelText("想说点什么？"), { target: { value: "这条内容不够相关" } });
+    fireEvent.change(screen.getByLabelText("反馈内容"), { target: { value: "这条内容不够相关" } });
     fireEvent.change(screen.getByLabelText("联系方式（选填）"), { target: { value: "wechat: demo" } });
     await userEvent.click(screen.getByRole("button", { name: "发送反馈" }));
 
@@ -1144,23 +1209,49 @@ describe("后台产品化界面", () => {
     expect(screen.queryByText("daily_digest daily-1")).not.toBeInTheDocument();
   });
 
-  it("keeps event review as AI review monitoring rather than manual approval", async () => {
+  it("runs event review actions from the content operation workspace", async () => {
     const api = apiStub();
     render(<EventsReviewView api={api} />);
 
-    expect(await screen.findByText("OpenAI 发布 GPT-5")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "通过" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "拒绝" })).not.toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: "OpenAI 发布 GPT-5" }));
+    expect(await screen.findByText("审核操作")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "通过" }));
+    await waitFor(() => expect(api.reviewEvent).toHaveBeenCalledWith("1", {
+      reviewStatus: "approved",
+      reviewNote: null,
+      actor: "operator"
+    }));
     expect(screen.queryByRole("button", { name: "提交反馈" })).not.toBeInTheDocument();
   });
 
-  it("shows daily digests as auto-published monitoring without manual publish controls", async () => {
-    const dailyApi = apiStub();
+  it("supports daily digest generation and publishing through existing APIs", async () => {
+    const dailyApi = apiStub({
+      listDailyDigests: vi.fn().mockResolvedValue([
+        {
+          id: "daily-1",
+          channel: "ai",
+          date: "2026-05-11",
+          generatedAt: "2026-05-11T08:00:00Z",
+          strategyVersion: "ai-default-v1",
+          title: "AI 日报",
+          sections: [{ category: "ai_models", label: "模型", count: 1, items: [{ title: "OpenAI 发布 GPT-5" }] }],
+          published: false,
+          publishedBy: null,
+          publishedAt: null
+        }
+      ])
+    });
     render(<DailyDigestsView api={dailyApi} />);
 
-    expect(await screen.findByText("日报发布")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "生成日报" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "发布" })).not.toBeInTheDocument();
+    expect(await screen.findByText("日报工作流")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "生成日报" }));
+    await waitFor(() => expect(dailyApi.generateDailyDigest).toHaveBeenCalledWith({
+      channel: "ai",
+      date: expect.any(String),
+      strategyVersion: "ai-default-v1"
+    }));
+    await userEvent.click(screen.getByRole("button", { name: "发布" }));
+    await waitFor(() => expect(dailyApi.publishDailyDigest).toHaveBeenCalledWith("daily-1", "operator"));
   });
 
   it("triggers a pipeline run from the pipeline console", async () => {
@@ -1182,26 +1273,26 @@ describe("后台产品化界面", () => {
 
     expect(await screen.findByText("AI 热点质量漏斗")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /AI 热点/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "拒绝样本" })).toBeInTheDocument();
-    const funnel = screen.getByLabelText("AI 热点漏斗");
+    expect(screen.getByRole("tab", { name: "拒绝样本" })).toBeInTheDocument();
+    const funnel = screen.getByLabelText("AI 热点最近窗口数据流");
     expect(within(funnel).getByText("原始条目")).toBeInTheDocument();
     expect(within(funnel).getByText("58")).toBeInTheDocument();
     expect(screen.getByText("已有 AI 初筛通过项，但没有精选，优先校准精筛分数、置信度和精选阈值。")).toBeInTheDocument();
     expect(screen.getByText("无效内容")).toBeInTheDocument();
     expect(screen.queryByText("invalid")).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "拒绝样本" }));
+    await userEvent.click(screen.getByRole("tab", { name: "拒绝样本" }));
     expect(await screen.findByText("旧教程内容")).toBeInTheDocument();
     expect(screen.getByText("这是一条没有新增事实的旧教程。")).toBeInTheDocument();
     expect(screen.getByText("置信度不足")).toBeInTheDocument();
     expect(screen.getByText(/低置信度 · 无效内容/)).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "信源贡献" }));
+    await userEvent.click(screen.getByRole("tab", { name: "信源贡献" }));
     expect(screen.getByText("Simon Willison Blog")).toBeInTheDocument();
   });
 
   it("does not expose manual feedback creation in the admin feedback page", async () => {
     render(<FeedbackView api={apiStub()} />);
 
-    expect(await screen.findByText("反馈历史")).toBeInTheDocument();
+    expect(await screen.findByText("反馈质量闭环")).toBeInTheDocument();
     expect(screen.queryByText("提交人工反馈")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "提交反馈" })).not.toBeInTheDocument();
   });

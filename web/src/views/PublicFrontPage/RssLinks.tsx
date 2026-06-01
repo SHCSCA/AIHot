@@ -17,14 +17,14 @@ export function RssLinks({ channel }: RssLinksProps) {
   const links = feedLinks.filter((link) => link.channel === channel);
 
   return (
-    <section className="rss-grid dark">
+    <section className="rss-grid dark" aria-label="RSS 订阅入口">
       {links.map((link) => (
         <motion.a
           key={link.url}
           href={link.url}
           target="_blank"
           rel="noreferrer"
-          className="rss-card glass"
+          className="rss-card liquid-glass-subtle"
           whileHover={{ scale: 1.03, y: -2 }}
           whileTap={{ scale: 0.98 }}
         >

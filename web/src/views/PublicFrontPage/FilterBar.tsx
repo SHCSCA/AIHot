@@ -44,7 +44,7 @@ export function FilterBar({ channel, filters, onChange, onRefresh }: FilterBarPr
   const categories = categoryOptions(channel);
 
   return (
-    <section className="aihot-filter-panel">
+    <section className="aihot-filter-panel liquid-glass-subtle">
       <div className="filter-groups" aria-label="信源和分类筛选">
         <div className="filter-group filter-group-source" aria-label="信源筛选">
           <span className="filter-group-title">信源</span>

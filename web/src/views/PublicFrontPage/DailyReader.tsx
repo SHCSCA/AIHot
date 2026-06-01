@@ -147,8 +147,8 @@ export function DailyReader({ api, channel }: DailyReaderProps) {
             {error && <p className="error">{error}</p>}
             {loading && !daily && <p className="hint">正在读取日报...</p>}
             {daily && (
-              <motion.article className="daily-document dark" key={date}>
-                <motion.header className="daily-cover" variants={itemVariants}>
+              <article className="daily-document dark" key={date}>
+                <header className="daily-cover">
                   <p className="daily-volume">VOL.{daily.date.replaceAll("-", ".")} · {storyCount} STORIES · {channelLabel(daily.channel)} DAILY</p>
                   <h2>
                     <span className="daily-logo-ai">AI</span>
@@ -162,27 +162,26 @@ export function DailyReader({ api, channel }: DailyReaderProps) {
                     <button className="ghost dark" onClick={reload}>刷新日报</button>
                   </div>
                   <p className="daily-cover-summary">{daily.windowLabel || "基于最近 24 小时精选情报自动生成"}</p>
-                </motion.header>
+                </header>
 
                 {sections.length > 0 && (
-                  <motion.nav className="daily-toc" aria-label="日报目录" variants={itemVariants}>
+                  <nav className="daily-toc" aria-label="日报目录">
                     <strong>目录</strong>
                     {sections.map((section, sectionIndex) => (
                       <a key={section.category} href={`#daily-${section.category}`}>
                         {String(sectionIndex + 1).padStart(2, "0")} {section.label}<span>{section.count} 篇</span>
                       </a>
                     ))}
-                  </motion.nav>
+                  </nav>
                 )}
 
                 {sections.length === 0 && <p className="hint">最近 24 小时暂无可发布精选情报。</p>}
 
                 {sections.map((section, sectionIndex) => (
-                  <motion.section
+                  <section
                     className="daily-section"
                     key={section.category}
                     id={`daily-${section.category}`}
-                    variants={itemVariants}
                   >
                     <div className="daily-section-title">
                       <strong>{String(sectionIndex + 1).padStart(2, "0")}</strong>
@@ -193,10 +192,9 @@ export function DailyReader({ api, channel }: DailyReaderProps) {
                       <em>{section.count} 篇</em>
                     </div>
                     {section.items.map((item) => (
-                      <motion.article
+                      <article
                         className="daily-story breathing-reveal"
                         key={item.eventId || item.title}
-                        variants={itemVariants}
                       >
                         <div className="daily-story-head">
                           <h4>{item.title}</h4>
@@ -213,11 +211,11 @@ export function DailyReader({ api, channel }: DailyReaderProps) {
                         </div>
                         <p>{item.summary || "待 AI 处理后生成中文摘要。"}</p>
                         {item.entryReason && <em>{item.entryReason}</em>}
-                      </motion.article>
+                      </article>
                     ))}
-                  </motion.section>
+                  </section>
                 ))}
-              </motion.article>
+              </article>
             )}
             {!loading && !daily && !error && (
               <section className="daily-document dark daily-empty">

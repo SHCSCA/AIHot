@@ -9,8 +9,8 @@ interface SearchResult {
 }
 
 const quickJumps: SearchResult[] = [
-  { id: "pub:overview", label: "总览", description: "AI 与 Amazon 情报聚合", category: "快速跳转" },
-  { id: "pub:selected", label: "精选", description: "AI 自动挑选的高价值情报", category: "快速跳转" },
+  { id: "pub:overview", label: "总览", description: "按当前频道查看情报总览", category: "快速跳转" },
+  { id: "pub:selected", label: "精选", description: "当前频道自动挑选的高价值情报", category: "快速跳转" },
   { id: "pub:all", label: "全部热点", description: "全部情报流", category: "快速跳转" },
   { id: "pub:daily", label: "AI 日报", description: "杂志式每日摘要", category: "快速跳转" },
   { id: "pub:sources", label: "信源墙", description: "公开信源列表", category: "快速跳转" },
