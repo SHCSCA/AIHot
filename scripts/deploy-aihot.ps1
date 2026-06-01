@@ -54,12 +54,12 @@ scp @scpArgs $bundlePath "${sshTarget}:$RemoteBundle"
 $remoteScript = @"
 set -euo pipefail
 cd "$AppDir"
-backup_dir="/data/wwwroot/AIHot-deploy-backups/$(date +%Y%m%d%H%M%S)"
-mkdir -p "$backup_dir"
-git status --short --branch > "$backup_dir/status.txt" || true
-git diff > "$backup_dir/worktree.diff" || true
-git diff --cached > "$backup_dir/index.diff" || true
-git ls-files --others --exclude-standard > "$backup_dir/untracked.txt" || true
+backup_dir="/data/wwwroot/AIHot-deploy-backups/`$(date +%Y%m%d%H%M%S)"
+mkdir -p "`$backup_dir"
+git status --short --branch > "`$backup_dir/status.txt" || true
+git diff > "`$backup_dir/worktree.diff" || true
+git diff --cached > "`$backup_dir/index.diff" || true
+git ls-files --others --exclude-standard > "`$backup_dir/untracked.txt" || true
 
 git fetch "$RemoteBundle" HEAD
 git reset --hard "$commit"
