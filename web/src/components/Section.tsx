@@ -5,22 +5,26 @@ export function Section({
   description,
   action,
   error,
+  className,
   children
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
   error?: string | null;
+  className?: string;
   children: ReactNode;
 }) {
+  const classes = ["section", className].filter(Boolean).join(" ");
+
   return (
-    <section className="section">
+    <section className={classes}>
       <div className="section-head">
         <div>
           <h2>{title}</h2>
           {description && <p>{description}</p>}
         </div>
-        {action}
+        {action && <div className="section-action">{action}</div>}
       </div>
       {error && <p className="error">{error}</p>}
       {children}

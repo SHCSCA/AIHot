@@ -1203,3 +1203,1035 @@ sources:
     base_weight: 72
     seller_area: marketplaces
     default_categories: [product_research, tools, compliance_trade]
+  - <<: *amazon_catalog_candidate
+    id: sellerapp_blog_verified
+    name: SellerApp Blog Verified RSS
+    url: https://www.sellerapp.com/blog/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 76
+    seller_area: tools
+    default_categories: [ads_ppc, listing_seo, product_research, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: sellerengine_blog_feed
+    name: SellerEngine Blog RSS
+    url: https://sellerengine.com/blog/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 74
+    seller_area: operations
+    default_categories: [account_health, product_research, listing_seo]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: ad_badger_main_feed
+    name: Ad Badger Main RSS
+    url: https://www.adbadger.com/feed/
+    source_type: rss
+    trust_level: expert
+    base_weight: 72
+    seller_area: ads
+    default_categories: [ads_ppc, listing_seo]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: amz_one_step_feed
+    name: AMZ One Step RSS
+    url: https://www.amzonestep.com/blog/feed/
+    source_type: rss
+    trust_level: expert
+    base_weight: 70
+    seller_area: listing_seo
+    default_categories: [listing_seo, ads_ppc, product_research]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: barrel13_feed
+    name: Barrel13 Amazon Seller RSS
+    url: https://barrel13.wordpress.com/feed/
+    source_type: rss
+    trust_level: expert
+    base_weight: 66
+    seller_area: operations
+    default_categories: [product_research, fees_margin, account_health]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: amz_prep_feed
+    name: AMZ Prep RSS
+    url: https://amzprep.com/blog/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 72
+    seller_area: logistics
+    default_categories: [fba_logistics, fees_margin]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: canopy_management_feed
+    name: Canopy Management RSS
+    url: https://canopymanagement.com/resources/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 74
+    seller_area: ads
+    default_categories: [ads_ppc, listing_seo, product_research]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: intentwise_feed
+    name: Intentwise RSS
+    url: https://www.intentwise.com/blog/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 76
+    seller_area: ads
+    default_categories: [ads_ppc, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: ecommercefuel_feed
+    name: EcommerceFuel RSS
+    url: https://www.ecommercefuel.com/feed/
+    source_type: rss
+    trust_level: community
+    base_weight: 68
+    seller_area: community
+    default_categories: [product_research, fees_margin, account_health]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: sostocked_feed
+    name: SoStocked RSS
+    url: https://www.sostocked.com/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 70
+    seller_area: inventory
+    default_categories: [fba_logistics, fees_margin, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: seller_mobile_feed
+    name: SellerMobile RSS
+    url: https://sellermobile.com/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 70
+    seller_area: tools
+    default_categories: [tools, fees_margin, product_research]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: incrementum_digital_feed
+    name: Incrementum Digital RSS
+    url: https://incrementumdigital.com/feed/
+    source_type: rss
+    trust_level: expert
+    base_weight: 70
+    seller_area: ads
+    default_categories: [ads_ppc, listing_seo, product_research]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: reddit_amazon_fba
+    name: Reddit Amazon FBA RSS
+    url: https://www.reddit.com/r/AmazonFBA/.rss
+    source_type: rss
+    trust_level: community
+    base_weight: 62
+    seller_area: community
+    default_categories: [account_health, fba_logistics, product_research]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: reddit_amazon_seller
+    name: Reddit Amazon Seller RSS
+    url: https://www.reddit.com/r/AmazonSeller/.rss
+    source_type: rss
+    trust_level: community
+    base_weight: 62
+    seller_area: community
+    default_categories: [account_health, fees_margin, product_research]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: reddit_fulfillmentbyamazon_rss
+    name: Reddit Fulfillment by Amazon RSS
+    url: https://www.reddit.com/r/FulfillmentByAmazon/.rss
+    source_type: rss
+    trust_level: community
+    base_weight: 62
+    seller_area: community
+    default_categories: [account_health, fba_logistics, product_research]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: amazon_sellers_attorney_feed
+    name: Amazon Sellers Attorney RSS
+    url: https://www.amazonsellers.attorney/blog/feed/
+    source_type: rss
+    trust_level: expert
+    base_weight: 72
+    seller_area: account_health
+    default_categories: [account_health, compliance_trade]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: payability_feed
+    name: Payability RSS
+    url: https://www.payability.com/feed/
+    source_type: rss
+    trust_level: authority
+    base_weight: 70
+    seller_area: finance
+    default_categories: [fees_margin, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: landingcube_feed
+    name: LandingCube RSS
+    url: https://landingcube.com/blog/feed/
+    source_type: rss
+    trust_level: expert
+    base_weight: 68
+    seller_area: listing_seo
+    default_categories: [listing_seo, ads_ppc]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: ecomclips_feed
+    name: Ecomclips RSS
+    url: https://ecomclips.com/blog/feed/
+    source_type: rss
+    trust_level: expert
+    base_weight: 68
+    seller_area: operations
+    default_categories: [listing_seo, ads_ppc, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: bigcommerce_blog
+    name: BigCommerce Blog
+    url: https://www.bigcommerce.com/blog/
+    trust_level: authority
+    base_weight: 70
+    seller_area: marketplaces
+    default_categories: [product_research, tools, compliance_trade]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: ecommerceceo_blog
+    name: Ecommerce CEO Blog
+    url: https://www.ecommerceceo.com/blog/
+    trust_level: expert
+    base_weight: 68
+    seller_area: operations
+    default_categories: [product_research, listing_seo, fees_margin]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: ecommercefuel_blog
+    name: EcommerceFuel Blog
+    url: https://www.ecommercefuel.com/blog/
+    trust_level: community
+    base_weight: 68
+    seller_area: community
+    default_categories: [product_research, fees_margin, account_health]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: eseller365_amazon
+    name: eSeller365 Amazon
+    url: https://www.eseller365.com/category/amazon/
+    trust_level: media
+    base_weight: 68
+    seller_area: industry
+    default_categories: [policy, fees_margin, product_research]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: martech_amazon_ads
+    name: MarTech RSS
+    url: https://martech.org/feed/
+    source_type: rss
+    trust_level: media
+    base_weight: 66
+    seller_area: ads
+    default_categories: [ads_ppc, tools]
+    parser_type: rss
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: shipmonk_blog
+    name: ShipMonk Blog
+    url: https://www.shipmonk.com/blog/
+    trust_level: authority
+    base_weight: 68
+    seller_area: logistics
+    default_categories: [fba_logistics, fees_margin]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: simplyvat_blog
+    name: SimplyVAT Blog
+    url: https://www.simplyvat.com/blog/
+    trust_level: authority
+    base_weight: 68
+    seller_area: tax
+    default_categories: [compliance_trade, fees_margin]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: a2x_blog
+    name: A2X Ecommerce Accounting Blog
+    url: https://www.a2xaccounting.com/blog/
+    trust_level: authority
+    base_weight: 70
+    seller_area: finance
+    default_categories: [fees_margin, compliance_trade, tools]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: easyship_blog
+    name: Easyship Blog
+    url: https://www.easyship.com/blog
+    trust_level: authority
+    base_weight: 68
+    seller_area: logistics
+    default_categories: [fba_logistics, fees_margin, compliance_trade]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: sellbrite_blog
+    name: Sellbrite Blog
+    url: https://www.sellbrite.com/blog/
+    trust_level: authority
+    base_weight: 68
+    seller_area: marketplaces
+    default_categories: [tools, product_research, fba_logistics]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: shopify_enterprise_retail
+    name: Shopify Enterprise Retail Blog
+    url: https://www.shopify.com/enterprise/blog
+    trust_level: authority
+    base_weight: 66
+    seller_area: marketplaces
+    default_categories: [product_research, fees_margin, compliance_trade]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: taxually_blog
+    name: Taxually Blog
+    url: https://taxually.com/blog/
+    trust_level: authority
+    base_weight: 68
+    seller_area: tax
+    default_categories: [compliance_trade, fees_margin]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: zentail_blog
+    name: Zentail Blog
+    url: https://www.zentail.com/blog
+    trust_level: authority
+    base_weight: 70
+    seller_area: marketplaces
+    default_categories: [tools, product_research, fba_logistics]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: seller_mobile_blog
+    name: SellerMobile Blog
+    url: https://sellermobile.com/blog/
+    trust_level: authority
+    base_weight: 70
+    seller_area: tools
+    default_categories: [tools, fees_margin, product_research]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: amz_pathfinder_blog
+    name: AMZ Pathfinder Blog
+    url: https://www.amzpathfinder.com/blog/
+    trust_level: expert
+    base_weight: 70
+    seller_area: ads
+    default_categories: [ads_ppc, listing_seo]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: awesome_dynamic_blog
+    name: Awesome Dynamic Blog
+    url: https://www.awesomedynamic.com/blog/
+    trust_level: expert
+    base_weight: 68
+    seller_area: operations
+    default_categories: [listing_seo, account_health, product_research]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: omnitail_blog
+    name: Omnitail Blog
+    url: https://www.omnitail.net/blog/
+    trust_level: expert
+    base_weight: 68
+    seller_area: ads
+    default_categories: [ads_ppc, fees_margin, product_research]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: tactical_arbitrage_blog
+    name: Tactical Arbitrage Blog
+    url: https://www.tacticalarbitrage.com/blog
+    trust_level: expert
+    base_weight: 68
+    seller_area: product_research
+    default_categories: [product_research, tools]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: threecolts_blog
+    name: Threecolts Blog
+    url: https://www.threecolts.com/blog
+    trust_level: authority
+    base_weight: 70
+    seller_area: tools
+    default_categories: [tools, fees_margin, account_health]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: redstag_blog
+    name: Red Stag Fulfillment Blog
+    url: https://redstagfulfillment.com/blog/
+    trust_level: authority
+    base_weight: 68
+    seller_area: logistics
+    default_categories: [fba_logistics, fees_margin]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: scanpower_blog
+    name: ScanPower Blog
+    url: https://www.scanpower.com/blog
+    trust_level: authority
+    base_weight: 68
+    seller_area: tools
+    default_categories: [tools, product_research, fees_margin]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: flxpoint_blog
+    name: Flxpoint Blog
+    url: https://flxpoint.com/blog/
+    trust_level: authority
+    base_weight: 68
+    seller_area: marketplaces
+    default_categories: [tools, fba_logistics, product_research]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: fulfillment_com_blog
+    name: Fulfillment.com Blog
+    url: https://www.fulfillment.com/blog/
+    trust_level: authority
+    base_weight: 68
+    seller_area: logistics
+    default_categories: [fba_logistics, fees_margin]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: inventorylab_blog
+    name: InventoryLab Blog
+    url: https://www.inventorylab.com/blog/
+    trust_level: authority
+    base_weight: 70
+    seller_area: inventory
+    default_categories: [fba_logistics, fees_margin, tools]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: seller_assistant_blog
+    name: Seller Assistant Blog
+    url: https://www.sellerassistant.app/blog
+    trust_level: authority
+    base_weight: 70
+    seller_area: product_research
+    default_categories: [product_research, tools, listing_seo]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: sellers_lawyer_blog
+    name: Amazon Sellers Lawyer Blog
+    url: https://amazonsellerslawyer.com/blog/
+    trust_level: expert
+    base_weight: 72
+    seller_area: account_health
+    default_categories: [account_health, compliance_trade]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: shiphero_blog
+    name: ShipHero Blog
+    url: https://shiphero.com/blog/
+    trust_level: authority
+    base_weight: 68
+    seller_area: logistics
+    default_categories: [fba_logistics, fees_margin, tools]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: shippo_blog
+    name: Shippo Blog
+    url: https://www.goshippo.com/blog/
+    trust_level: authority
+    base_weight: 68
+    seller_area: logistics
+    default_categories: [fba_logistics, fees_margin]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: veeqo_blog
+    name: Veeqo Blog
+    url: https://www.veeqo.com/blog/
+    trust_level: authority
+    base_weight: 72
+    seller_area: inventory
+    default_categories: [fba_logistics, fees_margin, tools]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: sellersprite_blog
+    name: SellerSprite Blog
+    url: https://www.sellersprite.com/en/blog
+    trust_level: authority
+    base_weight: 70
+    seller_area: product_research
+    default_categories: [product_research, listing_seo, tools]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: canopy_management_resources
+    name: Canopy Management Resources
+    url: https://canopymanagement.com/resources
+    trust_level: authority
+    base_weight: 74
+    seller_area: ads
+    default_categories: [ads_ppc, listing_seo, product_research]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: kenji_roi_blog
+    name: Kenji ROI Blog
+    url: https://kenjiroi.com/blog
+    trust_level: expert
+    base_weight: 68
+    seller_area: listing_seo
+    default_categories: [listing_seo, product_research]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: online_seller_solutions_blog
+    name: Online Seller Solutions Blog
+    url: https://onlinesellersolutions.com/blog
+    trust_level: expert
+    base_weight: 68
+    seller_area: operations
+    default_categories: [account_health, listing_seo, product_research]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: taxomate_blog
+    name: Taxomate Blog
+    url: https://taxomate.com/amazon-seller-blog
+    trust_level: authority
+    base_weight: 70
+    seller_area: tax
+    default_categories: [fees_margin, compliance_trade, tools]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: amazon_ads_blog_public
+    name: Amazon Ads Blog Public
+    url: https://advertising.amazon.com/blog
+    source_type: official
+    trust_level: official
+    base_weight: 84
+    seller_area: ads
+    default_categories: [ads_ppc, tools, policy]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: amazon_seller_blog_public
+    name: Amazon Seller Blog Public
+    url: https://sell.amazon.com/blog
+    source_type: official
+    trust_level: official
+    base_weight: 86
+    seller_area: operations
+    default_categories: [policy, account_health, fba_logistics, listing_seo]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: amazon_pay_blog_public
+    name: Amazon Pay Blog Public
+    url: https://pay.amazon.com/blog
+    source_type: official
+    trust_level: official
+    base_weight: 80
+    seller_area: payments
+    default_categories: [fees_margin, compliance_trade]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: amazon_sp_api_docs_public
+    name: Amazon SP-API Docs Public
+    url: https://developer-docs.amazon.com/sp-api/
+    source_type: official
+    trust_level: official
+    base_weight: 82
+    seller_area: tools
+    default_categories: [tools, policy]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: amazon_brand_registry_public
+    name: Amazon Brand Registry Public
+    url: https://brandservices.amazon.com/
+    source_type: official
+    trust_level: official
+    base_weight: 82
+    seller_area: brand
+    default_categories: [account_health, compliance_trade, listing_seo]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: avalara_marketplace_tax
+    name: Avalara Marketplace Tax Blog
+    url: https://www.avalara.com/blog/en/north-america.html
+    trust_level: authority
+    base_weight: 72
+    seller_area: tax
+    default_categories: [compliance_trade, fees_margin]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: linnworks_marketplace_blog
+    name: Linnworks Marketplace Blog
+    url: https://www.linnworks.com/blog/
+    trust_level: authority
+    base_weight: 70
+    seller_area: tools
+    default_categories: [tools, fba_logistics]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: marketplace_pulse_research_public
+    name: Marketplace Pulse Research Public
+    url: https://www.marketplacepulse.com/articles
+    trust_level: authority
+    base_weight: 82
+    seller_area: product_research
+    default_categories: [product_research, fees_margin, policy]
+    parser_type: html_list
+    enabled: true
+    collection_status: collectable
+  - <<: *amazon_catalog_candidate
+    id: linkedin_marketplace_pulse
+    name: Marketplace Pulse LinkedIn
+    url: https://www.linkedin.com/company/marketplace-pulse
+    source_type: social
+    trust_level: authority
+    base_weight: 76
+    seller_area: industry
+    default_categories: [product_research, fees_margin, policy]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: marketplace-pulse
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_chris_mccabe
+    name: Chris McCabe LinkedIn
+    url: https://www.linkedin.com/in/chris-mccabe-2646555/
+    source_type: social
+    trust_level: expert
+    base_weight: 74
+    seller_area: account_health
+    default_categories: [account_health, policy, compliance_trade]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: chris-mccabe-2646555
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_jonny_golding
+    name: Jonny Golding LinkedIn
+    url: https://www.linkedin.com/in/jonny-golding/
+    source_type: social
+    trust_level: expert
+    base_weight: 70
+    seller_area: operations
+    default_categories: [product_research, ads_ppc, tools]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: jonny-golding
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_mina_elias
+    name: Mina Elias LinkedIn
+    url: https://www.linkedin.com/in/theminaelias/
+    source_type: social
+    trust_level: expert
+    base_weight: 72
+    seller_area: ads
+    default_categories: [ads_ppc, listing_seo, product_research]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: theminaelias
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_destaney_wishon
+    name: Destaney Wishon LinkedIn
+    url: https://www.linkedin.com/in/destaney-wishon/
+    source_type: social
+    trust_level: expert
+    base_weight: 72
+    seller_area: ads
+    default_categories: [ads_ppc, product_research]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: destaney-wishon
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_elizabeth_greene
+    name: Elizabeth Greene LinkedIn
+    url: https://www.linkedin.com/in/elizabeth-greene/
+    source_type: social
+    trust_level: expert
+    base_weight: 70
+    seller_area: ads
+    default_categories: [ads_ppc, listing_seo]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: elizabeth-greene
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_scott_needham
+    name: Scott Needham LinkedIn
+    url: https://www.linkedin.com/in/scottneedham/
+    source_type: social
+    trust_level: expert
+    base_weight: 72
+    seller_area: product_research
+    default_categories: [product_research, fees_margin, tools]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: scottneedham
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_joshua_hadley
+    name: Joshua Hadley LinkedIn
+    url: https://www.linkedin.com/in/joshua-hadley/
+    source_type: social
+    trust_level: expert
+    base_weight: 70
+    seller_area: ads
+    default_categories: [ads_ppc, product_research, fees_margin]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: joshua-hadley
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_ritu_java
+    name: Ritu Java LinkedIn
+    url: https://www.linkedin.com/in/ritujava/
+    source_type: social
+    trust_level: expert
+    base_weight: 70
+    seller_area: ads
+    default_categories: [ads_ppc, tools]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: ritujava
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_chad_rubin
+    name: Chad Rubin LinkedIn
+    url: https://www.linkedin.com/in/chadrubin/
+    source_type: social
+    trust_level: expert
+    base_weight: 70
+    seller_area: pricing
+    default_categories: [fees_margin, tools, product_research]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: chadrubin
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_vanessa_hung
+    name: Vanessa Hung LinkedIn
+    url: https://www.linkedin.com/in/vanessaamazon/
+    source_type: social
+    trust_level: expert
+    base_weight: 70
+    seller_area: catalog
+    default_categories: [listing_seo, account_health, tools]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: vanessaamazon
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_tyler_jefcoat
+    name: Tyler Jefcoat LinkedIn
+    url: https://www.linkedin.com/in/tylerjefcoat/
+    source_type: social
+    trust_level: expert
+    base_weight: 70
+    seller_area: finance
+    default_categories: [fees_margin, product_research]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: tylerjefcoat
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_chelsea_cohen
+    name: Chelsea Cohen LinkedIn
+    url: https://www.linkedin.com/in/chelseacohen/
+    source_type: social
+    trust_level: expert
+    base_weight: 70
+    seller_area: inventory
+    default_categories: [fba_logistics, fees_margin, tools]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: chelseacohen
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_john_aspinall
+    name: John Aspinall LinkedIn
+    url: https://www.linkedin.com/in/john-aspinall/
+    source_type: social
+    trust_level: expert
+    base_weight: 70
+    seller_area: listing_seo
+    default_categories: [listing_seo, ads_ppc]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: john-aspinall
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_brett_bohannon
+    name: Brett Bohannon LinkedIn
+    url: https://www.linkedin.com/in/brett-bohannon/
+    source_type: social
+    trust_level: expert
+    base_weight: 68
+    seller_area: tools
+    default_categories: [tools, product_research]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: brett-bohannon
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_daniela_bolzmann
+    name: Daniela Bolzmann LinkedIn
+    url: https://www.linkedin.com/in/daniela-bolzmann/
+    source_type: social
+    trust_level: expert
+    base_weight: 68
+    seller_area: listing_seo
+    default_categories: [listing_seo, product_research]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: daniela-bolzmann
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_michael_facchin
+    name: Michael Erickson Facchin LinkedIn
+    url: https://www.linkedin.com/in/michaelfacchin/
+    source_type: social
+    trust_level: expert
+    base_weight: 70
+    seller_area: ads
+    default_categories: [ads_ppc, tools]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: michaelfacchin
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_chris_rawlings
+    name: Chris Rawlings LinkedIn
+    url: https://www.linkedin.com/in/chrisrawlings/
+    source_type: social
+    trust_level: expert
+    base_weight: 70
+    seller_area: tools
+    default_categories: [tools, product_research, listing_seo]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: chrisrawlings
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_marissa_linzey
+    name: Marissa Linzey LinkedIn
+    url: https://www.linkedin.com/in/marissalinzey/
+    source_type: social
+    trust_level: expert
+    base_weight: 68
+    seller_area: listing_seo
+    default_categories: [listing_seo, product_research]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: marissalinzey
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_joe_shelerud
+    name: Joe Shelerud LinkedIn
+    url: https://www.linkedin.com/in/joe-shelerud/
+    source_type: social
+    trust_level: expert
+    base_weight: 68
+    seller_area: automation
+    default_categories: [tools, ads_ppc, product_research]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: joe-shelerud
+    collection_status: pending_api
+    free_access: true
+  - <<: *amazon_catalog_candidate
+    id: linkedin_abe_chomali
+    name: Abe Chomali LinkedIn
+    url: https://www.linkedin.com/in/abechomali/
+    source_type: social
+    trust_level: expert
+    base_weight: 68
+    seller_area: ads
+    default_categories: [ads_ppc, listing_seo]
+    parser_type: linkedin_profile
+    enabled: false
+    source_group: social_opinion
+    platform: linkedin
+    social_handle: abechomali
+    collection_status: pending_api
+    free_access: true

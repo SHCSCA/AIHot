@@ -29,6 +29,14 @@ export type Credentials = {
   password: string;
 };
 
+export type PublicChannelSummary = {
+  id: string;
+  name: string;
+  description: string;
+  categories: Array<{ id: string; label: string }>;
+  sourceCount: number;
+};
+
 type QueryValue = string | number | boolean | null | undefined;
 
 export class ApiError extends Error {
@@ -46,6 +54,10 @@ export function buildBasicAuthHeader(credentials: Credentials): string {
 
 export class PublicApi {
   constructor(private baseUrl = "") {}
+
+  async listChannels(): Promise<PublicChannelSummary[]> {
+    return (await this.request<{ channels: PublicChannelSummary[] }>("/api/public/channels")).channels;
+  }
 
   async listEvents(
     filters: {
@@ -172,6 +184,7 @@ export class PublicApi {
     const response = await fetch(`${this.baseUrl}${path}`, {
       method: init.method,
       body: init.body,
+      cache: "no-store",
       headers: {
         "Content-Type": "application/json",
         ...(init.headers ?? {})

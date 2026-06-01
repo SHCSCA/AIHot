@@ -57,7 +57,7 @@ from intel_engine.models import (
 from intel_engine.normalizer import canonicalize_url
 from intel_engine.pipeline import run_pipeline_once
 from intel_engine.quality import is_publishable_original_url, operational_day_bounds_utc
-from intel_engine.review import PUBLIC_WINDOW_LABEL, ROLLING_WINDOW_HOURS, public_cluster_ready
+from intel_engine.review import channel_rolling_window_hours, public_cluster_ready, public_window_label
 from intel_engine.rss import build_events_feed
 from intel_engine.sources import SourceRegistry, SourceUpsert
 from intel_engine.storage import ItemRepository
@@ -320,8 +320,9 @@ def public_events(
             start, end = operational_day_bounds_utc(event_date)
             stmt = stmt.where(EventClusterRecord.last_seen_at >= start).where(EventClusterRecord.last_seen_at <= end)
         else:
-            hours = window or ROLLING_WINDOW_HOURS
+            hours = window or channel_rolling_window_hours(channel)
             stmt = stmt.where(EventClusterRecord.last_seen_at >= datetime.now(timezone.utc) - timedelta(hours=hours))
+        window_label = public_window_label(channel, window=window)
         if q:
             stmt = stmt.where(EventClusterRecord.canonical_title.contains(q))
         if mode == "selected":
@@ -342,7 +343,7 @@ def public_events(
             return {
                 **_pagination_meta(page_data, len(events)),
                 "nextCursor": None,
-                "windowLabel": PUBLIC_WINDOW_LABEL,
+                "windowLabel": window_label,
                 "events": events,
             }
 
@@ -371,7 +372,7 @@ def public_events(
         "total": len(events),
         "totalPages": 1 if events else 0,
         "hasPrev": False,
-        "windowLabel": PUBLIC_WINDOW_LABEL,
+        "windowLabel": window_label,
         "events": events,
     }
 
@@ -2171,7 +2172,7 @@ def _public_daily_payload(session, digest: DailyDigestRecord) -> dict[str, objec
         "stats": document["stats"],
         "sectionsJson": digest.sections_json,
         "published": digest.published,
-        "windowLabel": PUBLIC_WINDOW_LABEL,
+        "windowLabel": public_window_label(digest.channel),
     }
 
 
@@ -2359,7 +2360,7 @@ def _event_payload(session, cluster: EventClusterRecord) -> dict[str, object]:
         "sourceType": source.source_type if source is not None else None,
         "sourceTier": source.tier if source is not None else None,
         "socialHandle": source.social_handle if source is not None else None,
-        "windowLabel": PUBLIC_WINDOW_LABEL,
+        "windowLabel": public_window_label(cluster.channel),
         "sourceCount": cluster.source_count,
         "memberCount": cluster.member_count,
         "firstSeenAt": _iso(cluster.first_seen_at),

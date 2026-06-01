@@ -8,7 +8,7 @@ import { Section, TableWrap } from "../components/Section";
 import { StatusLabel } from "../components/StatusLabel";
 import { collectionStatusLabel, sourceGroupLabel, sourceTypeLabel } from "../labels";
 import type { Page, Source } from "../types";
-import { adapterLabel, channelLabel, visibilityLabel } from "../utils";
+import { adapterLabel, channelLabel, formatPercent, visibilityLabel } from "../utils";
 
 const TABLE_PAGE_SIZE = 50;
 const WALL_PAGE_SIZE = 6;
@@ -69,6 +69,7 @@ export function SourcesView({ api }: { api: AdminApi }) {
   const [selected, setSelected] = useState<Source | null>(null);
   const [form, setForm] = useState<Source>({ ...newSource, channel });
   const [formMessage, setFormMessage] = useState<{ tone: "info" | "success" | "error"; text: string } | null>(null);
+  const [toggleMessage, setToggleMessage] = useState<{ sourceId: string; tone: "info" | "success" | "error"; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -108,9 +109,16 @@ export function SourcesView({ api }: { api: AdminApi }) {
   }
 
   async function toggle(source: Source) {
-    await api.patchSource(source.id, { enabled: !source.enabled });
-    await loadTable(page);
-    await loadWall(wallPage);
+    const nextEnabled = !source.enabled;
+    setToggleMessage({ sourceId: source.id, tone: "info", text: `${sourceDisplayName(source)} 正在${nextEnabled ? "启用" : "停用"}...` });
+    try {
+      await api.patchSource(source.id, { enabled: nextEnabled });
+      setToggleMessage({ sourceId: source.id, tone: "success", text: `${sourceDisplayName(source)} 已${nextEnabled ? "启用" : "停用"}。` });
+      await loadTable(page);
+      await loadWall(wallPage);
+    } catch (err) {
+      setToggleMessage({ sourceId: source.id, tone: "error", text: err instanceof Error ? err.message : "信源启停失败。" });
+    }
   }
 
   async function submit() {
@@ -158,24 +166,44 @@ export function SourcesView({ api }: { api: AdminApi }) {
           error={error}
         >
           <SourceFilterPanel filters={filters} onChange={(next) => setFilters({ ...filters, ...next })} />
+          {toggleMessage && <p className={`form-message ${toggleMessage.tone}`}>{toggleMessage.text}</p>}
           <TableWrap>
             <table>
-              <thead><tr><th>信源</th><th>频道</th><th>类型</th><th>等级</th><th>采集方式</th><th>间隔</th><th>可见性</th><th>状态</th><th>操作</th></tr></thead>
+              <thead><tr><th>信源</th><th>运行状态</th><th>健康/收集</th><th>权重</th><th>抓取方式</th><th>状态</th><th>操作</th></tr></thead>
               <tbody>
                 {sourcePage.items.map((source, index) => (
                   <tr key={source.id || `empty-${index}`} onClick={() => setSelected(source)}>
-                    <td><strong>{sourceDisplayName(source)}</strong><span>{sourceDisplayId(source)}</span></td>
-                    <td>{channelLabel(source.channel)}</td>
-                    <td><strong>{sourceGroupLabel(source.sourceGroup)}</strong><span>{sourceTypeLabel(source.sourceType)} · {collectionStatusLabel(source.collectionStatus)}</span></td>
-                    <td>{source.tier}</td>
-                    <td>{adapterLabel(source.fetchAdapter)}</td>
-                    <td>{source.fetchIntervalMinutes} 分钟</td>
-                    <td>{visibilityLabel(source.visibility)}</td>
-                    <td><StatusLabel value={source.enabled ? "enabled" : "disabled"} /></td>
                     <td>
-                      <button className={source.enabled ? "danger ghost" : "primary"} onClick={(event) => { event.stopPropagation(); void toggle(source); }}>
+                      <strong>{sourceDisplayName(source)}</strong>
+                      <span>{sourceDisplayId(source)}</span>
+                      <span>{channelLabel(source.channel)} · {source.tier}</span>
+                    </td>
+                    <td>
+                      <StatusLabel value={source.enabled ? "enabled" : "disabled"} />
+                      <span>{source.enabled ? "参与抓取调度" : "暂停调度"} · {visibilityLabel(source.visibility)}</span>
+                    </td>
+                    <td>
+                      <span className={`status ${collectionStatusClass(source.collectionStatus)}`}>
+                        {collectionStatusLabel(source.collectionStatus)}
+                      </span>
+                      <span>{sourceGroupLabel(source.sourceGroup)} · {sourceTypeLabel(source.sourceType)} · {source.freeAccess === false ? "需授权" : "免费可读"}</span>
+                    </td>
+                    <td>
+                      <strong>{source.authorityWeight}</strong>
+                      <span>噪声 {formatPercent(source.noiseLevel ?? 0)}</span>
+                    </td>
+                    <td>
+                      <strong>{adapterLabel(source.fetchAdapter)}</strong>
+                      <span>{source.parserType || "默认解析"} · 每 {source.fetchIntervalMinutes} 分钟</span>
+                    </td>
+                    <td>
+                      <strong>{source.collectionStatus ? collectionStatusLabel(source.collectionStatus) : "未设置"}</strong>
+                      <span>{source.notes?.trim() || "无备注"}</span>
+                    </td>
+                    <td>
+                      <button className={source.enabled ? "danger ghost" : "primary"} disabled={toggleMessage?.sourceId === source.id && toggleMessage.tone === "info"} onClick={(event) => { event.stopPropagation(); void toggle(source); }}>
                         {source.enabled ? <PowerOff size={15} /> : <Power size={15} />}
-                        {source.enabled ? "停用" : "启用"}
+                        {toggleMessage?.sourceId === source.id && toggleMessage.tone === "info" ? "处理中..." : source.enabled ? "停用" : "启用"}
                       </button>
                     </td>
                   </tr>
@@ -255,4 +283,10 @@ function sourceDisplayName(source: Source) {
 
 function sourceDisplayId(source: Source) {
   return source.id?.trim() || "缺少信源 ID";
+}
+
+function collectionStatusClass(value?: string | null) {
+  if (value === "collectable") return "status-enabled";
+  if (value === "unavailable") return "status-failed";
+  return "status-pending";
 }

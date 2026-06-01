@@ -21,13 +21,16 @@ from intel_engine.models import (
 )
 from intel_engine.pipeline import (
     _apply_screening_guardrails,
+    _ensure_active_strategy,
     _fake_score,
     _model_payload,
     _normalize_raw_document,
+    _upsert_screening_result,
     reprocess_existing_items,
     run_pipeline_once,
     run_worker_once,
 )
+from intel_engine.review import adjusted_selected_threshold
 from intel_engine.settings import Settings
 from intel_engine.sources import SourceRegistry, SourceUpsert
 
@@ -305,6 +308,155 @@ def test_amazon_screening_guardrail_repairs_schema_invalid_seller_signal():
     assert corrected.screen_bucket == "related"
     assert corrected.category == "fba_logistics"
     assert corrected.reason_code == "seller_ops_signal"
+
+
+def test_amazon_seller_signal_without_publish_time_uses_fetch_time_for_ingest(tmp_path):
+    now = datetime(2026, 5, 14, 10, 0, tzinfo=timezone.utc)
+    SessionLocal = _session_factory(tmp_path)
+    with SessionLocal() as session:
+        source = SourceRecord(
+            id="ecommercebytes",
+            channel="amazon",
+            source_type="rss",
+            tier="T3",
+            name="EcommerceBytes RSS",
+            url="https://www.ecommercebytes.com/feed/",
+            language="en",
+            region="global",
+            marketplace="global",
+            authority_weight=72,
+            noise_level=0.35,
+            fetch_adapter="rss",
+            parser_type="rss",
+            default_categories=["fba_logistics"],
+            fetch_interval_minutes=60,
+            enabled=True,
+            visibility="public",
+            source_group="media",
+            collection_status="collectable",
+            free_access=True,
+        )
+        session.add(source)
+        strategy = _ensure_active_strategy(session, "amazon")
+        run = FetchRunRecord(
+            source_id=source.id,
+            status="succeeded",
+            started_at=now,
+            finished_at=now,
+            http_status=200,
+            content_type="application/rss+xml",
+            bytes_received=512,
+            item_count=1,
+            metadata_json={},
+        )
+        session.add(run)
+        session.flush()
+        raw_document = RawDocumentRecord(
+            fetch_run_id=run.id,
+            source_id=source.id,
+            url="https://www.ecommercebytes.com/amazon-fba-inventory-reimbursement/",
+            canonical_url="https://www.ecommercebytes.com/amazon-fba-inventory-reimbursement/",
+            content_type="application/rss+xml",
+            body_text=(
+                "Amazon FBA sellers can reconcile missing inventory and request reimbursement after products "
+                "arrive at Amazon fulfillment centers."
+            ),
+            body_html=None,
+            response_headers_json={"x-intel-title": "Amazon FBA inventory reimbursement update"},
+            content_hash="amazon-fba-no-publish-time",
+            fetched_at=now,
+        )
+        session.add(raw_document)
+        session.flush()
+        provider = FakeScreeningProvider(
+            ScreeningResult(
+                screen_status="accepted",
+                screen_bucket="related",
+                relevance_score=76,
+                confidence_score=78,
+                category="fba_logistics",
+                title_cn="亚马逊FBA库存赔付提醒",
+                summary_cn="内容涉及FBA卖家在库存丢失后申请赔付的处理动作。",
+                tags=["FBA", "库存赔付"],
+                reason_code="accepted",
+                reason_cn="具备明确卖家运营价值。",
+                raw_json={"provider": "deepseek", "model": "deepseek-v4-flash"},
+            )
+        )
+
+        screening = _upsert_screening_result(
+            session,
+            raw_document,
+            source,
+            strategy,
+            now=now,
+            screening_provider=provider,
+        )
+        item = _normalize_raw_document(session, source, raw_document, screening=screening)
+
+    assert screening.screen_status == "accepted"
+    assert screening.reason_code == "accepted"
+    assert screening.raw_json["publishedAtInferred"] == "fetched_at"
+    assert item is not None
+    assert item.published_at == now
+
+
+def test_default_strategy_uses_channel_config_selected_threshold(tmp_path):
+    SessionLocal = _session_factory(tmp_path)
+
+    with SessionLocal() as session:
+        ai_strategy = _ensure_active_strategy(session, "ai")
+        amazon_strategy = _ensure_active_strategy(session, "amazon")
+
+    assert ai_strategy.thresholds_json["selected"] == 75
+    assert amazon_strategy.thresholds_json["selected"] == 72
+
+
+def test_adjusted_selected_threshold_honors_channel_base_threshold():
+    assert (
+        adjusted_selected_threshold(
+            channel="amazon",
+            base_threshold=72,
+            source_tier="T2",
+            screen_bucket="core",
+            source_count=1,
+            risk_flags=[],
+        )
+        == 72
+    )
+    assert (
+        adjusted_selected_threshold(
+            channel="ai",
+            base_threshold=75,
+            source_tier="T1",
+            screen_bucket="core",
+            source_count=1,
+            risk_flags=[],
+        )
+        == 72
+    )
+    assert (
+        adjusted_selected_threshold(
+            channel="amazon",
+            base_threshold=72,
+            source_tier="T2",
+            screen_bucket="core",
+            source_count=1,
+            risk_flags=["竞争加剧可能导致利润压缩"],
+        )
+        == 72
+    )
+    assert (
+        adjusted_selected_threshold(
+            channel="ai",
+            base_threshold=75,
+            source_tier="T2",
+            screen_bucket="core",
+            source_count=1,
+            risk_flags=["模型效果存在不确定性"],
+        )
+        == 80
+    )
 
 
 def test_pipeline_once_produces_public_event_and_isolates_failed_source(tmp_path):

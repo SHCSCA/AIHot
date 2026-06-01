@@ -105,14 +105,11 @@ export function HealthView({ api }: { api: AdminApi }) {
             <thead>
               <tr>
                 <th>信源</th>
-                <th>频道</th>
-                <th>可用性诊断</th>
-                <th>健康分</th>
-                <th>候选/接收</th>
-                <th>跳过原因</th>
+                <th>信源健康</th>
+                <th>错误</th>
+                <th>抓取质量</th>
                 <th>AI 初筛</th>
-                <th>最近抓取</th>
-                <th>下次抓取</th>
+                <th>抓取节奏</th>
               </tr>
             </thead>
             <tbody>
@@ -122,40 +119,37 @@ export function HealthView({ api }: { api: AdminApi }) {
                     <strong>{source.sourceName}</strong>
                     <span>{source.sourceId} · {source.tier} · {sourceGroupLabel(source.sourceGroup)}</span>
                   </td>
-                  <td>{channelLabel(source.channel)}</td>
                   <td>
                     <span className={`status diagnostic-${source.diagnosticStatus}`}>
                       {diagnosticStatusLabel(source.diagnosticStatus)}
                     </span>
-                    <span>{collectionStatusLabel(source.collectionStatus)} · {source.freeAccess ? "免费可读" : "需授权"}</span>
-                    {source.screening.latestReason && <span>{source.screening.latestReason}</span>}
+                    <span>{source.enabled ? "启用" : "停用"} · {collectionStatusLabel(source.collectionStatus)} · {source.freeAccess ? "免费可读" : "需授权"}</span>
+                    <span>{channelLabel(source.channel)} · 健康 {Math.round(source.healthScore)} · 重复 {formatPercent(source.duplicateRatio)}</span>
                   </td>
                   <td>
-                    <strong>{Math.round(source.healthScore)}</strong>
-                    <span>错误 {source.errorStreak} · 重复 {formatPercent(source.duplicateRatio)}</span>
+                    <strong>{source.errorStreak} 次连续错误</strong>
+                    <span>{latestError(source)}</span>
+                    <span>最近错误 {formatDateTime(source.lastErrorAt)}</span>
                   </td>
                   <td>
                     {source.lastRun ? (
                       <>
-                        <strong>{source.lastRun.candidateItems} / {source.lastRun.acceptedItems}</strong>
-                        <span>原始 {source.rawCount24h} · 条目 {source.lastRun.itemCount}</span>
+                        <strong>{source.lastRun.candidateItems} 候选 / {source.lastRun.acceptedItems} 接收</strong>
+                        <span>原始 {source.rawCount24h} · 条目 {source.lastRun.itemCount} · 噪声 {formatPercent(source.noiseRatio)}</span>
+                        <span>{skipSummary(source)}</span>
                       </>
                     ) : "暂无抓取"}
                   </td>
                   <td>
-                    {source.lastRun ? (
-                      <>
-                        <strong>旧 {source.lastRun.skippedOldItems}</strong>
-                        <span>缺时间 {source.lastRun.skippedMissingDate} · 链接无效 {source.lastRun.skippedInvalidOriginalUrl}</span>
-                      </>
-                    ) : "-"}
-                  </td>
-                  <td>
                     <strong>{source.screening.accepted24h} 通过</strong>
                     <span>{source.screening.rejected24h} 拒绝 · {source.screening.latestReasonCode ? screenReasonCodeLabel(source.screening.latestReasonCode) : "无原因"}</span>
+                    {source.screening.latestReason && <span>{source.screening.latestReason}</span>}
                   </td>
-                  <td>{formatDateTime(source.lastRun?.startedAt ?? source.lastSuccessAt)}</td>
-                  <td>{formatDateTime(source.nextFetchAt)}</td>
+                  <td>
+                    <strong>最近 {formatDateTime(source.lastRun?.startedAt ?? source.lastSuccessAt)}</strong>
+                    <span>下次 {formatDateTime(source.nextFetchAt)}</span>
+                    <span>退避 {formatDateTime(source.backoffUntil)}</span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -165,6 +159,15 @@ export function HealthView({ api }: { api: AdminApi }) {
       </Section>
     </div>
   );
+}
+
+function latestError(source: SourceDiagnostic) {
+  return source.lastRun?.errorMessage || source.lastJob?.lastError || "无最新错误";
+}
+
+function skipSummary(source: SourceDiagnostic) {
+  if (!source.lastRun) return "暂无跳过统计";
+  return `跳过：旧 ${source.lastRun.skippedOldItems} · 缺时间 ${source.lastRun.skippedMissingDate} · 链接无效 ${source.lastRun.skippedInvalidOriginalUrl}`;
 }
 
 function HealthFilterPanel({ filters, onChange }: { filters: HealthFilters; onChange: (filters: Partial<HealthFilters>) => void }) {

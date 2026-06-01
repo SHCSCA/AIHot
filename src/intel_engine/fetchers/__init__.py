@@ -12,6 +12,7 @@ from urllib.parse import urljoin
 import feedparser
 import httpx
 
+from intel_engine.review import channel_rolling_window_hours
 from intel_engine.models import SourceRecord, utc_now
 from intel_engine.normalizer import canonicalize_url, collapse_whitespace
 from intel_engine.quality import is_publishable_original_url, is_within_recent_hours
@@ -86,7 +87,11 @@ class RssFetchAdapter:
             if published_at is None:
                 skipped_missing_date += 1
                 continue
-            if not is_within_recent_hours(published_at, fetched_at):
+            if not is_within_recent_hours(
+                published_at,
+                fetched_at,
+                hours=channel_rolling_window_hours(source.channel),
+            ):
                 skipped_old_items += 1
                 continue
             if not is_publishable_original_url(url, source.url):
@@ -221,7 +226,11 @@ class HtmlListAdapter:
             if published_at is None:
                 skipped_missing_date += 1
                 continue
-            if not is_within_recent_hours(published_at, fetched_at):
+            if not is_within_recent_hours(
+                published_at,
+                fetched_at,
+                hours=channel_rolling_window_hours(source.channel),
+            ):
                 skipped_old_items += 1
                 continue
             if not is_publishable_original_url(url, source.url):

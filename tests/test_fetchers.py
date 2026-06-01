@@ -130,6 +130,47 @@ def test_rss_adapter_only_accepts_rolling_24_hour_specific_links():
     assert result.metadata_json["skipped_invalid_original_url"] == 1
 
 
+def test_rss_adapter_uses_week_window_for_amazon_sources():
+    now = datetime(2026, 5, 18, 12, 0, tzinfo=timezone.utc)
+    rss = """<?xml version="1.0" encoding="UTF-8" ?>
+    <rss version="2.0">
+      <channel>
+        <title>Feed</title>
+        <item>
+          <title>Amazon FBA reimbursement update</title>
+          <link>https://example.com/news/amazon-fba-reimbursement</link>
+          <pubDate>Thu, 14 May 2026 12:00:00 GMT</pubDate>
+          <description>Amazon sellers can review FBA reimbursement changes.</description>
+        </item>
+      </channel>
+    </rss>
+    """
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, text=rss, headers={"content-type": "application/rss+xml"})
+
+    amazon_source = _source_record("amazon_feed", "rss")
+    amazon_source.channel = "amazon"
+    amazon_source.default_categories = ["fba_logistics"]
+    amazon_result = RssFetchAdapter(now=now).fetch(
+        amazon_source,
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    ai_source = _source_record("ai_feed", "rss")
+    ai_result = RssFetchAdapter(now=now).fetch(
+        ai_source,
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert [document.url for document in amazon_result.documents] == [
+        "https://example.com/news/amazon-fba-reimbursement"
+    ]
+    assert amazon_result.metadata_json["skipped_old_items"] == 0
+    assert ai_result.documents == ()
+    assert ai_result.metadata_json["skipped_old_items"] == 1
+
+
 def test_rss_adapter_caps_accepted_documents_per_source_run():
     now = datetime(2026, 5, 12, 12, 0, tzinfo=timezone.utc)
     items = "\n".join(
@@ -247,7 +288,8 @@ def test_html_list_adapter_extracts_recent_article_cards_with_images():
 
     assert result.status == "succeeded"
     assert [document.url for document in result.documents] == [
-        "https://advertising.amazon.com/updates/ads-budget-rules"
+        "https://advertising.amazon.com/updates/ads-budget-rules",
+        "https://advertising.amazon.com/updates/old-change",
     ]
     assert result.documents[0].response_headers_json["x-intel-title"] == "Amazon Ads adds new budget rules"
     assert result.documents[0].response_headers_json["x-intel-published-at"] == "2026-05-14T02:30:00+00:00"
@@ -255,8 +297,8 @@ def test_html_list_adapter_extracts_recent_article_cards_with_images():
         "https://advertising.amazon.com/images/ads-budget.png"
     )
     assert result.metadata_json["candidate_items"] == 2
-    assert result.metadata_json["accepted_items"] == 1
-    assert result.metadata_json["skipped_old_items"] == 1
+    assert result.metadata_json["accepted_items"] == 2
+    assert result.metadata_json["skipped_old_items"] == 0
 
 
 def test_html_list_adapter_reads_dates_before_card_links():
@@ -343,7 +385,8 @@ def test_html_list_adapter_extracts_sp_api_release_note_sections():
 
     assert result.status == "succeeded"
     assert [document.url for document in result.documents] == [
-        "https://developer-docs.amazon.com/sp-api/docs/sp-api-release-notes#may-14-2026"
+        "https://developer-docs.amazon.com/sp-api/docs/sp-api-release-notes#may-14-2026",
+        "https://developer-docs.amazon.com/sp-api/docs/sp-api-release-notes#may-10-2026",
     ]
     assert result.documents[0].response_headers_json["x-intel-title"] == (
         "Listings Items API updates product type definitions"
@@ -351,8 +394,8 @@ def test_html_list_adapter_extracts_sp_api_release_note_sections():
     assert result.documents[0].response_headers_json["x-intel-published-at"] == "2026-05-14T00:00:00+00:00"
     assert "Selling Partner API behavior" in result.documents[0].body_text
     assert result.metadata_json["candidate_items"] == 2
-    assert result.metadata_json["accepted_items"] == 1
-    assert result.metadata_json["skipped_old_items"] == 1
+    assert result.metadata_json["accepted_items"] == 2
+    assert result.metadata_json["skipped_old_items"] == 0
 
 
 def test_raw_store_saves_fetch_run_and_deduplicates_documents(tmp_path):

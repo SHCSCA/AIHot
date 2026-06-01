@@ -1,10 +1,23 @@
 import type { ReactNode } from "react";
 
-export function MetricCard({ label, value, tone = "neutral" }: { label: string; value: ReactNode; tone?: string }) {
+export function MetricCard({
+  label,
+  value,
+  tone = "neutral",
+  detail
+}: {
+  label: string;
+  value: ReactNode;
+  tone?: string;
+  detail?: ReactNode;
+}) {
+  const classes = ["metric", "metric-token", `metric-${tone}`].join(" ");
+
   return (
-    <div className={`metric metric-${tone}`}>
-      <span>{label}</span>
-      <strong>{value}</strong>
+    <div className={classes} data-tone={tone} aria-label={`${label}: ${String(value)}`}>
+      <span className="metric-label">{label}</span>
+      <strong className="metric-value">{value}</strong>
+      {detail && <em className="metric-detail">{detail}</em>}
     </div>
   );
 }

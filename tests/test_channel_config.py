@@ -29,3 +29,25 @@ def test_bundled_channels_include_free_social_candidates_without_enabling_unstab
     assert all(source.enabled is False for source in [*ai_social, *amazon_social])
     assert all(source.metadata.get("free_access") is True for source in [*ai_social, *amazon_social])
     assert all(source.metadata.get("collection_status") == "pending_api" for source in [*ai_social, *amazon_social])
+
+
+def test_amazon_channel_has_100_collectable_sources_and_social_opinion_radar():
+    amazon = {config.id: config for config in load_channel_configs()}["amazon"]
+
+    collectable = [
+        source
+        for source in amazon.sources
+        if source.enabled and source.metadata.get("collection_status", "collectable") == "collectable"
+    ]
+    opinion_sources = [
+        source
+        for source in amazon.sources
+        if source.metadata.get("source_group") == "social_opinion"
+    ]
+
+    assert len(collectable) >= 100
+    assert len(opinion_sources) >= 20
+    assert all(source.enabled is False for source in opinion_sources)
+    assert all(source.metadata.get("collection_status") in {"pending_api", "watch"} for source in opinion_sources)
+    assert len({source.id for source in amazon.sources}) == len(amazon.sources)
+    assert len({source.url.rstrip("/") for source in collectable}) == len(collectable)

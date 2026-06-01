@@ -6,7 +6,7 @@ import { useAsyncData } from "../hooks";
 import { categoryLabel, collectionStatusLabel, screenBucketLabel, screenReasonCodeLabel, sourceGroupLabel } from "../labels";
 import type { ChannelQuality, QualityDashboard } from "../types";
 import { channelLabel, formatDateTime, formatPercent } from "../utils";
-import { useState } from "react";
+import { useState, type KeyboardEvent } from "react";
 
 const emptyQuality: QualityDashboard = {
   windowHours: 24,
@@ -15,6 +15,12 @@ const emptyQuality: QualityDashboard = {
 };
 
 type QualityTab = "funnel" | "rejections" | "sources";
+
+const qualityTabs: Array<{ id: QualityTab; label: string }> = [
+  { id: "funnel", label: "漏斗概览" },
+  { id: "rejections", label: "拒绝样本" },
+  { id: "sources", label: "信源贡献" }
+];
 
 export function QualityView({ api }: { api: AdminApi }) {
   const [channel, setChannel] = usePersistedAdminChannel("admin-quality-channel");
@@ -54,6 +60,20 @@ export function QualityView({ api }: { api: AdminApi }) {
 
 function QualityChannel({ channel, tab, onTabChange }: { channel: ChannelQuality; tab: QualityTab; onTabChange: (tab: QualityTab) => void }) {
   const metrics = channel.metrics;
+  function handleTabKeyDown(event: KeyboardEvent<HTMLButtonElement>, current: QualityTab) {
+    const currentIndex = qualityTabs.findIndex((item) => item.id === current);
+    let nextIndex = currentIndex;
+    if (event.key === "ArrowRight") nextIndex = (currentIndex + 1) % qualityTabs.length;
+    if (event.key === "ArrowLeft") nextIndex = (currentIndex - 1 + qualityTabs.length) % qualityTabs.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = qualityTabs.length - 1;
+    if (nextIndex === currentIndex) return;
+    event.preventDefault();
+    const nextTab = qualityTabs[nextIndex].id;
+    onTabChange(nextTab);
+    document.getElementById(qualityTabId(nextTab))?.focus();
+  }
+
   return (
     <article className="quality-card">
       <div className="quality-card-head">
@@ -64,13 +84,28 @@ function QualityChannel({ channel, tab, onTabChange }: { channel: ChannelQuality
         <strong>{formatPercent(channel.conversion.screenAcceptRate)} 初筛通过率</strong>
       </div>
       <div className="quality-tabs" role="tablist" aria-label="质量视图">
-        <button className={tab === "funnel" ? "active" : ""} onClick={() => onTabChange("funnel")}>漏斗概览</button>
-        <button className={tab === "rejections" ? "active" : ""} onClick={() => onTabChange("rejections")}>拒绝样本</button>
-        <button className={tab === "sources" ? "active" : ""} onClick={() => onTabChange("sources")}>信源贡献</button>
+        {qualityTabs.map((item) => (
+          <button
+            key={item.id}
+            id={qualityTabId(item.id)}
+            role="tab"
+            type="button"
+            className={tab === item.id ? "active" : ""}
+            aria-selected={tab === item.id}
+            aria-controls={qualityPanelId(item.id)}
+            tabIndex={tab === item.id ? 0 : -1}
+            onClick={() => onTabChange(item.id)}
+            onKeyDown={(event) => handleTabKeyDown(event, item.id)}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
-      {tab === "funnel" && <QualityFunnel channel={channel} />}
-      {tab === "rejections" && <QualityRejections channel={channel} />}
-      {tab === "sources" && <QualitySources channel={channel} />}
+      <div id={qualityPanelId(tab)} role="tabpanel" tabIndex={0} aria-labelledby={qualityTabId(tab)}>
+        {tab === "funnel" && <QualityFunnel channel={channel} />}
+        {tab === "rejections" && <QualityRejections channel={channel} />}
+        {tab === "sources" && <QualitySources channel={channel} />}
+      </div>
     </article>
   );
 }
@@ -79,14 +114,14 @@ function QualityFunnel({ channel }: { channel: ChannelQuality }) {
   const metrics = channel.metrics;
   return (
     <>
-      <div className="quality-funnel" aria-label={`${channelLabel(channel.channel)}漏斗`}>
-        <FunnelStep label="原始条目" value={metrics.rawDocuments} />
-        <FunnelStep label="AI 初筛" value={metrics.acceptedScreenings} sub={`${metrics.rejectedScreenings} 拒绝`} />
-        <FunnelStep label="中文入库" value={metrics.normalizedItems} />
-        <FunnelStep label="精筛评分" value={metrics.scoredItems} />
+      <ol className="quality-funnel" aria-label={`${channelLabel(channel.channel)}最近窗口数据流`}>
+        <FunnelStep label="原始条目" value={metrics.rawDocuments} sub={`${metrics.fetchRuns} 次抓取，成功 ${metrics.successfulFetchRuns} 次`} />
+        <FunnelStep label="AI 初筛" value={metrics.acceptedScreenings} sub={`${metrics.screenedItems} 已筛，${metrics.rejectedScreenings} 拒绝`} />
+        <FunnelStep label="中文入库" value={metrics.normalizedItems} sub="通过初筛后进入结构化内容库" />
+        <FunnelStep label="精筛评分" value={metrics.scoredItems} sub={`${metrics.rankedItems} 已参与排序`} />
         <FunnelStep label="精选" value={metrics.selectedItems} sub={`${formatPercent(channel.conversion.selectedRate)} 精选率`} />
-        <FunnelStep label="公开发布" value={metrics.publicSelectedEvents} sub={`${metrics.approvedEvents} 已通过`} />
-      </div>
+        <FunnelStep label="公开发布" value={metrics.publicSelectedEvents} sub={`${metrics.approvedEvents} 已通过审核`} />
+      </ol>
       <div className="quality-bottlenecks">
         {channel.bottlenecks.map((item) => <span key={item}>{item}</span>)}
       </div>
@@ -176,10 +211,18 @@ function QualitySources({ channel }: { channel: ChannelQuality }) {
 
 function FunnelStep({ label, value, sub }: { label: string; value: number; sub?: string }) {
   return (
-    <div>
+    <li>
       <span>{label}</span>
       <strong>{value}</strong>
       {sub && <em>{sub}</em>}
-    </div>
+    </li>
   );
+}
+
+function qualityTabId(tab: QualityTab) {
+  return `quality-tab-${tab}`;
+}
+
+function qualityPanelId(tab: QualityTab) {
+  return `quality-panel-${tab}`;
 }
