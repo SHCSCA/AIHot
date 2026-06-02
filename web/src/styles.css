@@ -3357,33 +3357,54 @@ th { background: #f8fafc; color: #667085; }
 /* Unified AIHOT shell and theme system */
 :root,
 [data-theme="dark"] {
-  --ui-bg: #071019;
-  --ui-bg-soft: #0b1622;
-  --ui-surface: #101b2a;
-  --ui-surface-2: #142235;
-  --ui-panel: rgba(16, 27, 42, 0.88);
-  --ui-border: rgba(134, 158, 184, 0.22);
-  --ui-border-strong: rgba(93, 210, 226, 0.45);
-  --ui-text: #eef7ff;
+  --ui-bg: #07111b;
+  --ui-bg-soft: #0c1926;
+  --ui-bg-elevated: #122131;
+  --ui-surface: #122030;
+  --ui-surface-2: #17283b;
+  --ui-surface-3: #1d3046;
+  --ui-panel: rgba(18, 32, 48, 0.9);
+  --ui-panel-strong: rgba(20, 34, 50, 0.96);
+  --ui-border: rgba(154, 178, 204, 0.24);
+  --ui-border-strong: rgba(93, 210, 226, 0.5);
+  --ui-border-soft: rgba(154, 178, 204, 0.14);
+  --ui-text: #e9f2fb;
   --ui-text-strong: #ffffff;
-  --ui-muted: #9fb2c9;
-  --ui-faint: #70859e;
-  --ui-accent: #23d3e6;
-  --ui-accent-2: #13d6a5;
-  --ui-accent-ink: #001e26;
-  --ui-danger: #ff6b7a;
-  --ui-warning: #f6b84b;
-  --ui-success: #38d996;
-  --ui-accent-strong: #7df9ff;
-  --ui-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
-  --ui-shadow-soft: 0 14px 36px rgba(0, 0, 0, 0.22);
-  --glass-subtle: rgba(16, 27, 42, 0.78);
-  --glass-panel: rgba(16, 27, 42, 0.88);
-  --glass-floating: rgba(10, 18, 30, 0.72);
-  --glass-solid: #101b2a;
-  --glass-border: rgba(164, 190, 216, 0.24);
-  --glass-border-strong: rgba(125, 249, 255, 0.36);
-  --glass-highlight: rgba(255, 255, 255, 0.16);
+  --ui-muted: #a9bbce;
+  --ui-faint: #7f94aa;
+  --ui-placeholder: #657b92;
+  --ui-link: #7be7f3;
+  --ui-focus: rgba(105, 224, 238, 0.42);
+  --ui-selection: rgba(35, 211, 230, 0.24);
+  --ui-accent: #33d5e7;
+  --ui-accent-2: #35d39f;
+  --ui-accent-3: #f3c35b;
+  --ui-accent-ink: #04232b;
+  --ui-danger: #ff7a8a;
+  --ui-warning: #f3bf61;
+  --ui-success: #4bdda6;
+  --ui-info: #78b8ff;
+  --ui-accent-strong: #93f6ff;
+  --ui-danger-bg: rgba(255, 122, 138, 0.14);
+  --ui-warning-bg: rgba(243, 191, 97, 0.15);
+  --ui-success-bg: rgba(75, 221, 166, 0.14);
+  --ui-info-bg: rgba(120, 184, 255, 0.14);
+  --ui-row-hover: rgba(51, 213, 231, 0.08);
+  --ui-input-bg: rgba(9, 18, 29, 0.72);
+  --ui-input-border: rgba(166, 191, 216, 0.28);
+  --ui-table-head: rgba(22, 38, 56, 0.98);
+  --ui-table-row: rgba(18, 32, 48, 0.94);
+  --ui-backdrop: rgba(4, 10, 18, 0.68);
+  --ui-shadow: 0 24px 70px rgba(0, 0, 0, 0.36);
+  --ui-shadow-soft: 0 14px 36px rgba(0, 0, 0, 0.24);
+  --ui-shadow-hover: 0 22px 56px rgba(0, 0, 0, 0.3), 0 0 34px rgba(51, 213, 231, 0.1);
+  --glass-subtle: rgba(18, 32, 48, 0.76);
+  --glass-panel: rgba(18, 32, 48, 0.9);
+  --glass-floating: rgba(9, 18, 30, 0.76);
+  --glass-solid: #142234;
+  --glass-border: rgba(172, 198, 224, 0.26);
+  --glass-border-strong: rgba(147, 246, 255, 0.4);
+  --glass-highlight: rgba(255, 255, 255, 0.17);
   --glass-blur-subtle: 12px;
   --glass-blur-panel: 18px;
   --glass-blur-floating: 26px;
@@ -3403,33 +3424,54 @@ th { background: #f8fafc; color: #667085; }
 }
 
 [data-theme="light"] {
-  --ui-bg: #eef5f9;
-  --ui-bg-soft: #f7fbfd;
+  --ui-bg: #edf5f8;
+  --ui-bg-soft: #f8fbfd;
+  --ui-bg-elevated: #ffffff;
   --ui-surface: #ffffff;
-  --ui-surface-2: #f2f7fa;
+  --ui-surface-2: #f3f8fb;
+  --ui-surface-3: #e8f1f6;
   --ui-panel: rgba(255, 255, 255, 0.92);
-  --ui-border: #d6e3ec;
-  --ui-border-strong: #72d6e2;
-  --ui-text: #0b1830;
-  --ui-text-strong: #061020;
-  --ui-muted: #43566f;
-  --ui-faint: #6d7f95;
+  --ui-panel-strong: rgba(255, 255, 255, 0.98);
+  --ui-border: #ccdae4;
+  --ui-border-strong: #4cbfcc;
+  --ui-border-soft: #e1ebf1;
+  --ui-text: #172334;
+  --ui-text-strong: #07111f;
+  --ui-muted: #4c6077;
+  --ui-faint: #74869a;
+  --ui-placeholder: #8797a8;
+  --ui-link: #057f91;
+  --ui-focus: rgba(8, 152, 173, 0.28);
+  --ui-selection: rgba(8, 152, 173, 0.16);
   --ui-accent: #0898ad;
-  --ui-accent-2: #07966e;
+  --ui-accent-2: #0a8f6c;
+  --ui-accent-3: #b87908;
   --ui-accent-ink: #ffffff;
-  --ui-danger: #c93448;
-  --ui-warning: #a86d04;
-  --ui-success: #08754e;
-  --ui-accent-strong: #047889;
-  --ui-shadow: 0 24px 70px rgba(18, 38, 58, 0.12);
+  --ui-danger: #b72f43;
+  --ui-warning: #8e5f08;
+  --ui-success: #06734f;
+  --ui-info: #1e67c4;
+  --ui-accent-strong: #006f7f;
+  --ui-danger-bg: rgba(183, 47, 67, 0.1);
+  --ui-warning-bg: rgba(142, 95, 8, 0.11);
+  --ui-success-bg: rgba(6, 115, 79, 0.1);
+  --ui-info-bg: rgba(30, 103, 196, 0.1);
+  --ui-row-hover: rgba(8, 152, 173, 0.07);
+  --ui-input-bg: rgba(255, 255, 255, 0.96);
+  --ui-input-border: #bfceda;
+  --ui-table-head: #edf4f8;
+  --ui-table-row: #ffffff;
+  --ui-backdrop: rgba(231, 240, 246, 0.72);
+  --ui-shadow: 0 24px 70px rgba(18, 38, 58, 0.13);
   --ui-shadow-soft: 0 14px 36px rgba(18, 38, 58, 0.08);
-  --glass-subtle: rgba(255, 255, 255, 0.76);
-  --glass-panel: rgba(255, 255, 255, 0.9);
-  --glass-floating: rgba(255, 255, 255, 0.78);
+  --ui-shadow-hover: 0 22px 52px rgba(18, 38, 58, 0.14), 0 0 28px rgba(8, 152, 173, 0.09);
+  --glass-subtle: rgba(255, 255, 255, 0.78);
+  --glass-panel: rgba(255, 255, 255, 0.92);
+  --glass-floating: rgba(255, 255, 255, 0.84);
   --glass-solid: #ffffff;
-  --glass-border: rgba(92, 119, 145, 0.22);
-  --glass-border-strong: rgba(8, 152, 173, 0.36);
-  --glass-highlight: rgba(255, 255, 255, 0.78);
+  --glass-border: rgba(78, 105, 130, 0.22);
+  --glass-border-strong: rgba(8, 152, 173, 0.42);
+  --glass-highlight: rgba(255, 255, 255, 0.86);
   color-scheme: light;
 }
 
@@ -4536,7 +4578,7 @@ tr:hover td {
 @media (max-width: 720px) {
   .unified-shell {
     display: block;
-    padding-bottom: 78px;
+    padding-bottom: calc(118px + env(safe-area-inset-bottom));
   }
 
   .unified-global-nav-wrap {
@@ -4583,7 +4625,15 @@ tr:hover td {
   }
 
   .unified-content {
-    padding: 16px;
+    padding: 16px 16px calc(118px + env(safe-area-inset-bottom));
+  }
+
+  .hero-section.liquid-brief,
+  .daily-reader.dark,
+  .source-wall,
+  .public-feedback.dark,
+  .event-feed {
+    margin-bottom: calc(58px + env(safe-area-inset-bottom));
   }
 
   .unified-login-panel {
@@ -4656,17 +4706,18 @@ tr:hover td {
     position: fixed;
     left: 10px;
     right: 10px;
-    bottom: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
     z-index: 50;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 4px;
     padding: 6px;
-    border: 1px solid var(--ui-border);
+    border: 1px solid var(--glass-border-strong);
     border-radius: 18px;
-    background: var(--ui-panel);
+    background: var(--glass-floating);
     box-shadow: var(--ui-shadow);
-    backdrop-filter: blur(18px);
+    backdrop-filter: blur(var(--glass-blur-panel)) saturate(1.16);
+    -webkit-backdrop-filter: blur(var(--glass-blur-panel)) saturate(1.16);
   }
 
   .unified-mobile-nav button {
@@ -6420,6 +6471,11 @@ tr:hover td {
 @media (max-width: 720px) {
   .hero-section.liquid-brief {
     padding-top: 10px;
+    margin-bottom: calc(118px + env(safe-area-inset-bottom));
+  }
+
+  .brief-primary {
+    gap: 18px;
   }
 
   .brief-heading-row {
@@ -6433,10 +6489,587 @@ tr:hover td {
   }
 
   .brief-signal-grid {
-    grid-template-columns: 1fr;
+    order: 3;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .brief-signal-grid div {
+    min-height: 96px;
+    padding: 10px;
+  }
+
+  .brief-signal-grid span {
+    font-size: 11px;
+  }
+
+  .brief-signal-grid strong {
+    font-size: clamp(16px, 4.6vw, 20px);
+    line-height: 1.12;
+  }
+
+  .brief-actions {
+    order: 2;
+  }
+
+  .brief-side-stack {
+    margin-top: calc(118px + env(safe-area-inset-bottom));
   }
 
   .event-stat-strip {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================
+   Theme readability harmonization
+   ============================================ */
+::selection {
+  background: var(--ui-selection);
+  color: var(--ui-text-strong);
+}
+
+html {
+  background: var(--ui-bg);
+}
+
+body {
+  background:
+    radial-gradient(circle at 14% -10%, color-mix(in srgb, var(--ui-accent) 12%, transparent), transparent 32rem),
+    radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--ui-accent-2) 9%, transparent), transparent 34rem),
+    linear-gradient(135deg, var(--ui-bg), var(--ui-bg-soft));
+  color: var(--ui-text);
+}
+
+a,
+.link-button {
+  color: var(--ui-link);
+}
+
+a:hover,
+.link-button:hover {
+  color: var(--ui-accent-strong);
+}
+
+button,
+input,
+select,
+textarea {
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    background-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard);
+}
+
+button {
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-surface) 92%, transparent);
+  color: var(--ui-text);
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--ui-border-strong);
+  background: color-mix(in srgb, var(--ui-accent) 10%, var(--ui-surface));
+  color: var(--ui-text-strong);
+  box-shadow: 0 12px 24px color-mix(in srgb, var(--ui-accent) 10%, transparent);
+}
+
+button.primary,
+.primary {
+  border-color: color-mix(in srgb, var(--ui-accent) 86%, var(--ui-accent-2));
+  background: linear-gradient(135deg, var(--ui-accent), var(--ui-accent-2));
+  color: var(--ui-accent-ink);
+}
+
+button.primary:hover:not(:disabled),
+.primary:hover:not(:disabled) {
+  border-color: var(--ui-accent-strong);
+  filter: saturate(1.05);
+}
+
+button.ghost,
+.ghost {
+  background: color-mix(in srgb, var(--ui-surface) 72%, transparent);
+  color: var(--ui-text);
+}
+
+button.danger,
+.danger {
+  color: var(--ui-danger);
+}
+
+input,
+select,
+textarea,
+.cmdk-input {
+  border-color: var(--ui-input-border);
+  background: var(--ui-input-bg);
+  color: var(--ui-text);
+  caret-color: var(--ui-accent);
+}
+
+input::placeholder,
+textarea::placeholder,
+.cmdk-input::placeholder {
+  color: var(--ui-placeholder);
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  border-color: var(--ui-border-strong);
+  box-shadow: 0 0 0 3px var(--ui-focus);
+}
+
+label,
+.hint,
+.title-block p,
+.section-head p,
+.login-panel p:not(.eyebrow),
+td span {
+  color: var(--ui-muted);
+}
+
+.eyebrow,
+.brief-eyebrow {
+  color: var(--ui-accent-strong) !important;
+}
+
+.login-page,
+.app-shell,
+.public-shell,
+.workspace,
+.unified-content,
+.aihot-public-shell {
+  background:
+    radial-gradient(circle at 16% 0%, color-mix(in srgb, var(--ui-accent) 11%, transparent), transparent 30rem),
+    linear-gradient(135deg, var(--ui-bg), var(--ui-bg-soft));
+  color: var(--ui-text);
+}
+
+.topbar,
+.login-panel,
+.section,
+.metric,
+.public-login-panel,
+.public-filters,
+.event-main,
+.public-detail,
+.daily-document,
+.admin-review-item,
+.admin-source-wall article,
+.source-wall-card,
+.aihot-event-card,
+.brief-primary,
+.brief-side-card,
+.admin-login-card,
+.cmdk-panel {
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-panel-strong) 88%, transparent);
+  color: var(--ui-text);
+  box-shadow: var(--ui-shadow-soft);
+}
+
+.unified-global-nav,
+.unified-sidebar,
+.unified-topbar,
+.aihot-filter-panel,
+.bento-card,
+.daily-archive,
+.daily-toc,
+.public-feedback.dark {
+  border-color: var(--glass-border);
+  background: var(--glass-panel);
+  color: var(--ui-text);
+}
+
+.section,
+.metric,
+.table-wrap,
+.daily-document,
+.daily-document.dark,
+.public-feedback,
+.admin-filter-panel,
+.admin-channel-card {
+  background: var(--ui-panel-strong);
+}
+
+.aihot-event-card,
+.source-wall-card,
+.brief-primary,
+.brief-side-card,
+.bento-card {
+  background: color-mix(in srgb, var(--ui-panel) 88%, transparent);
+  backdrop-filter: blur(var(--glass-blur-subtle)) saturate(1.1);
+  -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(1.1);
+}
+
+.aihot-event-card:hover,
+.source-wall-card:hover,
+.brief-side-card:hover,
+.bento-card:hover,
+.admin-channel-card:hover {
+  border-color: var(--glass-border-strong);
+  box-shadow: var(--ui-shadow-hover);
+  transform: translateY(-2px);
+}
+
+h1,
+h2,
+h3,
+h4,
+.brand strong,
+.brand span,
+.public-brand,
+.event-main h2,
+.event-title-row h2,
+.daily-cover h2,
+.daily-section-title h3,
+.daily-story h4,
+.source-card-top h3,
+.source-wall-head h2,
+.admin-login-card h2,
+.admin-login-hero h1,
+.metric strong,
+td,
+td strong,
+code {
+  color: var(--ui-text-strong);
+}
+
+.public-hero p:not(.eyebrow),
+.public-detail span,
+.daily-document span,
+.event-main p,
+.event-meta,
+.event-reason,
+.aihot-event-card p,
+.daily-story p,
+.daily-cover-summary,
+.daily-volume,
+.source-wall-card p,
+.source-card-meta,
+.cmdk-result-desc,
+.cmdk-empty,
+.cmdk-footer,
+.admin-login-card p,
+.admin-login-card label,
+.admin-login-hero strong,
+.admin-login-hero span {
+  color: var(--ui-muted);
+}
+
+.sidebar,
+.aihot-sidebar {
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-bg) 92%, transparent);
+  color: var(--ui-text);
+}
+
+nav button,
+.public-nav button,
+.public-channel-nav button,
+.public-section-nav button,
+.aihot-channel-nav button,
+.aihot-section-nav button,
+.unified-nav button,
+.unified-channel-switch button,
+.theme-dot,
+.pagination-bar button,
+.pagination-bar span,
+.daily-archive .latest,
+.daily-archive-list button,
+.daily-archive-item {
+  border-color: color-mix(in srgb, var(--ui-border) 78%, transparent);
+  background: color-mix(in srgb, var(--ui-surface) 68%, transparent);
+  color: var(--ui-muted);
+}
+
+nav button.active,
+nav button:hover,
+.public-nav button.active,
+.public-nav button:hover,
+.public-channel-nav button.active,
+.public-channel-nav button:hover,
+.public-section-nav button.active,
+.public-section-nav button:hover,
+.aihot-channel-nav button.active,
+.aihot-section-nav button.active,
+.aihot-channel-nav button:hover,
+.aihot-section-nav button:hover,
+.unified-nav button.active,
+.unified-nav button:hover,
+.unified-channel-switch button.active,
+.daily-archive .latest,
+.daily-archive-list button.active,
+.daily-archive-list button:hover,
+.theme-dot.active {
+  border-color: var(--ui-border-strong);
+  background: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface));
+  color: var(--ui-text-strong);
+}
+
+.theme-switcher,
+.aihot-search,
+.segmented-row,
+.source-wall-tools {
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-surface) 76%, transparent);
+  color: var(--ui-text);
+}
+
+.table-wrap {
+  border-color: var(--ui-border);
+  background: var(--ui-panel-strong);
+}
+
+table {
+  background: var(--ui-table-row);
+}
+
+th,
+.quality-tabs {
+  background: var(--ui-table-head);
+  color: var(--ui-muted);
+}
+
+td {
+  border-bottom-color: var(--ui-border-soft);
+}
+
+tr:hover td {
+  background: var(--ui-row-hover);
+}
+
+.event-meta span,
+.event-meta.dark span,
+.event-reason span,
+.event-tags span,
+.event-tags.dark span,
+.source-card-meta span,
+.daily-story-meta span,
+.brief-actions span,
+.admin-source-wall article > span,
+.admin-source-wall article > div span {
+  border-color: color-mix(in srgb, var(--ui-border) 74%, transparent);
+  background: color-mix(in srgb, var(--ui-surface-2) 78%, transparent);
+  color: var(--ui-muted);
+}
+
+.event-reason-highlight,
+.event-detail-member-summary,
+.daily-story em {
+  background: color-mix(in srgb, var(--ui-accent-2) 13%, transparent);
+  color: var(--ui-text);
+}
+
+.daily-toc a,
+.daily-story,
+.event-detail-section,
+.event-source-link,
+.event-detail-stats span,
+.event-stat-strip span {
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-surface) 92%, transparent);
+  color: var(--ui-text);
+}
+
+.metric-good strong,
+.status-enabled,
+.status-active,
+.status-succeeded,
+.status-completed,
+.status-approved,
+.status-published,
+.status-read,
+.status-ignored {
+  color: var(--ui-success);
+}
+
+.metric-warn strong,
+.status-pending,
+.status-draft,
+.status-running,
+.status-locked,
+.status-unread {
+  color: var(--ui-warning);
+}
+
+.metric-bad strong,
+.error,
+.status-disabled,
+.status-failed,
+.status-dead,
+.status-retired,
+.status-cancelled,
+.status-rejected,
+.status-unpublished {
+  color: var(--ui-danger);
+}
+
+.status-enabled,
+.status-active,
+.status-succeeded,
+.status-completed,
+.status-approved,
+.status-published,
+.status-read,
+.status-ignored {
+  border-color: color-mix(in srgb, var(--ui-success) 42%, var(--ui-border));
+  background: var(--ui-success-bg);
+}
+
+.status-pending,
+.status-draft,
+.status-running,
+.status-locked,
+.status-unread {
+  border-color: color-mix(in srgb, var(--ui-warning) 44%, var(--ui-border));
+  background: var(--ui-warning-bg);
+}
+
+.status-disabled,
+.status-failed,
+.status-dead,
+.status-retired,
+.status-cancelled,
+.status-rejected,
+.status-unpublished {
+  border-color: color-mix(in srgb, var(--ui-danger) 44%, var(--ui-border));
+  background: var(--ui-danger-bg);
+}
+
+.status {
+  border-color: color-mix(in srgb, currentColor 34%, var(--ui-border));
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.quality-tabs button.active,
+.quality-tabs button:hover,
+.pagination-bar button.active {
+  border-color: var(--ui-accent);
+  background: linear-gradient(135deg, var(--ui-accent), var(--ui-accent-2));
+  color: var(--ui-accent-ink);
+}
+
+.admin-login-gate {
+  background:
+    radial-gradient(circle at 12% 4%, color-mix(in srgb, var(--ui-accent) 20%, transparent), transparent 30rem),
+    radial-gradient(circle at 88% 16%, color-mix(in srgb, var(--ui-accent-2) 16%, transparent), transparent 32rem),
+    linear-gradient(135deg, var(--ui-bg), var(--ui-bg-soft));
+  color: var(--ui-text);
+}
+
+.admin-login-symbol::after {
+  background: var(--ui-text-strong);
+}
+
+.admin-login-symbol span,
+.admin-login-submit,
+.cmdk-result.selected {
+  border-color: var(--ui-border-strong);
+  background: color-mix(in srgb, var(--ui-accent) 16%, var(--ui-surface));
+  color: var(--ui-text-strong);
+}
+
+.admin-login-card input,
+.admin-login-submit {
+  border-color: var(--ui-input-border);
+  background: var(--ui-input-bg);
+  color: var(--ui-text);
+}
+
+.admin-login-error {
+  border-color: color-mix(in srgb, var(--ui-danger) 42%, transparent);
+  background: var(--ui-danger-bg);
+  color: var(--ui-danger);
+}
+
+.admin-login-hint {
+  border-color: color-mix(in srgb, var(--ui-info) 36%, transparent);
+  background: var(--ui-info-bg);
+  color: var(--ui-link);
+}
+
+.cmdk-input-wrap,
+.cmdk-footer {
+  border-color: var(--ui-border-soft);
+}
+
+.cmdk-input-icon,
+.cmdk-group-title,
+.cmdk-result-icon,
+.cmdk-result-shortcut,
+.cmdk-footer,
+.cmdk-footer kbd {
+  color: var(--ui-faint);
+}
+
+.cmdk-footer kbd {
+  border-color: var(--ui-border);
+  background: color-mix(in srgb, var(--ui-surface-2) 82%, transparent);
+}
+
+[data-theme="light"] .unified-shell,
+[data-theme="light"] .aihot-public-shell {
+  --breath-cyan: rgba(8, 152, 173, 0.13);
+  --breath-emerald: rgba(10, 143, 108, 0.12);
+  --breath-amber: rgba(184, 121, 8, 0.08);
+  --breath-rose: rgba(183, 47, 67, 0.06);
+}
+
+[data-theme="dark"] .section,
+[data-theme="dark"] .metric,
+[data-theme="dark"] .table-wrap,
+[data-theme="dark"] .daily-document,
+[data-theme="dark"] .daily-document.dark,
+[data-theme="dark"] .public-feedback,
+[data-theme="dark"] .admin-filter-panel,
+[data-theme="dark"] .admin-channel-card {
+  background: var(--ui-panel-strong);
+}
+
+[data-theme="light"] .unified-shell {
+  background:
+    radial-gradient(circle at 12% 0%, color-mix(in srgb, var(--ui-accent) 13%, transparent), transparent 360px),
+    radial-gradient(circle at 84% 12%, color-mix(in srgb, var(--ui-accent-2) 9%, transparent), transparent 420px),
+    linear-gradient(135deg, var(--ui-bg) 0%, var(--ui-bg-soft) 100%);
+}
+
+[data-theme="light"] .aihot-event-card,
+[data-theme="light"] .source-wall-card,
+[data-theme="light"] .brief-primary,
+[data-theme="light"] .brief-side-card,
+[data-theme="light"] .bento-card {
+  background: color-mix(in srgb, var(--ui-panel) 94%, transparent);
+}
+
+@supports not (background: color-mix(in srgb, white, black)) {
+  button,
+  .section,
+  .metric,
+  .table-wrap,
+  .daily-document,
+  .aihot-event-card,
+  .source-wall-card,
+  .cmdk-panel {
+    background: var(--ui-surface);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  .aihot-event-card,
+  .source-wall-card,
+  .brief-side-card,
+  .bento-card,
+  .admin-channel-card {
+    transform: none !important;
+    transition-duration: 0.01ms !important;
   }
 }
