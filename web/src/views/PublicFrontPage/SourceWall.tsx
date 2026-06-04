@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { RefreshCw } from "lucide-react";
+import { ExternalLink, RefreshCw } from "lucide-react";
 import { PaginationBar } from "../../components/PaginationBar";
 import { useAsyncData } from "../../hooks";
 import type { PublicApi } from "../../api";
@@ -56,7 +56,7 @@ export function SourceWall({ api, channel, q }: SourceWallProps) {
       <div className="source-wall-head">
         <div>
           <h2>信源墙</h2>
-          <p>每张卡片都是一位贡献者的功劳；审核通过的提报会获得专属编号，永久收录在这里。</p>
+          <p>把公开信源按权威性、可采集性和噪声风险分层展示。贡献编号保留，但核心是判断这个来源为什么值得进入情报池。</p>
         </div>
         <motion.button
           className="ghost dark"
@@ -85,25 +85,44 @@ export function SourceWall({ api, channel, q }: SourceWallProps) {
       {error && <p className="error">{error}</p>}
       {loading && <p className="hint">正在加载信源...</p>}
 
+      <div className="source-wall-summary" aria-label="当前信源筛选概览">
+        <span><small>当前范围</small><strong>{sourceGroup ? sourceGroups.find((item) => item.value === sourceGroup)?.label : "全部信源"}</strong></span>
+        <span><small>匹配信源</small><strong>{sourcePage.total ?? sourcePage.count}</strong></span>
+        <span><small>本页展示</small><strong>{sourcePage.items.length}</strong></span>
+      </div>
+
       <div className="source-wall-grid">
         {sourcePage.items.map((source) => (
           <motion.article
             key={source.id}
-          className="source-wall-card liquid-glass-subtle"
+            className="source-wall-card liquid-glass-subtle"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
             <div className="source-card-top">
-              <h3>{source.name}</h3>
-              <span>{formatContributorNo(source.contributorNo)}</span>
+              <div>
+                <h3>{source.name || "未命名信源"}</h3>
+                <p>{source.socialHandle ? `${source.socialHandle} · ` : ""}{sourceTypeLabel(source.sourceType)} · {sourceGroupLabel(source.sourceGroup)}</p>
+              </div>
+              <span className={tierClass(source.tier)}>{source.tier || "未分级"}</span>
             </div>
-            <p>{source.socialHandle ? `${source.socialHandle} · ` : ""}{sourceTypeLabel(source.sourceType)} · {sourceGroupLabel(source.sourceGroup)}</p>
-            <div className="source-card-meta">
-              <span>{source.tier}</span>
+            <div className="source-trust-grid" aria-label={`${source.name} 信源档案`}>
+              <span><small>权威权重</small><strong>{Math.round(source.authorityWeight ?? 0)}</strong></span>
+              <span><small>噪声风险</small><strong>{formatNoise(source.noiseLevel)}</strong></span>
+              <span><small>采集频率</small><strong>{formatInterval(source.fetchIntervalMinutes)}</strong></span>
+            </div>
+            <div className="source-card-meta" aria-label="信源状态">
               <span>{collectionStatusLabel(source.collectionStatus)}</span>
               <span>{source.freeAccess ? "免费可读" : "需授权"}</span>
+              <span>{source.enabled ? "已启用" : "未启用"}</span>
+              <span>{formatContributorNo(source.contributorNo)}</span>
             </div>
+            {source.url && (
+              <a className="source-card-link" href={source.url} target="_blank" rel="noreferrer">
+                <ExternalLink size={14} />查看信源
+              </a>
+            )}
           </motion.article>
         ))}
       </div>
@@ -123,4 +142,23 @@ function formatContributorNo(value?: string | null) {
   const parts = value.split("-");
   if (parts.length === 2) return `${parts[0]} · ${parts[1]}`;
   return value;
+}
+
+function formatNoise(value?: number | null) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return "--";
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatInterval(value?: number | null) {
+  if (!value) return "手动";
+  if (value < 60) return `${value} 分钟`;
+  const hours = value / 60;
+  return Number.isInteger(hours) ? `${hours} 小时` : `${hours.toFixed(1)} 小时`;
+}
+
+function tierClass(tier?: string | null) {
+  const normalized = (tier ?? "").toLowerCase();
+  if (normalized === "t1") return "source-tier source-tier-1";
+  if (normalized === "t2") return "source-tier source-tier-2";
+  return "source-tier";
 }

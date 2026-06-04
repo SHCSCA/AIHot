@@ -926,10 +926,13 @@ describe("后台产品化界面", () => {
     expect(screen.getByRole("button", { name: "官方/一手" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "社媒/社区" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "服务商" })).not.toBeInTheDocument();
-    expect(screen.getByText("推荐理由：来自官方一手信源，模型能力变化会影响开发者选型。")).toBeInTheDocument();
+    expect(screen.getByText("入选依据")).toBeInTheDocument();
+    expect(screen.getByText("来自官方一手信源，模型能力变化会影响开发者选型。")).toBeInTheDocument();
     expect(screen.getByText("精选分 86")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "信源墙" }));
     expect(await screen.findByText("X: OpenAI")).toBeInTheDocument();
+    expect(screen.getByText("权威权重")).toBeInTheDocument();
+    expect(screen.getByText("噪声风险")).toBeInTheDocument();
     expect(screen.getByText("AIHOT · 001")).toBeInTheDocument();
     expect(screen.getByText("待接入")).toBeInTheDocument();
   }, 10000);
