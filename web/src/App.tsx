@@ -384,34 +384,59 @@ function AdminLoginGate({
   }
 
   return (
-    <main className="admin-login-gate">
-      <section className="admin-login-hero" aria-label="AIHOT 运营登录">
-        <div className="admin-login-symbol" aria-hidden="true"><span /></div>
-        <p>AIHOT</p>
-        <h1>AIHOT 运营入口</h1>
-        <strong>员工与授权运营人员登录入口。</strong>
-        <span>普通访客无需登录即可继续浏览公开内容。</span>
-      </section>
-      <form className="admin-login-card" onSubmit={submit}>
-        <div>
-          <h2>登录</h2>
-          <p>登录后解锁收藏、反馈、信源提报、审核、日报发布和质量校准等内部功能。</p>
+    <main className={submitting ? "admin-login-gate is-unlocking" : "admin-login-gate"}>
+      <div className="admin-login-ambient" aria-hidden="true">
+        <span />
+        <span />
+        <i />
+      </div>
+      <section className="admin-login-stage" aria-label="AIHOT 运营登录">
+        <div className="admin-login-hero">
+          <div className="admin-login-symbol" aria-hidden="true">
+            <span />
+            <i />
+          </div>
+          <p>AIHOT SECURE PORTAL</p>
+          <h1>AIHOT 运营入口</h1>
+          <strong>员工与授权运营人员登录入口。</strong>
+          <span>普通访客无需登录即可继续浏览公开内容。</span>
+          <div className="admin-login-orbit" aria-label="工作台模式状态">
+            <span><Sparkles size={15} />Reader 在线</span>
+            <span><ShieldCheck size={15} />Ops 受保护</span>
+            <span><GitBranch size={15} />Lab 需授权</span>
+          </div>
         </div>
-        <label>
-          后台账号
-          <input aria-label="管理员账号" autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} />
-        </label>
-        <label>
-          后台密码
-          <input aria-label="管理员密码" autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
-        </label>
-        {error && <p className="admin-login-error">{error}</p>}
-        {loading && <p className="admin-login-hint">正在同步登录状态...</p>}
-        <button className="admin-login-submit" type="submit" disabled={submitting || loading || !username || !password}>
-          <span>{submitting ? "正在登录" : "进入运营工作台"}</span><ArrowRight size={17} />
-        </button>
-        <button className="admin-login-back" type="button" onClick={onBack}>暂不登录，返回 AIHot</button>
-      </form>
+
+        <form className="admin-login-card" onSubmit={submit} aria-busy={submitting}>
+          <span className="admin-login-card-beam" aria-hidden="true" />
+          <div className="admin-login-card-head">
+            <span><LockKeyhole size={18} />权限校验</span>
+            <h2>登录</h2>
+            <p>登录后解锁收藏、反馈、信源提报、审核、日报发布和质量校准等内部功能。</p>
+          </div>
+          <div className="admin-login-field-grid">
+            <label>
+              后台账号
+              <input aria-label="管理员账号" autoComplete="username" value={username} onChange={(event) => setUsername(event.target.value)} />
+            </label>
+            <label>
+              后台密码
+              <input aria-label="管理员密码" autoComplete="current-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} />
+            </label>
+          </div>
+          <div className="admin-login-signal-grid" aria-label="系统状态">
+            <span><Activity size={15} />服务在线</span>
+            <span><RadioTower size={15} />信源同步</span>
+            <span><Database size={15} />审计记录</span>
+          </div>
+          {error && <p className="admin-login-error">{error}</p>}
+          {loading && <p className="admin-login-hint">正在同步登录状态...</p>}
+          <button className="admin-login-submit" type="submit" disabled={submitting || loading || !username || !password}>
+            <span>{submitting ? "正在解锁权限" : "进入运营工作台"}</span><ArrowRight size={17} />
+          </button>
+          <button className="admin-login-back" type="button" onClick={onBack}>暂不登录，返回 AIHot</button>
+        </form>
+      </section>
     </main>
   );
 }
