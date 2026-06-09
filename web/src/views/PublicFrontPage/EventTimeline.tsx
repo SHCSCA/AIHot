@@ -91,8 +91,9 @@ export function EventTimeline({
   }));
 
   return (
-    <section className="aihot-timeline" aria-label="虚拟化情报流" data-testid="virtualized-event-feed">
+    <section className="aihot-timeline" aria-label="虚拟化情报流" data-testid="virtualized-event-feed" data-loading={eventLoading ? "true" : "false"}>
       {eventError && <p className="error" role="alert">{eventError}</p>}
+      {eventLoading && events.length > 0 && <p className="timeline-loading-chip" aria-live="polite">正在刷新情报流...</p>}
       {eventLoading && events.length === 0 && (
         <div className="skeleton-timeline" aria-label="正在加载" aria-live="polite">
           {[...Array(3)].map((_, i) => (

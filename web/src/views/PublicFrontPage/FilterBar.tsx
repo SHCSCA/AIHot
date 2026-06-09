@@ -44,7 +44,7 @@ export function FilterBar({ channel, filters, onChange, onRefresh }: FilterBarPr
   const categories = categoryOptions(channel);
 
   return (
-    <section className="aihot-filter-panel liquid-glass-subtle">
+    <section className="aihot-filter-panel liquid-glass-subtle" data-channel={channel}>
       <div className="filter-groups" aria-label="信源和分类筛选">
         <div className="filter-group filter-group-source" aria-label="信源筛选">
           <span className="filter-group-title">信源</span>
@@ -53,11 +53,13 @@ export function FilterBar({ channel, filters, onChange, onRefresh }: FilterBarPr
               <motion.button
                 key={option.value || "all"}
                 className={filters.sourceGroup === option.value ? "active" : ""}
+                aria-pressed={filters.sourceGroup === option.value}
                 onClick={() => onChange({ sourceGroup: option.value })}
                 whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.98 }}
               >
-                {option.label}
+                {filters.sourceGroup === option.value && <motion.span className="filter-pill-liquid" layoutId="filter-source-liquid" />}
+                <span>{option.label}</span>
               </motion.button>
             ))}
           </div>
@@ -68,21 +70,25 @@ export function FilterBar({ channel, filters, onChange, onRefresh }: FilterBarPr
           <div className="filter-pill-row">
             <motion.button
               className={filters.category === "" ? "active" : ""}
+              aria-pressed={filters.category === ""}
               onClick={() => onChange({ category: "" })}
               whileHover={{ y: -1 }}
               whileTap={{ scale: 0.98 }}
             >
-              全部分类
+              {filters.category === "" && <motion.span className="filter-pill-liquid" layoutId="filter-category-liquid" />}
+              <span>全部分类</span>
             </motion.button>
             {categories.map((option) => (
               <motion.button
                 key={option.value}
                 className={filters.category === option.value ? "active" : ""}
+                aria-pressed={filters.category === option.value}
                 onClick={() => onChange({ category: option.value })}
                 whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.98 }}
               >
-                {option.shortLabel ?? option.label}
+                {filters.category === option.value && <motion.span className="filter-pill-liquid" layoutId="filter-category-liquid" />}
+                <span>{option.shortLabel ?? option.label}</span>
               </motion.button>
             ))}
           </div>

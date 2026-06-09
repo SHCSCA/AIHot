@@ -1876,7 +1876,34 @@ th { background: #f8fafc; color: #667085; }
     grid-template-columns: 1fr;
   }
   .event-title-row {
+    position: relative;
     grid-template-columns: 1fr;
+    padding-right: 112px;
+  }
+
+  .event-title-row h2 {
+    font-size: 23px;
+    line-height: 1.18;
+  }
+
+  .event-title-row .score-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    min-height: 30px;
+    width: auto;
+    min-width: 98px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .event-summary {
+    display: -webkit-box;
+    margin: 10px 0 12px;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-height: 1.55;
   }
   .source-card-top {
     display: grid;
@@ -7830,5 +7857,397 @@ tr:hover td {
   .admin-login-submit::before {
     animation: none !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   Workspace interaction polish
+   ============================================ */
+.aihot-filter-panel {
+  position: sticky;
+  top: 18px;
+  z-index: 18;
+  overflow: hidden;
+  isolation: isolate;
+  border-color: color-mix(in srgb, var(--glass-border-strong) 72%, var(--ui-border));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-highlight) 16%, transparent), transparent 38%),
+    color-mix(in srgb, var(--glass-panel) 92%, transparent);
+  box-shadow:
+    var(--ui-shadow-soft),
+    inset 0 1px 0 color-mix(in srgb, var(--glass-highlight) 72%, transparent);
+}
+
+.aihot-filter-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent, color-mix(in srgb, var(--ui-accent) 12%, transparent), transparent),
+    radial-gradient(circle at 0 0, color-mix(in srgb, var(--ui-accent-2) 10%, transparent), transparent 38%);
+  opacity: 0.58;
+}
+
+.filter-group {
+  position: relative;
+}
+
+.filter-group-title {
+  border-color: color-mix(in srgb, var(--ui-accent) 28%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-accent) 10%, transparent);
+  color: var(--ui-accent-strong);
+}
+
+.filter-pill-row button {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.filter-pill-row button > span:not(.filter-pill-liquid) {
+  position: relative;
+  z-index: 1;
+}
+
+.filter-pill-liquid {
+  position: absolute;
+  inset: 3px;
+  z-index: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--ui-accent) 30%, var(--ui-surface)), color-mix(in srgb, var(--ui-accent-2) 24%, var(--ui-surface)));
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--glass-highlight) 80%, transparent),
+    0 0 22px color-mix(in srgb, var(--ui-accent) 14%, transparent);
+}
+
+.filter-pill-row button.active {
+  color: var(--ui-text-strong);
+  background: transparent;
+}
+
+.date-filter input {
+  min-height: 38px;
+  border-radius: 12px;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--ui-surface) 88%, transparent), color-mix(in srgb, var(--ui-surface-2) 72%, transparent));
+}
+
+.refresh-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.refresh-btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 0 38%, color-mix(in srgb, var(--ui-accent) 18%, transparent) 50%, transparent 64%);
+  transform: translateX(-120%);
+  transition: transform 420ms var(--ease-standard);
+}
+
+.refresh-btn:hover::after {
+  transform: translateX(120%);
+}
+
+.aihot-timeline {
+  position: relative;
+}
+
+.timeline-loading-chip {
+  position: sticky;
+  top: 96px;
+  z-index: 12;
+  width: fit-content;
+  margin: 0 0 12px auto;
+  border: 1px solid color-mix(in srgb, var(--ui-accent) 36%, var(--ui-border));
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: var(--glass-floating);
+  color: var(--ui-accent-strong);
+  font-size: 13px;
+  font-weight: 820;
+  box-shadow: var(--ui-shadow-soft);
+  backdrop-filter: blur(var(--glass-blur-floating)) saturate(1.16);
+  -webkit-backdrop-filter: blur(var(--glass-blur-floating)) saturate(1.16);
+  animation: timeline-chip-enter var(--motion-slow) var(--ease-standard) both;
+}
+
+.aihot-timeline[data-loading="true"] .aihot-event-card {
+  transition:
+    filter var(--motion-base) var(--ease-standard),
+    opacity var(--motion-base) var(--ease-standard);
+}
+
+.aihot-timeline[data-loading="true"] .aihot-event-card {
+  filter: saturate(0.92);
+}
+
+.aihot-event-card {
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard),
+    background-color var(--motion-base) var(--ease-standard);
+}
+
+.aihot-event-card:hover {
+  border-color: color-mix(in srgb, var(--ui-accent) 48%, var(--ui-border));
+  box-shadow:
+    var(--ui-shadow-hover),
+    inset 0 1px 0 color-mix(in srgb, var(--glass-highlight) 72%, transparent);
+}
+
+.event-card-breath {
+  opacity: 0.62;
+}
+
+.event-title-row .score-badge {
+  transition:
+    transform var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard);
+}
+
+.aihot-event-card:hover .score-badge {
+  transform: translateY(-1px);
+  box-shadow: 0 0 22px color-mix(in srgb, var(--ui-warning) 14%, transparent);
+}
+
+.event-decision-panel,
+.event-detail-section,
+.event-source-link {
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    background-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard);
+}
+
+.event-decision-panel:hover,
+.event-detail-section:hover {
+  border-color: color-mix(in srgb, var(--ui-accent) 34%, var(--ui-border));
+}
+
+.public-detail.dark {
+  overflow: hidden;
+  animation: detail-glass-open 360ms var(--ease-standard) both;
+}
+
+.event-evidence-chain li {
+  margin-bottom: 8px;
+}
+
+.source-wall-card,
+.admin-channel-card,
+.metric-token,
+.daily-story {
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard);
+}
+
+.source-wall-card:hover,
+.daily-story:hover {
+  transform: translateY(-2px);
+}
+
+.cmdk-overlay {
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--ui-accent) 12%, transparent), transparent 32rem),
+    color-mix(in srgb, var(--ui-backdrop) 82%, transparent);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+}
+
+.cmdk-panel {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--glass-border-strong) 78%, var(--ui-border));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--glass-highlight) 16%, transparent), transparent 36%),
+    var(--glass-floating);
+  box-shadow:
+    var(--ui-shadow),
+    inset 0 1px 0 color-mix(in srgb, var(--glass-highlight) 74%, transparent);
+}
+
+.cmdk-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, transparent 0 36%, color-mix(in srgb, var(--ui-accent) 10%, transparent) 48%, transparent 62%),
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--ui-accent-2) 12%, transparent), transparent 36%);
+  opacity: 0.76;
+}
+
+.cmdk-input-wrap,
+.cmdk-body,
+.cmdk-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.cmdk-result {
+  position: relative;
+  overflow: hidden;
+}
+
+.cmdk-result::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  width: 3px;
+  height: 0;
+  border-radius: 999px;
+  background: var(--ui-accent);
+  transform: translateY(-50%);
+  transition: height var(--motion-base) var(--ease-standard);
+}
+
+.cmdk-result.selected::before,
+.cmdk-result:hover::before {
+  height: 22px;
+}
+
+.cmdk-result.selected {
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, var(--glass-highlight) 72%, transparent),
+    0 0 24px color-mix(in srgb, var(--ui-accent) 10%, transparent);
+}
+
+@keyframes timeline-chip-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes detail-glass-open {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+    filter: blur(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@media (max-width: 920px) {
+  .aihot-filter-panel {
+    position: relative;
+    top: 0;
+  }
+
+  .timeline-loading-chip {
+    top: 12px;
+  }
+}
+
+@media (max-width: 720px) {
+  .unified-topbar {
+    gap: 12px;
+    padding: 14px 16px 12px;
+  }
+
+  .unified-topbar h1 {
+    font-size: 28px;
+  }
+
+  .unified-topbar-actions {
+    gap: 8px;
+  }
+
+  .unified-public-workspace .aihot-filter-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .filter-groups {
+    grid-column: 1 / -1;
+    gap: 8px;
+  }
+
+  .date-filter {
+    grid-column: 1;
+  }
+
+  .refresh-btn {
+    grid-column: 2;
+  }
+
+  .filter-group {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 6px;
+    padding: 4px;
+    border-radius: 14px;
+  }
+
+  .filter-group-title {
+    min-width: 42px;
+    min-height: 30px;
+    justify-content: center;
+    padding: 0 9px;
+    font-size: 12px;
+  }
+
+  .filter-pill-row button {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+
+  .date-filter input,
+  .refresh-btn {
+    min-height: 34px;
+  }
+
+  .filter-pill-row button {
+    min-width: max-content;
+  }
+
+  .cmdk-overlay {
+    align-items: end;
+    padding: 10px;
+  }
+
+  .cmdk-panel {
+    width: 100%;
+    max-height: min(76svh, 640px);
+    border-radius: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-pill-liquid,
+  .refresh-btn::after,
+  .timeline-loading-chip,
+  .public-detail.dark,
+  .cmdk-panel::before,
+  .cmdk-result::before {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .source-wall-card:hover,
+  .daily-story:hover,
+  .aihot-event-card:hover,
+  .aihot-event-card:hover .score-badge {
+    transform: none !important;
   }
 }
