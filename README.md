@@ -55,6 +55,30 @@ python -m venv .venv
 .\.venv\Scripts\python -m uvicorn intel_engine.main:app --host 127.0.0.1 --port 8000
 ```
 
+## 启动 Web
+
+```powershell
+cd web
+npm install
+npm run dev
+```
+
+前端默认监听 `http://127.0.0.1:5173`。当前 Vite 配置不内置 API proxy；真实接口访问以生产同源部署为准，本地联调可使用后端静态服务或临时反向代理。
+
+主要页面：
+
+```text
+/             Reader Mode 今日 Brief
+/selected     Reader Mode 精选情报
+/all          Reader Mode 全部情报
+/daily        Reader Mode 日报阅读
+/rss          RSS 订阅入口
+/sources      公开信源墙
+/feedback     用户反馈
+/admin        Ops Mode / Lab Mode 登录入口
+/admin/...    运营后台、策略和评估工作台
+```
+
 生产库通过环境变量接入：
 
 ```powershell
@@ -84,6 +108,16 @@ http://127.0.0.1:8000/feed/ai/daily.xml
 http://127.0.0.1:8000/admin
 ```
 
+## 前端产品形态
+
+Web 端已升级为克制的 Liquid Intelligence Glass 情报工作台：
+
+- `Reader Mode`：公共端，阅读今日 Brief、精选/全部情报、日报、RSS、信源墙和反馈。
+- `Ops Mode`：运营端，管理 Dashboard、信源、任务、健康、质量、审核、日报发布、反馈和权限。
+- `Lab Mode`：策略端，复用现有策略版本和评估运行能力，不承诺完整回测引擎。
+
+UI 基线在 `web/src/styles.css`：深浅色主题、玻璃材质 token、动效 token、`prefers-reduced-motion` 降级、`backdrop-filter` 实色回退。玻璃感只用于导航、浮层、Hero、重点面板和轻卡；后台表格、长文、表单保持高不透明度，优先可读性。
+
 ## 当前已实现能力
 
 - 频道配置加载：`channels/ai.yaml`、`channels/amazon.yaml`
@@ -105,7 +139,20 @@ http://127.0.0.1:8000/admin
 - Basic Auth 后台鉴权：`ADMIN_USERNAME`、`ADMIN_PASSWORD`
 - Pipeline worker 闭环：`src/intel_engine/pipeline.py`
 - 日报生成和策略评估：`src/intel_engine/daily.py`、`src/intel_engine/evaluation.py`
-- React 运营后台：`web/`
+- React/Vite 工作台：`web/`，包含 Reader / Ops / Lab 三种模式、液态玻璃登录门、Cmd+K、公开信源墙和后台运营视图。
+
+## 部署
+
+仓库内提供部署脚本：
+
+```powershell
+.\scripts\deploy-aihot.ps1 -KeyPath <private-key-path>
+```
+
+脚本会在本地构建前端、打包当前 Git commit、上传到服务器项目目录、安装 Python 包、执行 Alembic migration、seed sources，并重启 systemd 服务。不要把 SSH 私钥写入仓库；使用 `-KeyPath` 或 `AIHOT_DEPLOY_KEY` 环境变量。
+
+生产访问入口：`http://aihot.shcai.top/`
+服务器项目目录：`/data/wwwroot/AIHot`
 
 ## 生产目标技术栈
 
@@ -122,6 +169,7 @@ http://127.0.0.1:8000/admin
 - `docs/PRODUCT_SPEC.md`
 - `docs/ARCHITECTURE.md`
 - `docs/API.md`
+- `docs/RUNBOOK.md`
 - `docs/AIHOT_SYSTEM_DEEP_READING.md`
 - `docs/AIHOT_ARTICLE_DEEP_DIVE.md`
 - `docs/superpowers/plans/2026-05-11-production-intelligence-platform.md`

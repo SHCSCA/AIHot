@@ -47,7 +47,7 @@ flowchart TD
 采集运行面：Source Registry、Scheduler、Fetch Worker、Raw Store。
 智能处理面：PreScreener、LLM Score、Translation、Clusterer。
 策略治理面：Rank Policy、Strategy Version、Feedback、Evaluation。
-发布分发面：Web、RSS、REST API、Daily Digest。
+发布分发面：Reader Web、Ops Web、Lab Web、RSS、REST API、Daily Digest。
 Agent 接入面：Skill、受控查询、Markdown 输出。
 ```
 
@@ -115,6 +115,50 @@ LLMProvider
 - 每个 fetch run、model call、rank run、cluster run 记录成本和耗时。
 - OpenTelemetry 预留。
 - 后续接 Prometheus、Grafana、Sentry。
+
+## Web 工作台架构
+
+前端位于 `web/`，采用 React 19、TypeScript、Vite、Framer Motion、Lucide React 和 `react-virtuoso`。`web/src/App.tsx` 是唯一的模式 Shell，负责路由映射、频道状态、登录门禁、RBAC 过滤、主题切换、移动端导航和 Cmd+K。
+
+Web 端分为三个模式：
+
+```text
+Reader Mode：公共端，给用户读情报、看日报、查 RSS、查信源、提交反馈。
+Ops Mode：后台运营端，给运营人员处理信源、任务、质量、审核、日报发布和权限。
+Lab Mode：策略与评估端，复用现有 StrategyVersion 和 EvaluationRun 能力。
+```
+
+当前路由分组：
+
+```text
+/             Reader Mode 今日 Brief
+/selected     Reader Mode 精选情报
+/all          Reader Mode 全部情报
+/daily        日报阅读
+/rss          RSS 订阅入口
+/sources      公开信源墙
+/feedback     公共反馈
+/admin        受保护后台入口
+/admin/*      Ops Mode / Lab Mode
+```
+
+Liquid Intelligence Glass 设计系统集中在 `web/src/styles.css`：
+
+- token 覆盖深色、浅色、surface、border、shadow、accent、blur、motion。
+- 玻璃层级分为 subtle、panel、floating。
+- 玻璃预算只用于导航、浮层、Hero、重点决策面板、登录门和轻量公共卡片。
+- 表格、长文、表单默认使用高不透明背景，避免可读性被模糊和发光牺牲。
+- `prefers-reduced-motion` 下关闭非必要动画，`backdrop-filter` 不支持时使用实色回退。
+
+关键体验组件：
+
+- `PublicFrontPage/index.tsx`、`HeroSection.tsx`、`TopNav.tsx`：Reader Mode 首页和今日 Brief。
+- `EventTimeline.tsx`、`EventCard.tsx`、`EventCardExpand.tsx`：虚拟化情报流、事件决策面板和证据链展开。
+- `DailyReader.tsx`：Zen Reader，正文控制阅读宽度。
+- `SourceWall.tsx`：信源 dossier，把等级、类型、状态、权重、噪声和抓取间隔作为信任线索展示。
+- `CmdKPanel.tsx`：全局命令面板。
+- `DashboardView.tsx`、`SourcesView.tsx`、`JobsView.tsx`、`QualityView.tsx`、`EventsReviewView.tsx`：Ops Mode 工作区。
+- `StrategiesView.tsx`、`EvaluationsView.tsx`：Lab Mode 初版。
 
 ## 核心模块
 
@@ -507,17 +551,10 @@ created_at
 
 ## 当前代码状态
 
-当前代码仍是过渡实现：
+截至 2026-06-17，代码已经从早期 YAML + SQLite MVP 扩展到生产级骨架：
 
-```text
-src/intel_engine/channel_config.py  频道 YAML 加载
-src/intel_engine/scoring.py         MVP 加权评分
-src/intel_engine/crawler.py         RSS/网页公开内容解析
-src/intel_engine/normalizer.py      URL 规范化和 hash
-src/intel_engine/storage.py         SQLite repository
-src/intel_engine/ingest.py          简单入库
-src/intel_engine/jobs.py            简单抓取 job
-src/intel_engine/routes.py          公开 API
-```
-
-下一阶段要把这些模块迁移到生产架构，而不是继续堆 MVP 功能。
+- 数据库模型已覆盖 sources、source_states、fetch_jobs、fetch_runs、raw_documents、normalized_items、strategy_versions、event_clusters、daily_digests、feedback_events、evaluation_runs 等核心表。
+- 调度、抓取、预筛、LLM 评分、确定性 rank、事件聚类、日报、策略评估和内部运营 API 已形成闭环。
+- Web 端已经是 Reader / Ops / Lab 三模式工作台，而不是单一后台。
+- Lab Mode 仍只复用当前策略版本和评估运行能力，不包含完整后端回测引擎。
+- 旧的 `src/intel_engine/storage.py` 和 `/api/public/*` 属于兼容与测试路径，新功能优先落在 `/api/v1/*` 和 SQLAlchemy 模型。

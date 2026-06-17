@@ -109,11 +109,19 @@ export function EventCardExpand({ event, api, showDate, index }: EventCardExpand
           </motion.div>
         )}
 
-        <div className="event-reason-highlight" aria-label="推荐理由和建议动作">
-          <div className="event-reason-copy"><small>推荐理由</small><span>{reason}</span></div>
-          <div className="event-action-copy"><small>建议动作</small><span>{suggestedAction}</span></div>
-          {event.sellerActionLevel && <em>{sellerActionLevelLabel(event.sellerActionLevel)}</em>}
-          {event.confidenceScore != null && <em>置信度 {Math.round(event.confidenceScore)}</em>}
+        <div className="event-decision-panel" aria-label="入选依据和建议动作">
+          <div className="event-rationale">
+            <small>入选依据</small>
+            <span>{reason}</span>
+          </div>
+          <aside className="event-next-step" aria-label="建议动作">
+            <small>下一步</small>
+            <strong>{suggestedAction}</strong>
+            <div>
+              {event.sellerActionLevel && <em>{sellerActionLevelLabel(event.sellerActionLevel)}</em>}
+              {event.confidenceScore != null && <em>置信度 {Math.round(event.confidenceScore)}</em>}
+            </div>
+          </aside>
         </div>
 
         <motion.div layoutId={`event-foot-${event.id}`} className="event-foot">
@@ -205,7 +213,7 @@ export function EventCardExpand({ event, api, showDate, index }: EventCardExpand
 }
 
 function formatReason(reason: string) {
-  return reason.startsWith("推荐理由") ? reason : `推荐理由：${reason}`;
+  return reason.replace(/^推荐理由[：:]\s*/, "");
 }
 
 function aiSignalTags(event: PublicEvent): string[] {

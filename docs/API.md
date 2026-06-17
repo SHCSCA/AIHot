@@ -5,7 +5,7 @@ API 分为两组：
 - Public API：对 Web、RSS、Skill、外部集成开放，只读、字段稳定。
 - Internal API：给后台和策略运营使用，需要认证、审计和权限控制。
 
-当前代码只实现了部分 Public API。本文定义生产目标规格。
+截至 2026-06-17，代码同时包含兼容用 `/api/public/*`、正式 `/api/v1/public/*`、认证 `/api/v1/auth/*` 和运营 `/api/v1/internal/*`。本文记录当前主要契约和生产约束；新增前端功能不得绕过这些 API 直接访问数据库。
 
 ## API 原则
 
@@ -144,6 +144,22 @@ GET /api/v1/public/events/{event_id}
 GET /api/v1/public/items?channel=ai&mode=selected&take=20
 ```
 
+## 公开信源
+
+Reader Mode 的信源墙使用公开信源接口，不暴露内部备注和策略细节。
+
+```http
+GET /api/v1/public/sources?channel=ai&sourceGroup=social&page=1&pageSize=20
+```
+
+## 公共反馈
+
+公共反馈表单写入反馈事件，供 Ops Mode 继续处理。
+
+```http
+POST /api/v1/public/feedback-events
+```
+
 ## 日报
 
 ```http
@@ -207,39 +223,67 @@ get_event(event_id)
 默认行为：
 
 - 未指定 `mode` 时使用 `selected`。
-- 未指定窗口时使用最近 24 小时。
+- 未指定窗口时使用过去 24 小时。
 - 用户明确说“全部”才使用 `all`。
 - 用户明确说“日报”才调用 daily。
 
 ## Internal API
 
-内部 API 目标：
+内部 API 使用 RBAC 权限过滤，服务于 Ops Mode 和 Lab Mode。
+
+主要端点：
 
 ```text
+POST /api/v1/auth/login
+POST /api/v1/auth/logout
+GET /api/v1/me
+PATCH /api/v1/me/preferences
+GET /api/v1/internal/dashboard
+GET /api/v1/internal/quality-dashboard
 GET /api/v1/internal/sources
 POST /api/v1/internal/sources
 PATCH /api/v1/internal/sources/{source_id}
 GET /api/v1/internal/source-states
+GET /api/v1/internal/source-diagnostics
 GET /api/v1/internal/jobs
+POST /api/v1/internal/jobs/{job_id}/retry
 GET /api/v1/internal/strategy-versions
 POST /api/v1/internal/strategy-versions
+POST /api/v1/internal/strategy-versions/{strategy_id}/activate
 POST /api/v1/internal/evaluation-runs
+GET /api/v1/internal/evaluation-runs
+GET /api/v1/internal/evaluation-runs/{run_id}
+POST /api/v1/internal/evaluation-runs/{run_id}/run
 POST /api/v1/internal/feedback-events
+GET /api/v1/internal/feedback-events
+PATCH /api/v1/internal/feedback-events/{feedback_id}
+GET /api/v1/internal/events
+GET /api/v1/internal/events/{event_id}
+PATCH /api/v1/internal/events/{event_id}/review
+GET /api/v1/internal/daily-digests
+POST /api/v1/internal/daily-digests/generate
+POST /api/v1/internal/daily-digests/{digest_id}/publish
+POST /api/v1/internal/daily-digests/{digest_id}/unpublish
+GET /api/v1/internal/users
+POST /api/v1/internal/users
+PATCH /api/v1/internal/users/{user_id}
+GET /api/v1/internal/roles
+PATCH /api/v1/internal/roles/{role_id}
+GET /api/v1/internal/audit-logs
+GET /api/v1/internal/pipeline-runs
+POST /api/v1/internal/pipeline-runs
 ```
 
-内部 API 使用 Basic Auth。账号密码来自环境变量：
+内部 API 认证和初始化账号来自环境变量：
 
 ```text
 ADMIN_USERNAME
 ADMIN_PASSWORD
 ```
 
-策略版本补充操作：
+认证 API 会创建会话，前端按 `/api/v1/me` 返回的 roles 和 permissions 过滤后台导航。旧 Basic Auth 语义仍是服务端认证边界的一部分，但前端以登录会话为主。
 
-```text
-POST /api/v1/internal/strategy-versions/{strategy_id}/activate
-POST /api/v1/internal/evaluation-runs/{run_id}/run
-```
+Lab Mode 只使用 `strategy-versions` 和 `evaluation-runs` 现有字段。若 UI 需要更细的回测指标、成本拆分或样本级对比，应先扩展后端契约，不能在前端 mock。
 
 RSS 输出：
 
