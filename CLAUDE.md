@@ -21,6 +21,16 @@ python -m venv .venv
 # Start API (port 8000)
 .\.venv\Scripts\python -m uvicorn intel_engine.main:app --host 127.0.0.1 --port 8000
 
+# Start frontend (port 5173)
+cd web
+npm install
+npm run dev
+
+# Frontend verification
+cd web
+npm test -- --run
+npm run build
+
 # Start pipeline worker
 .\.venv\Scripts\intel-engine pipeline-once
 
@@ -56,8 +66,20 @@ Source Registry → Scheduler → Fetch Workers → Raw Documents
 
 ### Web Frontend (`web/src/`)
 - React 19 + TypeScript + Vite
-- Admin dashboard with RBAC, sessions, audit logs
-- Views: Dashboard, Sources, Jobs, Quality, Events, Daily, Strategies, Feedback, Evaluations, Admin Access
+- Reader / Ops / Lab shell in `App.tsx`
+- Public Reader routes: `/`, `/selected`, `/all`, `/daily`, `/rss`, `/sources`, `/feedback`
+- Protected admin routes under `/admin/...`
+- Ops views: Dashboard, Sources, Jobs, Health, Quality, Events Review, Daily Digests, Feedback, Admin Access
+- Lab views: Strategies, Evaluations
+- Global Cmd+K command palette from `PublicFrontPage/CmdKPanel.tsx`
+- Liquid Glass design tokens and motion rules live in `web/src/styles.css`
+
+### UI Direction
+- Keep the product as a restrained Liquid Intelligence Glass intelligence workstation.
+- Use glass for navigation, floating overlays, hero/brief regions, decision panels, login portal, Cmd+K, and light public cards.
+- Keep dense tables, long daily text, and forms high-opacity for readability.
+- Preserve both light and dark themes. Any motion must degrade under `prefers-reduced-motion`.
+- Do not invent frontend fields that are absent from `web/src/types.ts` or API responses.
 
 ### Data Model (key tables)
 `sources` → `source_states`, `fetch_jobs`, `fetch_runs`, `raw_documents`
@@ -99,10 +121,13 @@ Environment variables:
 - `ADMIN_USERNAME`, `ADMIN_PASSWORD` - Basic auth for admin API
 - `LLM_PROVIDER` - `fake` (default) or `deepseek`
 - `LLM_MODEL`, `DEEPSEEK_API_KEY` - Model configuration
+- `AIHOT_DEPLOY_KEY` - optional local path to the SSH key used by `scripts/deploy-aihot.ps1`; never commit keys
 
 ## Key Files
 - `pyproject.toml` - Python package config, dependencies
 - `channels/ai.yaml`, `channels/amazon.yaml` - Source registry per channel
 - `docs/ARCHITECTURE.md` - Full architecture documentation
 - `docs/API.md` - API specification
+- `docs/RUNBOOK.md` - Local verification and deployment runbook
+- `scripts/deploy-aihot.ps1` - Bundle-based deploy script for the production server
 - `alembic.ini` - Database migration config
