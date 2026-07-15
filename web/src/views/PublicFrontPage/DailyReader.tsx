@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { PublicApi } from "../../api";
 import type { DailyArchiveItem, DailySection, PublicDaily } from "../../types";
 import { channelLabel, categoryLabel } from "../../labels";
@@ -71,6 +71,7 @@ interface DailyReaderProps {
 
 export function DailyReader({ api, channel }: DailyReaderProps) {
   const [date, setDate] = useState(today());
+  const reducedMotion = useReducedMotion();
   const { data: daily, error, loading, reload } = useAsyncData<PublicDaily | null>(
     () => api.getDaily({ channel, date }),
     null,
@@ -95,32 +96,28 @@ export function DailyReader({ api, channel }: DailyReaderProps) {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.06, delayChildren: 0.15 },
+      transition: reducedMotion ? { duration: 0 } : { staggerChildren: 0.04, delayChildren: 0.06 },
     },
-    exit: { opacity: 0, transition: { duration: 0.25 } },
+    exit: { opacity: 0, transition: { duration: reducedMotion ? 0 : 0.16 } },
   };
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: reducedMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 8 },
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.5, ease: [0.4, 0, 0.2, 1] as [number, number, number, number] },
+      transition: { duration: reducedMotion ? 0 : 0.28, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
     },
   };
 
   return (
     <motion.div
-      className="daily-reader dark breathing-reader"
+      className="daily-reader dark qi-daily-reader"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
     >
-          <div className="daily-breathing-field" data-testid="daily-breathing-field" aria-hidden="true">
-            <span />
-            <span />
-          </div>
           <motion.aside className="daily-archive" variants={itemVariants}>
             <button className="latest" onClick={() => setDate(latestArchiveDate ?? today())}>
               <strong>最新一期</strong><span>{latestArchiveDate ?? today()}</span>
@@ -193,7 +190,7 @@ export function DailyReader({ api, channel }: DailyReaderProps) {
                     </div>
                     {section.items.map((item) => (
                       <article
-                        className="daily-story breathing-reveal"
+                        className="daily-story"
                         key={item.eventId || item.title}
                       >
                         <div className="daily-story-head">

@@ -1,14 +1,11 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ArrowUpRight, ExternalLink, FileSearch, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { EventMember, MainItem, PublicEvent, PublicEventDetail } from "../../types";
 import { useAsyncData } from "../../hooks";
-import { ExternalLink } from "lucide-react";
 import { formatDateTime, formatMonthDay, formatTime } from "../../utils";
-import {
-  categoryLabel,
-  sourceGroupLabel,
-  sellerActionLevelLabel
-} from "../../labels";
+import { categoryLabel, sourceGroupLabel, sellerActionLevelLabel } from "../../labels";
 
 interface EventCardExpandProps {
   event: PublicEvent;
@@ -19,19 +16,83 @@ interface EventCardExpandProps {
 
 export function EventCardExpand({ event, api, showDate, index }: EventCardExpandProps) {
   const [open, setOpen] = useState(false);
-  const { data: detail, reload, loading, error } = useAsyncData<PublicEventDetail | null>(
+  const reducedMotion = useReducedMotion();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const { data: detail, loading, error } = useAsyncData<PublicEventDetail | null>(
     () => (open ? api.getEventDetail(event.id) : Promise.resolve(null)),
     null,
     [open, event.id, api]
   );
 
+  useEffect(() => {
+    if (!open) return;
+    const appRoot = document.getElementById("root");
+    const scrollContainer = document.querySelector<HTMLElement>(".unified-main");
+    const previousOverflow = document.body.style.overflow;
+    const previousContainerOverflow = scrollContainer?.style.overflow ?? "";
+    const previousRootInert = appRoot?.inert ?? false;
+    const previousRootAriaHidden = appRoot?.getAttribute("aria-hidden") ?? null;
+    document.body.style.overflow = "hidden";
+    if (scrollContainer) scrollContainer.style.overflow = "hidden";
+    closeRef.current?.focus();
+    if (appRoot) {
+      appRoot.inert = true;
+      appRoot.setAttribute("aria-hidden", "true");
+    }
+
+    const containDialogFocus = (keyboardEvent: KeyboardEvent) => {
+      if (keyboardEvent.key === "Escape") {
+        keyboardEvent.preventDefault();
+        setOpen(false);
+        return;
+      }
+      if (keyboardEvent.key !== "Tab" || !dialogRef.current) return;
+
+      const focusable = [...dialogRef.current.querySelectorAll<HTMLElement>(
+        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])"
+      )].filter((element) => !element.hasAttribute("hidden") && element.getAttribute("aria-hidden") !== "true");
+      if (focusable.length === 0) {
+        keyboardEvent.preventDefault();
+        dialogRef.current.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const active = document.activeElement;
+      if (keyboardEvent.shiftKey && (active === first || !dialogRef.current.contains(active))) {
+        keyboardEvent.preventDefault();
+        last.focus();
+      } else if (!keyboardEvent.shiftKey && active === last) {
+        keyboardEvent.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", containDialogFocus);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      if (scrollContainer) scrollContainer.style.overflow = previousContainerOverflow;
+      if (appRoot) {
+        appRoot.inert = previousRootInert;
+        if (previousRootAriaHidden == null) appRoot.removeAttribute("aria-hidden");
+        else appRoot.setAttribute("aria-hidden", previousRootAriaHidden);
+      }
+      window.removeEventListener("keydown", containDialogFocus);
+      triggerRef.current?.focus();
+    };
+  }, [open]);
+
   const summary = event.summary || event.mainItem?.summary || "待 AI 处理后生成中文摘要。";
-  const reason = formatReason(event.entryReason || event.suggestedAction || `来自 ${event.sourceCount} 个来源，系统评分达到精选阈值。`);
+  const reason = formatReason(event.entryReason || `来自 ${event.sourceCount} 个来源，系统评分达到精选阈值。`);
   const suggestedAction = event.suggestedAction || (event.channel === "amazon" && event.sellerActionLevel
     ? sellerActionLevelLabel(event.sellerActionLevel)
-    : "继续跟进主来源和相关来源。");
+    : "继续核对主来源与相关证据，再决定是否跟进。");
   const scoreClass = event.score > 85 ? "score-high" : event.score >= 70 ? "score-mid" : "score-low";
   const signalTags = event.channel === "amazon" ? amazonSignalTags(event) : aiSignalTags(event);
+  const visibleTags = signalTags.slice(0, 3);
+  const hiddenTagCount = Math.max(signalTags.length - visibleTags.length, 0);
   const detailId = `event-detail-${event.id}`;
   const detailEvent = detail?.event ?? event;
   const members = detail?.members ?? [];
@@ -40,157 +101,68 @@ export function EventCardExpand({ event, api, showDate, index }: EventCardExpand
   const relatedMembers = members.filter((member) => !member.isMain);
   const keyFacts = detailEvent.keyFacts?.filter(Boolean) ?? [];
 
-  const allVariants = {
-    hidden: { opacity: 0, y: 12, scale: 0.98 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        delay: i * 0.04,
-        duration: 0.35,
-        ease: [0.4, 0, 0.2, 1] as [number, number, number, number],
-      },
-    }),
-    exit: { opacity: 0, scale: 0.96, transition: { duration: 0.2 } },
-  };
-
-  return (
-    <motion.article
-      className="aihot-event"
-      layout
-      custom={index}
-      variants={allVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-    >
-      <div className="timeline-stamp dark">
-        {showDate && <span className="timeline-date">{formatMonthDay(event.lastSeenAt)}</span>}
-        <strong>{formatTime(event.lastSeenAt)}</strong>
-        <i aria-hidden="true" />
-      </div>
-      <motion.div layoutId={`event-card-${event.id}`} className="aihot-event-card breathing-card breathing-idle">
-        <span className="event-card-breath" aria-hidden="true" />
-        <motion.div layoutId={`event-meta-${event.id}`} className="event-meta dark">
-          <span>{event.mainItem?.sourceName ?? "未知来源"}</span>
-          {event.socialHandle && <span>{event.socialHandle}</span>}
-          <span>{sourceGroupLabel(event.sourceGroup)}</span>
-          <span>{categoryLabel(event.category)}</span>
-          <span>{formatDateTime(event.lastSeenAt)}</span>
-        </motion.div>
-
-        <div className="event-title-row">
-          <motion.h2 layoutId={`event-title-${event.id}`}>{event.title}</motion.h2>
-          <strong className={`score-badge ${scoreClass}`} aria-label={`精选分 ${Math.round(event.score)}`}>
-            精选分 {Math.round(event.score)}
-          </strong>
-        </div>
-
-        {event.mainItem?.imageUrl && (
-          <figure className="event-media event-media-natural">
-            <img src={event.mainItem.imageUrl} alt={event.mainItem.imageAlt || event.title} loading="lazy" />
-          </figure>
-        )}
-
-        <motion.p layoutId={`event-summary-${event.id}`} className="event-summary">
-          {summary}
-        </motion.p>
-
-        <div className="event-stat-strip" aria-label="事件指标">
-          <span><small>来源数</small><strong>{event.sourceCount}</strong></span>
-          <span><small>成员数</small><strong>{event.memberCount}</strong></span>
-          <span><small>精选分</small><strong>{Math.round(event.score)}</strong></span>
-        </div>
-
-        {signalTags.length > 0 && (
-          <motion.div layoutId={`event-tags-${event.id}`} className="event-tags dark" role="list" aria-label="事件标签">
-            {signalTags.map((tag) => <span className={tagClass(tag)} key={tag} role="listitem">{tag}</span>)}
-          </motion.div>
-        )}
-
-        <div className="event-decision-panel" aria-label="入选依据和建议动作">
-          <div className="event-rationale">
-            <small>入选依据</small>
-            <span>{reason}</span>
-          </div>
-          <aside className="event-next-step" aria-label="建议动作">
-            <small>下一步</small>
-            <strong>{suggestedAction}</strong>
-            <div>
-              {event.sellerActionLevel && <em>{sellerActionLevelLabel(event.sellerActionLevel)}</em>}
-              {event.confidenceScore != null && <em>置信度 {Math.round(event.confidenceScore)}</em>}
-            </div>
-          </aside>
-        </div>
-
-        <motion.div layoutId={`event-foot-${event.id}`} className="event-foot">
-          <span>{event.sourceCount} 个来源</span>
-          <span>{event.memberCount} 条相关</span>
-          {event.mainItem?.url && (
-            <a href={event.mainItem.url} target="_blank" rel="noreferrer">
-              <ExternalLink size={15} />查看原文
-            </a>
-          )}
-          <button
-            className="ghost dark"
-            onClick={() => {
-              const nextOpen = !open;
-              setOpen(nextOpen);
-              if (nextOpen) reload();
-            }}
-            aria-expanded={open}
-            aria-controls={detailId}
+  const detailPortal = typeof document === "undefined" ? null : createPortal(
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          className="qi-evidence-layer"
+          initial={{ opacity: reducedMotion ? 1 : 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: reducedMotion ? 1 : 0 }}
+          transition={{ duration: reducedMotion ? 0 : 0.2 }}
+        >
+          <div className="qi-evidence-backdrop" aria-hidden="true" onClick={() => setOpen(false)} />
+          <motion.aside
+            ref={dialogRef}
+            id={detailId}
+            className="qi-evidence-drawer liquid-glass-floating"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`${detailId}-title`}
+            tabIndex={-1}
+            initial={reducedMotion ? false : { x: "100%" }}
+            animate={{ x: 0 }}
+            exit={reducedMotion ? { opacity: 0 } : { x: "100%" }}
+            transition={{ duration: reducedMotion ? 0 : 0.34, ease: [0.22, 1, 0.36, 1] }}
           >
-            {open ? "收起详情" : "事件详情"}
-          </button>
-        </motion.div>
+            <header className="qi-evidence-header">
+              <div>
+                <span><FileSearch size={15} />事件证据</span>
+                <h2 id={`${detailId}-title`}>{event.title}</h2>
+              </div>
+              <button ref={closeRef} className="icon-button" type="button" onClick={() => setOpen(false)} aria-label="关闭事件详情">
+                <X size={19} />
+              </button>
+            </header>
 
-        <AnimatePresence>
-          {open && (
-            <motion.div
-              layoutId={`event-detail-${event.id}`}
-              id={detailId}
-              className="public-detail dark"
-              role="region"
-              aria-label="事件详情"
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.45, ease: [0.4, 0, 0.2, 1] }}
-            >
-              {loading && <p className="hint" aria-live="polite">正在加载详情...</p>}
+            <div className="qi-evidence-body">
+              {loading && <div className="qi-drawer-loading" role="status" aria-live="polite">正在核对来源与证据链...</div>}
               {error && <p className="error" role="alert">{error}</p>}
               {!loading && !error && (
                 <>
-                  <div className="event-detail-section event-detail-member-summary" aria-label="成员来源">
-                    <h3>成员来源</h3>
+                  <section className="event-detail-section event-detail-member-summary" aria-label="成员来源">
+                    <div className="qi-evidence-section-title"><h3>证据概览</h3><span>{members.length || event.memberCount} 条成员</span></div>
                     <div className="event-detail-stats">
-                      <span>{members.length || event.memberCount} 个成员</span>
-                      <span>{event.sourceCount} 个来源</span>
-                      <span>主来源 {mainSource?.sourceName ?? "未知"}</span>
+                      <span><strong>{event.sourceCount}</strong> 个来源</span>
+                      <span><strong>{Math.round(event.score)}</strong> 精选分</span>
+                      <span>主来源 <strong>{mainSource?.sourceName ?? "未知"}</strong></span>
                     </div>
-                  </div>
-                  <div className="event-detail-section" aria-label="主来源">
-                    <h3>主来源</h3>
-                    {mainSource ? (
-                      <SourceEvidenceLink item={mainSource} relation="主来源" />
-                    ) : (
-                      <p className="hint">暂无主来源信息。</p>
-                    )}
-                  </div>
-                  <div className="event-detail-section" aria-label="相关来源">
-                    <h3>相关来源</h3>
-                    {relatedMembers.length > 0 ? (
-                      relatedMembers.map((member) => (
-                        <SourceEvidenceLink key={member.id} item={member} relation={memberRelation(member)} />
-                      ))
-                    ) : (
-                      <p className="hint">暂无更多相关来源。</p>
-                    )}
-                  </div>
-                  <div className="event-detail-section" aria-label="证据链">
-                    <h3>证据链</h3>
+                  </section>
+
+                  <section className="event-detail-section" aria-label="主来源">
+                    <div className="qi-evidence-section-title"><h3>主来源</h3><span>PRIMARY</span></div>
+                    {mainSource ? <SourceEvidenceLink item={mainSource} relation="主来源" /> : <p className="hint">暂无主来源信息。</p>}
+                  </section>
+
+                  <section className="event-detail-section" aria-label="相关来源">
+                    <div className="qi-evidence-section-title"><h3>相关来源</h3><span>{relatedMembers.length}</span></div>
+                    {relatedMembers.length > 0 ? relatedMembers.map((member) => (
+                      <SourceEvidenceLink key={member.id} item={member} relation={memberRelation(member)} />
+                    )) : <p className="hint">暂无更多相关来源。</p>}
+                  </section>
+
+                  <section className="event-detail-section" aria-label="证据链">
+                    <div className="qi-evidence-section-title"><h3>证据链</h3><span>TRACE</span></div>
                     <ol className="event-evidence-chain">
                       {keyFacts.map((fact) => <li key={fact}>{fact}</li>)}
                       {members.map((member) => (
@@ -201,14 +173,99 @@ export function EventCardExpand({ event, api, showDate, index }: EventCardExpand
                       ))}
                     </ol>
                     {keyFacts.length === 0 && members.length === 0 && <p className="hint">详情暂无证据链条目。</p>}
-                  </div>
+                  </section>
                 </>
               )}
-            </motion.div>
+            </div>
+          </motion.aside>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  );
+
+  return (
+    <>
+      <motion.article
+        className="aihot-event qi-event"
+        initial={reducedMotion ? false : { opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reducedMotion ? 0 : 0.28, delay: reducedMotion ? 0 : Math.min(index, 4) * 0.025 }}
+      >
+        <div className="timeline-stamp dark">
+          {showDate && <span className="timeline-date">{formatMonthDay(event.lastSeenAt)}</span>}
+          <strong>{formatTime(event.lastSeenAt)}</strong>
+          <i aria-hidden="true" />
+        </div>
+
+        <div className="aihot-event-card qi-event-card">
+          <div className="event-meta dark">
+            <span>{event.mainItem?.sourceName ?? "未知来源"}</span>
+            <span>{categoryLabel(event.category)}</span>
+            <span>{formatDateTime(event.lastSeenAt)}</span>
+          </div>
+
+          <div className="event-title-row">
+            <h2>{event.title}</h2>
+            <strong className={`score-badge ${scoreClass}`} aria-label={`精选分 ${Math.round(event.score)}`}>
+              精选分 {Math.round(event.score)}
+            </strong>
+          </div>
+
+          {event.mainItem?.imageUrl && (
+            <figure className="event-media event-media-natural">
+              <img src={event.mainItem.imageUrl} alt={event.mainItem.imageAlt || event.title} loading="lazy" />
+            </figure>
           )}
-        </AnimatePresence>
-      </motion.div>
-    </motion.article>
+
+          <p className="event-summary">{summary}</p>
+
+          {visibleTags.length > 0 && (
+            <div className="event-tags dark" role="list" aria-label="事件标签">
+              {visibleTags.map((tag) => <span className={tagClass(tag)} key={tag} role="listitem">{tag}</span>)}
+              {hiddenTagCount > 0 && <span className="tag-more" role="listitem">+{hiddenTagCount}</span>}
+            </div>
+          )}
+
+          <div className="event-decision-panel" aria-label="入选依据和建议动作">
+            <div className="event-rationale">
+              <small>入选依据</small>
+              <p>{reason}</p>
+            </div>
+            <div className="event-next-step" aria-label="建议动作">
+              <small>建议动作</small>
+              <strong>{suggestedAction}</strong>
+              <div>
+                {event.sellerActionLevel && <em>{sellerActionLevelLabel(event.sellerActionLevel)}</em>}
+                {event.confidenceScore != null && <em>置信度 {Math.round(event.confidenceScore)}</em>}
+              </div>
+            </div>
+          </div>
+
+          <div className="event-foot">
+            <span className="qi-event-evidence-count"><strong>{event.sourceCount}</strong> 个来源 · <strong>{event.memberCount}</strong> 条相关</span>
+            <div className="qi-event-actions">
+              {event.mainItem?.url && (
+                <a href={event.mainItem.url} target="_blank" rel="noreferrer">
+                  查看原文<ExternalLink size={14} />
+                </a>
+              )}
+              <button
+                ref={triggerRef}
+                className="ghost dark qi-detail-trigger"
+                type="button"
+                onClick={() => setOpen(true)}
+                aria-expanded={open}
+                aria-controls={detailId}
+              >
+                证据详情<ArrowUpRight size={15} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </motion.article>
+      {detailPortal}
+    </>
   );
 }
 
@@ -248,13 +305,11 @@ function SourceEvidenceLink({ item, relation }: { item: MainItem | EventMember; 
     </>
   );
 
-  if (!item.url) {
-    return <div className="event-source-link event-source-link-muted">{body}</div>;
-  }
+  if (!item.url) return <div className="event-source-link event-source-link-muted">{body}</div>;
 
   return (
     <a className="event-source-link" href={item.url} target="_blank" rel="noreferrer">
-      {body}
+      <span>{body}</span><ArrowUpRight size={16} aria-hidden="true" />
     </a>
   );
 }

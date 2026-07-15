@@ -1,4 +1,5 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Search } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 interface SearchResult {
@@ -13,21 +14,14 @@ const quickJumps: SearchResult[] = [
   { id: "pub:selected", label: "精选", description: "当前频道自动挑选的高价值情报", category: "快速跳转" },
   { id: "pub:all", label: "全部热点", description: "全部情报流", category: "快速跳转" },
   { id: "pub:daily", label: "AI 日报", description: "杂志式每日摘要", category: "快速跳转" },
-  { id: "pub:sources", label: "信源墙", description: "公开信源列表", category: "快速跳转" },
+  { id: "pub:sources", label: "信源目录", description: "公开信源与采集档案", category: "快速跳转" },
   { id: "pub:feedback", label: "反馈", description: "提交内容质量反馈", category: "快速跳转" },
   { id: "admin:dashboard", label: "工作台", description: "运营总览", category: "快速跳转" },
   { id: "admin:sources", label: "信源管理", description: "维护信源", category: "快速跳转" },
   { id: "admin:events", label: "事件审核", description: "审核事件簇", category: "快速跳转" },
 ];
 
-const hotIntelligence: SearchResult[] = [
-  { id: "hot:1", label: "Claude 4 发布", description: "Anthropic 推出新一代多模态模型", category: "热门情报" },
-  { id: "hot:2", label: "Amazon FBA 新规", description: "物流费用即将调整", category: "热门情报" },
-  { id: "hot:3", label: "GPT-5  rumored", description: "OpenAI 下一代模型传闻", category: "热门情报" },
-  { id: "hot:4", label: "TikTok Shop 新政", description: "电商渠道政策变动", category: "热门情报" },
-];
-
-const HISTORY_KEY = "aihot_cmdk_history";
+const HISTORY_KEY = "aihot_cmdk_history_v2";
 
 function loadHistory(): string[] {
   try {
@@ -49,25 +43,22 @@ interface CmdKPanelProps {
 
 export function CmdKPanel({ open, onClose, onSelect }: CmdKPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const reducedMotion = useReducedMotion();
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const allResults = query.trim()
-    ? [
-        ...hotIntelligence.filter((r) =>
+    ? quickJumps.filter((r) =>
           r.label.toLowerCase().includes(query.toLowerCase()) ||
           r.description?.toLowerCase().includes(query.toLowerCase())
-        ),
-        ...quickJumps.filter((r) =>
-          r.label.toLowerCase().includes(query.toLowerCase()) ||
-          r.description?.toLowerCase().includes(query.toLowerCase())
-        ),
-      ]
+        )
     : [
-        { id: "section:quick", label: "快速跳转", description: "", category: "section" },
-        ...quickJumps.slice(0, 3),
-        { id: "section:daily", label: "热门情报", description: "", category: "section" },
-        ...hotIntelligence,
+        { id: "section:reader", label: "Reader Mode", description: "", category: "section" },
+        ...quickJumps.filter((item) => item.id.startsWith("pub:")),
+        { id: "section:ops", label: "Ops Mode", description: "", category: "section" },
+        ...quickJumps.filter((item) => item.id.startsWith("admin:")),
       ];
 
   const historyItems = loadHistory().filter((h) =>
@@ -78,10 +69,14 @@ export function CmdKPanel({ open, onClose, onSelect }: CmdKPanelProps) {
 
   useEffect(() => {
     if (open) {
+      previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       setQuery("");
       setSelectedIndex(0);
       inputRef.current?.focus();
     }
+    return () => {
+      if (open) previousFocusRef.current?.focus();
+    };
   }, [open]);
 
   useEffect(() => {
@@ -105,26 +100,42 @@ export function CmdKPanel({ open, onClose, onSelect }: CmdKPanelProps) {
     }
   }
 
+  function containPanelFocus(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key !== "Tab" || !panelRef.current) return;
+    const focusable = [...panelRef.current.querySelectorAll<HTMLElement>(
+      "input:not([disabled]), button:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])"
+    )];
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   function selectItem(item: SearchResult) {
     onSelect?.(item.id, item.label);
+    const existing = loadHistory();
+    saveHistory([item.label, ...existing.filter((historyItem) => historyItem !== item.label)]);
     if (item.id.startsWith("pub:")) {
       const section = item.id.replace("pub:", "");
       window.history.replaceState(null, "", section === "overview" ? "/" : `/${section}`);
     } else if (item.id.startsWith("admin:")) {
       const view = item.id.replace("admin:", "");
       window.history.replaceState(null, "", `/admin/${view}`);
-    } else {
-      const existing = loadHistory();
-      saveHistory([item.label, ...existing.filter((h) => h !== item.label)]);
     }
     onClose();
   }
 
-  function renderSection(title: string, items: SearchResult[], startIdx: number) {
+  function renderSection(title: string, items: SearchResult[]) {
     return (
       <div key={title} className="cmdk-section">
         <p className="cmdk-section-title">{title}</p>
-        {items.map((item, i) => {
+        {items.map((item) => {
           const globalIdx = flatResults.indexOf(item);
           const isSelected = globalIdx === selectedIndex;
           return (
@@ -149,25 +160,29 @@ export function CmdKPanel({ open, onClose, onSelect }: CmdKPanelProps) {
   let sectionStartIdx = 0;
   const sections: { title: string; items: SearchResult[]; startIdx: number }[] = [];
 
-  allResults.forEach((item, i) => {
-    if (item.category === "section") {
-      if (currentSection) {
-        sections.push({
-          title: currentSection,
-          items: allResults.slice(sectionStartIdx, i) as SearchResult[],
-          startIdx: sectionStartIdx,
-        });
+  if (query.trim()) {
+    if (flatResults.length > 0) sections.push({ title: "搜索结果", items: flatResults, startIdx: 0 });
+  } else {
+    allResults.forEach((item, i) => {
+      if (item.category === "section") {
+        if (currentSection) {
+          sections.push({
+            title: currentSection,
+            items: allResults.slice(sectionStartIdx, i) as SearchResult[],
+            startIdx: sectionStartIdx,
+          });
+        }
+        currentSection = item.label;
+        sectionStartIdx = i + 1;
       }
-      currentSection = item.label;
-      sectionStartIdx = i + 1;
-    }
-  });
-  if (currentSection) {
-    sections.push({
-      title: currentSection,
-      items: allResults.slice(sectionStartIdx) as SearchResult[],
-      startIdx: sectionStartIdx,
     });
+    if (currentSection) {
+      sections.push({
+        title: currentSection,
+        items: allResults.slice(sectionStartIdx) as SearchResult[],
+        startIdx: sectionStartIdx,
+      });
+    }
   }
 
   return (
@@ -178,32 +193,31 @@ export function CmdKPanel({ open, onClose, onSelect }: CmdKPanelProps) {
           role="dialog"
           aria-modal="true"
           aria-label="命令面板"
-          initial={{ opacity: 0 }}
+          initial={{ opacity: reducedMotion ? 1 : 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
+          exit={{ opacity: reducedMotion ? 1 : 0 }}
+          transition={{ duration: reducedMotion ? 0 : 0.16 }}
           onClick={onClose}
         >
           <motion.div
-            className="cmdk-panel breathing-command"
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
+            ref={panelRef}
+            className="cmdk-panel qi-command-panel"
+            initial={reducedMotion ? false : { y: -8, scale: 0.985, opacity: 0 }}
+            animate={{ y: 0, scale: 1, opacity: 1 }}
+            exit={reducedMotion ? { opacity: 0 } : { y: -5, scale: 0.99, opacity: 0 }}
+            transition={{ duration: reducedMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
             onClick={(e) => e.stopPropagation()}
+            onKeyDown={containPanelFocus}
           >
-            <span className="cmdk-breathing-frame" data-testid="cmdk-breathing-frame" aria-hidden="true" />
             <div className="cmdk-input-wrap">
-              <svg className="cmdk-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
+              <Search className="cmdk-search-icon" size={18} aria-hidden="true" />
               <input
                 ref={inputRef}
                 className="cmdk-input"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
+                aria-label="搜索命令或页面"
                 placeholder="搜索或快速跳转..."
                 autoComplete="off"
               />
@@ -212,7 +226,7 @@ export function CmdKPanel({ open, onClose, onSelect }: CmdKPanelProps) {
 
             <div className="cmdk-body">
               {sections.map((section) =>
-                renderSection(section.title, section.items.filter((r) => r.category !== "section") as SearchResult[], section.startIdx)
+                renderSection(section.title, section.items.filter((r) => r.category !== "section") as SearchResult[])
               )}
               {historyItems.length > 0 && !query && (
                 <div className="cmdk-section">

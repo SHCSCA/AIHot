@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
-import { ShieldCheck, LockKeyhole } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
+import { ShieldCheck } from "lucide-react";
 import type { Credentials } from "../../api";
 
 interface LoginPanelProps {
@@ -9,6 +9,7 @@ interface LoginPanelProps {
 }
 
 export function LoginPanel({ error, onLogin }: LoginPanelProps) {
+  const reducedMotion = useReducedMotion();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -25,9 +26,9 @@ export function LoginPanel({ error, onLogin }: LoginPanelProps) {
   return (
     <motion.section
       className="public-login-panel dark glass"
-      initial={{ opacity: 0, y: -10 }}
+      initial={reducedMotion ? false : { opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={{ duration: reducedMotion ? 0 : 0.24, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="login-panel-info">
         <ShieldCheck size={19} />
@@ -58,15 +59,14 @@ export function LoginPanel({ error, onLogin }: LoginPanelProps) {
 
       {error && <p className="error">{error}</p>}
 
-      <motion.button
+      <button
         className="primary login-btn"
+        type="button"
         onClick={submit}
         disabled={submitting}
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
       >
         {submitting ? "登录中..." : "登录"}
-      </motion.button>
+      </button>
     </motion.section>
   );
 }

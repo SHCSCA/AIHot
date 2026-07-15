@@ -104,7 +104,7 @@ export function SourcesView({ api }: { api: AdminApi }) {
       const nextPage = await api.listSourcesPage({ ...apiFilters(channel, filters), page: pageNumber, pageSize: WALL_PAGE_SIZE });
       setWallPageData(nextPage);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "信源墙加载失败");
+      setError(err instanceof Error ? err.message : "信源目录加载失败");
     }
   }
 
@@ -213,7 +213,7 @@ export function SourcesView({ api }: { api: AdminApi }) {
           </TableWrap>
           <PaginationBar page={page} totalPages={sourcePage.totalPages ?? 1} onPageChange={setPage} disabled={loading} />
         </Section>
-        <Section title="信源墙视图" description="公开前台展示的信源贡献卡片，固定 6 条一页，跟随当前频道和筛选条件。">
+        <Section title="信源目录视图" description="公开前台展示的信源目录，固定 6 条一页，跟随当前频道和筛选条件。">
           <div className="admin-source-wall">
             {wallPageData.items.map((source, index) => (
               <article key={source.id || `wall-empty-${index}`}>
