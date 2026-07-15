@@ -11,6 +11,12 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+function Assert-NativeCommandSucceeded([string]$Step) {
+  if ($LASTEXITCODE -ne 0) {
+    throw "$Step failed with exit code $LASTEXITCODE."
+  }
+}
+
 if (-not $KeyPath) {
   throw "Provide -KeyPath or set AIHOT_DEPLOY_KEY. Do not put private keys in this script."
 }
@@ -23,6 +29,7 @@ $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $repoRoot
 
 $currentBranch = (git branch --show-current).Trim()
+Assert-NativeCommandSucceeded "Read current Git branch"
 if ($currentBranch -ne $Branch) {
   throw "Current branch is '$currentBranch', expected '$Branch'."
 }
@@ -31,12 +38,14 @@ if (-not $SkipBuild) {
   Push-Location (Join-Path $repoRoot "web")
   try {
     npm run build
+    Assert-NativeCommandSucceeded "Build frontend"
   } finally {
     Pop-Location
   }
 }
 
 $commit = (git rev-parse HEAD).Trim()
+Assert-NativeCommandSucceeded "Resolve deployment commit"
 $bundlePath = Join-Path ([System.IO.Path]::GetTempPath()) "aihot-$commit.bundle"
 
 if (Test-Path -LiteralPath $bundlePath) {
@@ -44,12 +53,14 @@ if (Test-Path -LiteralPath $bundlePath) {
 }
 
 git bundle create $bundlePath HEAD
+Assert-NativeCommandSucceeded "Create deployment bundle"
 
 $sshTarget = "$User@$HostName"
 $sshArgs = @("-i", $KeyPath, "-p", "$Port", "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=accept-new")
 $scpArgs = @("-i", $KeyPath, "-P", "$Port", "-o", "IdentitiesOnly=yes", "-o", "StrictHostKeyChecking=accept-new")
 
 scp @scpArgs $bundlePath "${sshTarget}:$RemoteBundle"
+Assert-NativeCommandSucceeded "Upload deployment bundle"
 
 $remoteScript = @"
 set -euo pipefail
@@ -83,5 +94,6 @@ exit 1
 
 $encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remoteScript))
 ssh @sshArgs $sshTarget "printf '%s' '$encoded' | base64 -d | bash"
+Assert-NativeCommandSucceeded "Run remote deployment"
 
 Write-Host "Deployed $commit to ${sshTarget}:$AppDir"
