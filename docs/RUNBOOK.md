@@ -16,6 +16,12 @@ python -m venv .venv
 curl http://127.0.0.1:8000/health
 ```
 
+## 全网采集周期
+
+- `channels/ai.yaml` 与 `channels/amazon.yaml` 中的内置信源统一按 `720` 分钟（12 小时）采集。
+- 调度器可以更频繁地扫描队列，但只会为 `next_fetch_at` 已到期的信源创建任务，不等于每次扫描都会重新抓取全网。
+- 部署中的 `intel-engine seed-sources` 会把配置周期同步到数据库；周期发生变化时，`next_fetch_at` 会按最近一次成功抓取时间重新计算。
+
 ## 本地前端
 
 ```powershell
@@ -86,7 +92,7 @@ $env:AIHOT_DEPLOY_KEY="<private-key-path>"
 生产信息：
 
 ```text
-访问入口：http://aihot.shcai.top/
+访问入口：https://aihot.shcai.top/
 服务器项目目录：/data/wwwroot/AIHot
 服务健康检查：http://127.0.0.1:8003/health
 ```

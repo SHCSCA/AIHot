@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -49,6 +49,7 @@ class SourceRegistry:
     def upsert_source(self, source: SourceUpsert) -> SourceUpsertResult:
         record = self.session.get(SourceRecord, source.id)
         created = record is None
+        previous_interval = record.fetch_interval_minutes if record is not None else None
         if record is None:
             record = SourceRecord(id=source.id)
             self.session.add(record)
@@ -76,8 +77,11 @@ class SourceRegistry:
         record.free_access = source.free_access
         record.notes = source.notes
 
-        if self.session.get(SourceStateRecord, source.id) is None:
+        state = self.session.get(SourceStateRecord, source.id)
+        if state is None:
             self.session.add(SourceStateRecord(source_id=source.id, next_fetch_at=datetime(1970, 1, 1, tzinfo=timezone.utc)))
+        elif previous_interval != source.fetch_interval_minutes and state.last_success_at is not None:
+            state.next_fetch_at = state.last_success_at + timedelta(minutes=source.fetch_interval_minutes)
 
         self.session.flush()
         return SourceUpsertResult(source_id=source.id, created=created)

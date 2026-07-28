@@ -38,7 +38,7 @@ catalog_candidate_defaults: &amazon_catalog_candidate
   seller_area: operations
   trust_level: authority
   base_weight: 72
-  crawl_interval_minutes: 60
+  crawl_interval_minutes: 720
   parser_type: website
   enabled: false
   collection_status: unavailable
@@ -55,7 +55,7 @@ sources:
     trust_level: authority
     base_weight: 78
     default_categories: [account_health, listing_seo, tools]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: ecomcrew_blog
@@ -69,7 +69,7 @@ sources:
     trust_level: expert
     base_weight: 76
     default_categories: [product_research, fees_margin, listing_seo]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
     collection_status: collectable
@@ -85,7 +85,7 @@ sources:
     trust_level: media
     base_weight: 72
     default_categories: [product_research, listing_seo, ads_ppc]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: ecommercebytes
@@ -99,7 +99,7 @@ sources:
     trust_level: media
     base_weight: 70
     default_categories: [policy, fees_margin, tools]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: retail_dive
@@ -113,7 +113,7 @@ sources:
     trust_level: media
     base_weight: 68
     default_categories: [product_research, compliance_trade]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
     collection_status: collectable
@@ -129,7 +129,7 @@ sources:
     trust_level: media
     base_weight: 68
     default_categories: [product_research, ads_ppc]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
     collection_status: collectable
@@ -145,7 +145,7 @@ sources:
     trust_level: media
     base_weight: 68
     default_categories: [ads_ppc, listing_seo]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
     collection_status: collectable
@@ -161,7 +161,7 @@ sources:
     trust_level: expert
     base_weight: 74
     default_categories: [product_research, fba_logistics, listing_seo]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: repricerexpress_blog
@@ -175,7 +175,7 @@ sources:
     trust_level: authority
     base_weight: 74
     default_categories: [fees_margin, tools]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: sellerengine_blog
@@ -189,7 +189,7 @@ sources:
     trust_level: authority
     base_weight: 74
     default_categories: [account_health, product_research, listing_seo]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: riverbend_consulting
@@ -203,7 +203,7 @@ sources:
     trust_level: expert
     base_weight: 76
     default_categories: [account_health, compliance_trade]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
     collection_status: collectable
@@ -219,7 +219,7 @@ sources:
     trust_level: authority
     base_weight: 74
     default_categories: [product_research, listing_seo, ads_ppc]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: channelx_amazon
@@ -233,7 +233,7 @@ sources:
     trust_level: media
     base_weight: 68
     default_categories: [policy, ads_ppc, product_research]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: seller_snap_blog
@@ -247,7 +247,7 @@ sources:
     trust_level: authority
     base_weight: 72
     default_categories: [fees_margin, ads_ppc, tools]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: teikametrics_blog
@@ -261,7 +261,7 @@ sources:
     trust_level: authority
     base_weight: 76
     default_categories: [ads_ppc, product_research, tools]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
     collection_status: collectable
@@ -277,7 +277,7 @@ sources:
     trust_level: expert
     base_weight: 72
     default_categories: [ads_ppc, listing_seo, account_health]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: sellerlabs_blog
@@ -291,7 +291,7 @@ sources:
     trust_level: authority
     base_weight: 72
     default_categories: [ads_ppc, listing_seo, tools]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
     collection_status: collectable
@@ -307,7 +307,7 @@ sources:
     trust_level: authority
     base_weight: 72
     default_categories: [product_research, tools, compliance_trade]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: ecommerce_times
@@ -321,7 +321,7 @@ sources:
     trust_level: media
     base_weight: 66
     default_categories: [product_research, tools, compliance_trade]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: digital_commerce_360
@@ -335,7 +335,7 @@ sources:
     trust_level: media
     base_weight: 66
     default_categories: [product_research, fees_margin]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
     collection_status: collectable
@@ -351,7 +351,7 @@ sources:
     trust_level: authority
     base_weight: 76
     default_categories: [product_research, listing_seo]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: amazon_sp_api_release_notes
@@ -365,7 +365,7 @@ sources:
     trust_level: official
     base_weight: 95
     default_categories: [policy, tools]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: html_list
     enabled: true
   - id: amazon_ads_updates
@@ -379,7 +379,7 @@ sources:
     trust_level: official
     base_weight: 92
     default_categories: [ads_ppc]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: html_list
     enabled: false
     collection_status: watch
@@ -394,7 +394,7 @@ sources:
     trust_level: authority
     base_weight: 82
     default_categories: [product_research, fees_margin]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
     collection_status: collectable
@@ -409,7 +409,7 @@ sources:
     trust_level: authority
     base_weight: 78
     default_categories: [product_research, listing_seo, ads_ppc]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: true
   - id: amazon_seller_university
@@ -423,7 +423,7 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [policy, listing_seo, fba_logistics]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: website
     enabled: false
   - id: amazon_seller_blog
@@ -437,7 +437,7 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [policy, listing_seo, product_research]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: website
     enabled: false
   - id: amazon_supply_chain_blog
@@ -451,7 +451,7 @@ sources:
     trust_level: official
     base_weight: 88
     default_categories: [fba_logistics, fees_margin]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: website
     enabled: false
   - id: amazon_pay_updates
@@ -465,7 +465,7 @@ sources:
     trust_level: official
     base_weight: 84
     default_categories: [fees_margin, compliance_trade]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: website
     enabled: false
   - id: helium10_blog
@@ -479,7 +479,7 @@ sources:
     trust_level: authority
     base_weight: 80
     default_categories: [product_research, listing_seo, ads_ppc, tools]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: false
     collection_status: unavailable
@@ -494,7 +494,7 @@ sources:
     trust_level: authority
     base_weight: 76
     default_categories: [ads_ppc, listing_seo, product_research, tools]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: rss
     enabled: false
     collection_status: unavailable
@@ -509,7 +509,7 @@ sources:
     trust_level: expert
     base_weight: 75
     default_categories: [tools, account_health, product_research]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: website
     enabled: false
   - id: amzscout_blog
@@ -523,7 +523,7 @@ sources:
     trust_level: expert
     base_weight: 74
     default_categories: [product_research, listing_seo]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: website
     enabled: false
   - id: x_amazonads
@@ -537,7 +537,7 @@ sources:
     trust_level: official_social
     base_weight: 90
     default_categories: [ads_ppc, policy]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: x_timeline
     enabled: false
     source_group: social
@@ -556,7 +556,7 @@ sources:
     trust_level: official_social
     base_weight: 86
     default_categories: [policy, tools]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: x_timeline
     enabled: false
     source_group: social
@@ -575,7 +575,7 @@ sources:
     trust_level: authority
     base_weight: 82
     default_categories: [product_research, fees_margin, policy]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: x_timeline
     enabled: false
     source_group: social
@@ -594,7 +594,7 @@ sources:
     trust_level: authority
     base_weight: 78
     default_categories: [product_research, listing_seo, ads_ppc]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: x_timeline
     enabled: false
     source_group: social
@@ -613,7 +613,7 @@ sources:
     trust_level: authority
     base_weight: 76
     default_categories: [tools, product_research, listing_seo]
-    crawl_interval_minutes: 60
+    crawl_interval_minutes: 720
     parser_type: x_timeline
     enabled: false
     source_group: social

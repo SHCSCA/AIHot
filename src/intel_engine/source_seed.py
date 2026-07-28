@@ -135,7 +135,7 @@ def source_upsert_from_config(channel_id: str, source: SourceConfig) -> SourceUp
         fetch_adapter=_fetch_adapter(source),
         parser_type=source.parser_type,
         default_categories=list(source.default_categories),
-        fetch_interval_minutes=60,
+        fetch_interval_minutes=source.crawl_interval_minutes,
         enabled=source.enabled,
         visibility=_visibility(source),
         source_group=_source_group(source),
