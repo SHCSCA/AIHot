@@ -6,7 +6,7 @@ param(
   [string]$Branch = "codex/precise-review-model-v1",
   [string]$KeyPath = $env:AIHOT_DEPLOY_KEY,
   [string]$RemoteBundle = "/tmp/aihot-deploy.bundle",
-  [int]$PipelineBatchLimit = 80,
+  [int]$PipelineBatchLimit = 60,
   [int]$PipelineSmokeLimit = 1,
   [switch]$SkipBuild
 )
@@ -161,7 +161,7 @@ EnvironmentFile=$AppDir/.env
 Environment=INTEL_ENV_FILE=
 ExecStart=$AppDir/.venv/bin/intel-engine pipeline-once --worker-id systemd-pipeline-%i --limit %i
 Nice=5
-TimeoutStartSec=45min
+TimeoutStartSec=55min
 NoNewPrivileges=true
 PrivateTmp=true
 UNIT
