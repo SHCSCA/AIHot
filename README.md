@@ -90,6 +90,7 @@ $env:LLM_MODEL="deepseek-v4-flash"
 $env:DEEPSEEK_API_KEY="<deepseek-api-key>"
 .\.venv\Scripts\python -m alembic upgrade head
 .\.venv\Scripts\intel-engine seed-sources
+.\.venv\Scripts\intel-engine backfill-evidence
 .\.venv\Scripts\intel-engine pipeline-once
 ```
 

@@ -24,7 +24,7 @@ from intel_engine.auth import (
     set_session_cookie,
     verify_password,
 )
-from intel_engine.channel_config import load_channel_configs
+from intel_engine.channel_config import load_channel_configs, load_collection_policy
 from intel_engine.daily import generate_daily_digest
 from intel_engine.evaluation import activate_strategy_version, run_evaluation
 from intel_engine.fetchers import get_fetch_adapter
@@ -33,6 +33,7 @@ from intel_engine.models import (
     DailyDigestRecord,
     EvaluationRunRecord,
     EventClusterRecord,
+    EventEvidenceAssessmentRecord,
     FeedbackEventRecord,
     FetchJobRecord,
     FetchRunRecord,
@@ -48,7 +49,6 @@ from intel_engine.models import (
     PermissionRecord,
     RolePermissionRecord,
     RoleRecord,
-    SessionRecord,
     StrategyVersionRecord,
     UserPreferenceRecord,
     UserRecord,
@@ -57,9 +57,17 @@ from intel_engine.models import (
 from intel_engine.normalizer import canonicalize_url
 from intel_engine.pipeline import run_pipeline_once
 from intel_engine.quality import is_publishable_original_url, operational_day_bounds_utc
-from intel_engine.review import channel_rolling_window_hours, public_cluster_ready, public_window_label
+from intel_engine.review import (
+    channel_rolling_window_hours,
+    public_cluster_ready,
+    public_window_label,
+)
 from intel_engine.rss import build_events_feed
-from intel_engine.sources import SourceRegistry, SourceUpsert
+from intel_engine.sources import (
+    SourceRegistry,
+    SourceUpsert,
+    normalize_publisher_key,
+)
 from intel_engine.storage import ItemRepository
 
 
@@ -83,10 +91,13 @@ class SourceWrite(BaseModel):
     fetch_adapter: str = Field(alias="fetchAdapter")
     parser_type: str = Field(alias="parserType")
     default_categories: list[str] = Field(alias="defaultCategories")
-    fetch_interval_minutes: int = Field(alias="fetchIntervalMinutes")
+    fetch_interval_minutes: int | None = Field(
+        default=None, alias="fetchIntervalMinutes"
+    )
     enabled: bool = True
     visibility: str = "public"
     source_group: str = Field(default="media", alias="sourceGroup")
+    publisher_key: str | None = Field(default=None, alias="publisherKey")
     contributor_no: str | None = Field(default=None, alias="contributorNo")
     social_handle: str | None = Field(default=None, alias="socialHandle")
     collection_status: str = Field(default="collectable", alias="collectionStatus")
@@ -101,8 +112,8 @@ class SourcePatch(BaseModel):
     visibility: str | None = None
     authority_weight: float | None = Field(default=None, alias="authorityWeight")
     noise_level: float | None = Field(default=None, alias="noiseLevel")
-    fetch_interval_minutes: int | None = Field(default=None, alias="fetchIntervalMinutes")
     source_group: str | None = Field(default=None, alias="sourceGroup")
+    publisher_key: str | None = Field(default=None, alias="publisherKey")
     contributor_no: str | None = Field(default=None, alias="contributorNo")
     social_handle: str | None = Field(default=None, alias="socialHandle")
     collection_status: str | None = Field(default=None, alias="collectionStatus")
@@ -121,7 +132,9 @@ class StrategyVersionWrite(BaseModel):
     score_prompt_version: str = Field(alias="scorePromptVersion")
     rank_formula_version: str = Field(alias="rankFormulaVersion")
     thresholds_json: dict[str, object] = Field(default_factory=dict, alias="thresholds")
-    model_config_json: dict[str, object] = Field(default_factory=dict, alias="modelConfig")
+    model_config_json: dict[str, object] = Field(
+        default_factory=dict, alias="modelConfig"
+    )
 
 
 class FeedbackEventWrite(BaseModel):
@@ -224,7 +237,14 @@ class PreferencePatchWrite(BaseModel):
     compact_mode: bool | None = Field(default=None, alias="compactMode")
 
 
-PUBLIC_FEEDBACK_TYPES = {"general", "false_positive", "false_negative", "promote", "demote", "category_fix"}
+PUBLIC_FEEDBACK_TYPES = {
+    "general",
+    "false_positive",
+    "false_negative",
+    "promote",
+    "demote",
+    "category_fix",
+}
 
 
 @router.get("/health")
@@ -245,7 +265,9 @@ def channels() -> dict[str, list[dict[str, object]]]:
                     {"id": category.id, "label": category.label}
                     for category in config.categories
                 ],
-                "sourceCount": len([source for source in config.sources if source.enabled]),
+                "sourceCount": len(
+                    [source for source in config.sources if source.enabled]
+                ),
             }
             for config in configs
         ]
@@ -261,7 +283,9 @@ def items(
     take: int = Query(default=20, ge=1, le=100),
 ) -> dict[str, object]:
     repository = ItemRepository(request.app.state.db_engine)
-    records = repository.list_items(channel=channel, category=category, take=take, mode=mode)
+    records = repository.list_items(
+        channel=channel, category=category, take=take, mode=mode
+    )
     return {
         "count": len(records),
         "hasNext": False,
@@ -303,7 +327,9 @@ def public_events(
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        stmt = select(EventClusterRecord).where(EventClusterRecord.review_status == "approved")
+        stmt = select(EventClusterRecord).where(
+            EventClusterRecord.review_status == "approved"
+        )
         if channel:
             stmt = stmt.where(EventClusterRecord.channel == channel)
         category_values = _split_filter_values(category)
@@ -312,16 +338,24 @@ def public_events(
         source_group_values = _split_filter_values(source_group)
         if source_group_values:
             stmt = (
-                stmt.join(NormalizedItemRecord, NormalizedItemRecord.id == EventClusterRecord.main_item_id)
+                stmt.join(
+                    NormalizedItemRecord,
+                    NormalizedItemRecord.id == EventClusterRecord.main_item_id,
+                )
                 .join(SourceRecord, SourceRecord.id == NormalizedItemRecord.source_id)
                 .where(SourceRecord.source_group.in_(source_group_values))
             )
         if event_date is not None:
             start, end = operational_day_bounds_utc(event_date)
-            stmt = stmt.where(EventClusterRecord.last_seen_at >= start).where(EventClusterRecord.last_seen_at <= end)
+            stmt = stmt.where(EventClusterRecord.last_seen_at >= start).where(
+                EventClusterRecord.last_seen_at <= end
+            )
         else:
             hours = window or channel_rolling_window_hours(channel)
-            stmt = stmt.where(EventClusterRecord.last_seen_at >= datetime.now(timezone.utc) - timedelta(hours=hours))
+            stmt = stmt.where(
+                EventClusterRecord.last_seen_at
+                >= datetime.now(timezone.utc) - timedelta(hours=hours)
+            )
         window_label = public_window_label(channel, window=window)
         if q:
             stmt = stmt.where(EventClusterRecord.canonical_title.contains(q))
@@ -332,11 +366,20 @@ def public_events(
                 .where(RankedItemRecord.selected.is_(True))
             )
         if page is not None:
-            rows = list(session.scalars(stmt.order_by(EventClusterRecord.last_seen_at.desc(), EventClusterRecord.id.desc())).all())
+            rows = list(
+                session.scalars(
+                    stmt.order_by(
+                        EventClusterRecord.last_seen_at.desc(),
+                        EventClusterRecord.id.desc(),
+                    )
+                ).all()
+            )
             clusters = [
                 cluster
                 for cluster in rows
-                if _is_public_cluster_ready(session, cluster, require_selected=mode == "selected")
+                if _is_public_cluster_ready(
+                    session, cluster, require_selected=mode == "selected"
+                )
             ]
             page_data = _numbered_page(clusters, page=page, page_size=page_size)
             events = [_event_payload(session, cluster) for cluster in page_data["rows"]]
@@ -358,9 +401,22 @@ def public_events(
                     ),
                 )
             )
-        stmt = stmt.order_by(EventClusterRecord.last_seen_at.desc(), EventClusterRecord.id.desc()).limit(take + 1)
-        page = _page_rows(list(session.scalars(stmt).all()), take, lambda cluster: cluster.last_seen_at, lambda cluster: cluster.id)
-        clusters = [cluster for cluster in page["rows"] if _is_public_cluster_ready(session, cluster, require_selected=mode == "selected")]
+        stmt = stmt.order_by(
+            EventClusterRecord.last_seen_at.desc(), EventClusterRecord.id.desc()
+        ).limit(take + 1)
+        page = _page_rows(
+            list(session.scalars(stmt).all()),
+            take,
+            lambda cluster: cluster.last_seen_at,
+            lambda cluster: cluster.id,
+        )
+        clusters = [
+            cluster
+            for cluster in page["rows"]
+            if _is_public_cluster_ready(
+                session, cluster, require_selected=mode == "selected"
+            )
+        ]
         events = [_event_payload(session, cluster) for cluster in clusters]
 
     return {
@@ -407,13 +463,30 @@ def public_sources(
                 )
             )
         if page is not None:
-            rows = list(session.scalars(stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc())).all())
+            rows = list(
+                session.scalars(
+                    stmt.order_by(
+                        SourceRecord.updated_at.desc(), SourceRecord.id.desc()
+                    )
+                ).all()
+            )
             page_data = _numbered_page(rows, page=page, page_size=page_size)
             sources = [_source_payload(source) for source in page_data["rows"]]
-            return {**_pagination_meta(page_data, len(sources)), "nextCursor": None, "sources": sources}
+            return {
+                **_pagination_meta(page_data, len(sources)),
+                "nextCursor": None,
+                "sources": sources,
+            }
         stmt = _apply_cursor(stmt, SourceRecord.updated_at, SourceRecord.id, cursor)
-        stmt = stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
-        page = _page_rows(list(session.scalars(stmt).all()), take, lambda source: source.updated_at, lambda source: source.id)
+        stmt = stmt.order_by(
+            SourceRecord.updated_at.desc(), SourceRecord.id.desc()
+        ).limit(take + 1)
+        page = _page_rows(
+            list(session.scalars(stmt).all()),
+            take,
+            lambda source: source.updated_at,
+            lambda source: source.id,
+        )
         sources = [_source_payload(source) for source in page["rows"]]
         return {
             "count": len(sources),
@@ -429,7 +502,9 @@ def public_sources(
 
 
 @router.post("/api/v1/public/feedback-events")
-def public_create_feedback_event(request: Request, payload: PublicFeedbackWrite) -> dict[str, object]:
+def public_create_feedback_event(
+    request: Request, payload: PublicFeedbackWrite
+) -> dict[str, object]:
     reason = payload.reason.strip()
     if payload.feedback_type not in PUBLIC_FEEDBACK_TYPES:
         raise HTTPException(status_code=422, detail="unsupported feedback type")
@@ -440,7 +515,9 @@ def public_create_feedback_event(request: Request, payload: PublicFeedbackWrite)
     with SessionLocal() as session:
         if payload.cluster_id is not None:
             cluster = session.get(EventClusterRecord, payload.cluster_id)
-            if cluster is None or not _is_public_cluster_ready(session, cluster, require_selected=False):
+            if cluster is None or not _is_public_cluster_ready(
+                session, cluster, require_selected=False
+            ):
                 raise HTTPException(status_code=404, detail="event not found")
         event = FeedbackEventRecord(
             item_id=payload.item_id,
@@ -509,10 +586,16 @@ def public_daily(
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        stmt = select(DailyDigestRecord).where(DailyDigestRecord.channel == channel).where(DailyDigestRecord.published.is_(True))
+        stmt = (
+            select(DailyDigestRecord)
+            .where(DailyDigestRecord.channel == channel)
+            .where(DailyDigestRecord.published.is_(True))
+        )
         if digest_date is not None:
             stmt = stmt.where(DailyDigestRecord.digest_date == digest_date)
-        stmt = stmt.order_by(DailyDigestRecord.digest_date.desc(), DailyDigestRecord.generated_at.desc()).limit(1)
+        stmt = stmt.order_by(
+            DailyDigestRecord.digest_date.desc(), DailyDigestRecord.generated_at.desc()
+        ).limit(1)
         digest = session.scalar(stmt)
         if digest is None:
             return {"daily": None}
@@ -532,7 +615,11 @@ def public_dailies(
             select(DailyDigestRecord)
             .where(DailyDigestRecord.channel == channel)
             .where(DailyDigestRecord.published.is_(True))
-            .order_by(DailyDigestRecord.digest_date.desc(), DailyDigestRecord.generated_at.desc(), DailyDigestRecord.id.desc())
+            .order_by(
+                DailyDigestRecord.digest_date.desc(),
+                DailyDigestRecord.generated_at.desc(),
+                DailyDigestRecord.id.desc(),
+            )
         )
         rows = list(session.scalars(stmt).all())
         page_data = _numbered_page(rows, page=page, page_size=page_size)
@@ -553,7 +640,10 @@ def events_feed(request: Request, channel: str) -> Response:
                 .where(RankedItemRecord.item_id == EventClusterRecord.main_item_id)
                 .where(RankedItemRecord.selected.is_(True))
             )
-            .order_by(EventClusterRecord.last_seen_at.desc(), EventClusterRecord.cluster_score.desc())
+            .order_by(
+                EventClusterRecord.last_seen_at.desc(),
+                EventClusterRecord.cluster_score.desc(),
+            )
             .limit(50)
         ).all()
         events = []
@@ -571,7 +661,12 @@ def events_feed(request: Request, channel: str) -> Response:
                     "publishedAt": payload["lastSeenAt"],
                 }
             )
-    xml = build_events_feed(events, title=f"{channel.upper()} 情报事件", link=f"/feed/{channel}/events.xml", description="精选事件")
+    xml = build_events_feed(
+        events,
+        title=f"{channel.upper()} 情报事件",
+        link=f"/feed/{channel}/events.xml",
+        description="精选事件",
+    )
     return Response(content=xml, media_type="application/rss+xml")
 
 
@@ -596,7 +691,12 @@ def daily_feed(request: Request, channel: str) -> Response:
             }
             for digest in digests
         ]
-    xml = build_events_feed(events, title=f"{channel.upper()} 日报", link=f"/feed/{channel}/daily.xml", description="每日精选情报")
+    xml = build_events_feed(
+        events,
+        title=f"{channel.upper()} 日报",
+        link=f"/feed/{channel}/daily.xml",
+        description="每日精选情报",
+    )
     return Response(content=xml, media_type="application/rss+xml")
 
 
@@ -624,12 +724,23 @@ SYSTEM_MANAGE = [Depends(require_permission("system.manage"))]
 
 
 @router.post("/api/v1/auth/login")
-def auth_login(request: Request, response: Response, payload: LoginWrite) -> dict[str, object]:
+def auth_login(
+    request: Request, response: Response, payload: LoginWrite
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        user = session.scalar(select(UserRecord).where(UserRecord.username == payload.username))
-        if user is None or user.status != "active" or not verify_password(payload.password, user.password_hash):
-            raise HTTPException(status_code=401, detail={"code": "invalid_credentials", "message": "账号或密码错误。"})
+        user = session.scalar(
+            select(UserRecord).where(UserRecord.username == payload.username)
+        )
+        if (
+            user is None
+            or user.status != "active"
+            or not verify_password(payload.password, user.password_hash)
+        ):
+            raise HTTPException(
+                status_code=401,
+                detail={"code": "invalid_credentials", "message": "账号或密码错误。"},
+            )
         token = create_session(session, user)
         session.commit()
         set_session_cookie(response, token)
@@ -659,7 +770,9 @@ def auth_patch_preferences(
     principal=Depends(require_permission("public.read")),
 ) -> dict[str, object]:
     if principal.user_id is None:
-        raise HTTPException(status_code=401, detail={"code": "unauthenticated", "message": "请先登录。"})
+        raise HTTPException(
+            status_code=401, detail={"code": "unauthenticated", "message": "请先登录。"}
+        )
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         prefs = session.get(UserPreferenceRecord, principal.user_id)
@@ -681,17 +794,28 @@ def auth_patch_preferences(
 def internal_users(request: Request) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        users = session.scalars(select(UserRecord).order_by(UserRecord.created_at.desc(), UserRecord.id.desc())).all()
+        users = session.scalars(
+            select(UserRecord).order_by(
+                UserRecord.created_at.desc(), UserRecord.id.desc()
+            )
+        ).all()
         return {"users": [_user_payload(session, user) for user in users]}
 
 
 @router.post("/api/v1/internal/users", dependencies=USERS_MANAGE)
-def internal_create_user(request: Request, payload: UserCreateWrite) -> dict[str, object]:
+def internal_create_user(
+    request: Request, payload: UserCreateWrite
+) -> dict[str, object]:
     if payload.status not in {"active", "disabled"}:
         raise HTTPException(status_code=422, detail="invalid user status")
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        if session.scalar(select(UserRecord).where(UserRecord.username == payload.username)) is not None:
+        if (
+            session.scalar(
+                select(UserRecord).where(UserRecord.username == payload.username)
+            )
+            is not None
+        ):
             raise HTTPException(status_code=409, detail="username already exists")
         _ensure_roles_exist(session, payload.role_ids)
         user = create_user(
@@ -703,13 +827,21 @@ def internal_create_user(request: Request, payload: UserCreateWrite) -> dict[str
             role_ids=payload.role_ids,
             status=payload.status,
         )
-        audit_log(request, session, action="users.create", target_type="user", target_id=user.id)
+        audit_log(
+            request,
+            session,
+            action="users.create",
+            target_type="user",
+            target_id=user.id,
+        )
         session.commit()
         return {"user": _user_payload(session, user)}
 
 
 @router.patch("/api/v1/internal/users/{user_id}", dependencies=USERS_MANAGE)
-def internal_patch_user(request: Request, user_id: int, payload: UserPatchWrite) -> dict[str, object]:
+def internal_patch_user(
+    request: Request, user_id: int, payload: UserPatchWrite
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         user = session.get(UserRecord, user_id)
@@ -730,7 +862,13 @@ def internal_patch_user(request: Request, user_id: int, payload: UserPatchWrite)
         if payload.role_ids is not None:
             _ensure_roles_exist(session, payload.role_ids)
             replace_user_roles(session, user.id, payload.role_ids)
-        audit_log(request, session, action="users.update", target_type="user", target_id=user.id)
+        audit_log(
+            request,
+            session,
+            action="users.update",
+            target_type="user",
+            target_id=user.id,
+        )
         session.commit()
         return {"user": _user_payload(session, user)}
 
@@ -740,25 +878,43 @@ def internal_roles(request: Request) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         roles = session.scalars(select(RoleRecord).order_by(RoleRecord.id)).all()
-        permissions = session.scalars(select(PermissionRecord).order_by(PermissionRecord.group, PermissionRecord.id)).all()
+        permissions = session.scalars(
+            select(PermissionRecord).order_by(
+                PermissionRecord.group, PermissionRecord.id
+            )
+        ).all()
         return {
             "roles": [_role_payload(session, role) for role in roles],
-            "permissions": [_permission_payload(permission) for permission in permissions],
+            "permissions": [
+                _permission_payload(permission) for permission in permissions
+            ],
         }
 
 
 @router.patch("/api/v1/internal/roles/{role_id}", dependencies=ROLES_MANAGE)
-def internal_patch_role(request: Request, role_id: str, payload: RolePatchWrite) -> dict[str, object]:
+def internal_patch_role(
+    request: Request, role_id: str, payload: RolePatchWrite
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         role = session.get(RoleRecord, role_id)
         if role is None:
             raise HTTPException(status_code=404, detail="role not found")
         _ensure_permissions_exist(session, payload.permission_ids)
-        session.execute(delete(RolePermissionRecord).where(RolePermissionRecord.role_id == role_id))
+        session.execute(
+            delete(RolePermissionRecord).where(RolePermissionRecord.role_id == role_id)
+        )
         for permission_id in payload.permission_ids:
-            session.add(RolePermissionRecord(role_id=role_id, permission_id=permission_id))
-        audit_log(request, session, action="roles.update", target_type="role", target_id=role_id)
+            session.add(
+                RolePermissionRecord(role_id=role_id, permission_id=permission_id)
+            )
+        audit_log(
+            request,
+            session,
+            action="roles.update",
+            target_type="role",
+            target_id=role_id,
+        )
         session.commit()
         return {"role": _role_payload(session, role)}
 
@@ -777,35 +933,62 @@ def internal_audit_logs(
             stmt = stmt.where(AuditLogRecord.actor_username == actor)
         if action:
             stmt = stmt.where(AuditLogRecord.action == action)
-        logs = session.scalars(stmt.order_by(AuditLogRecord.created_at.desc(), AuditLogRecord.id.desc()).limit(take)).all()
+        logs = session.scalars(
+            stmt.order_by(
+                AuditLogRecord.created_at.desc(), AuditLogRecord.id.desc()
+            ).limit(take)
+        ).all()
         return {"auditLogs": [_audit_payload(log) for log in logs]}
 
 
 @router.get("/api/v1/internal/dashboard", dependencies=OPS_DASHBOARD)
-def internal_dashboard(request: Request, channel: str | None = None) -> dict[str, object]:
+def internal_dashboard(
+    request: Request, channel: str | None = None
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        failed_jobs_stmt = select(FetchJobRecord).where(FetchJobRecord.last_error.is_not(None))
+        failed_jobs_stmt = select(FetchJobRecord).where(
+            FetchJobRecord.last_error.is_not(None)
+        )
         if channel:
-            failed_jobs_stmt = failed_jobs_stmt.join(SourceRecord, SourceRecord.id == FetchJobRecord.source_id).where(
-                SourceRecord.channel == channel
-            )
+            failed_jobs_stmt = failed_jobs_stmt.join(
+                SourceRecord, SourceRecord.id == FetchJobRecord.source_id
+            ).where(SourceRecord.channel == channel)
         failed_jobs = session.scalars(
-            failed_jobs_stmt.order_by(FetchJobRecord.updated_at.desc(), FetchJobRecord.id.desc()).limit(5)
+            failed_jobs_stmt.order_by(
+                FetchJobRecord.updated_at.desc(), FetchJobRecord.id.desc()
+            ).limit(5)
         ).all()
-        pending_events_stmt = select(EventClusterRecord).where(EventClusterRecord.review_status == "pending")
+        pending_events_stmt = select(EventClusterRecord).where(
+            EventClusterRecord.review_status == "pending"
+        )
         if channel:
-            pending_events_stmt = pending_events_stmt.where(EventClusterRecord.channel == channel)
-        pending_events = session.scalars(pending_events_stmt.order_by(EventClusterRecord.last_seen_at.desc()).limit(5)).all()
-        pipeline_runs = session.scalars(select(PipelineRunRecord).order_by(PipelineRunRecord.started_at.desc()).limit(5)).all()
+            pending_events_stmt = pending_events_stmt.where(
+                EventClusterRecord.channel == channel
+            )
+        pending_events = session.scalars(
+            pending_events_stmt.order_by(EventClusterRecord.last_seen_at.desc()).limit(
+                5
+            )
+        ).all()
+        pipeline_runs = session.scalars(
+            select(PipelineRunRecord)
+            .order_by(PipelineRunRecord.started_at.desc())
+            .limit(5)
+        ).all()
         return {
             "metrics": _dashboard_metrics(session),
             "channelMetrics": [
-                {"channel": channel_id, "metrics": _dashboard_metrics(session, channel=channel_id)}
+                {
+                    "channel": channel_id,
+                    "metrics": _dashboard_metrics(session, channel=channel_id),
+                }
                 for channel_id in _dashboard_channel_ids(session)
             ],
             "recentFailedJobs": [_job_payload(job) for job in failed_jobs],
-            "pendingReviewEvents": [_internal_event_payload(session, event) for event in pending_events],
+            "pendingReviewEvents": [
+                _internal_event_payload(session, event) for event in pending_events
+            ],
             "recentPipelineRuns": [_pipeline_run_payload(run) for run in pipeline_runs],
         }
 
@@ -819,12 +1002,16 @@ def internal_quality_dashboard(
     started_at = generated_at - timedelta(hours=window)
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        channels = session.scalars(select(SourceRecord.channel).distinct().order_by(SourceRecord.channel)).all()
+        channels = session.scalars(
+            select(SourceRecord.channel).distinct().order_by(SourceRecord.channel)
+        ).all()
         return {
             "windowHours": window,
             "generatedAt": generated_at.isoformat(),
             "channels": [
-                _quality_channel_payload(session, channel=channel, started_at=started_at)
+                _quality_channel_payload(
+                    session, channel=channel, started_at=started_at
+                )
                 for channel in channels
             ],
         }
@@ -855,7 +1042,13 @@ def internal_sources(
         )
         metric_rows = list(session.scalars(stmt).all())
         if page is not None:
-            rows = list(session.scalars(stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc())).all())
+            rows = list(
+                session.scalars(
+                    stmt.order_by(
+                        SourceRecord.updated_at.desc(), SourceRecord.id.desc()
+                    )
+                ).all()
+            )
             page_data = _numbered_page(rows, page=page, page_size=page_size)
             sources = [_source_payload(source) for source in page_data["rows"]]
             return {
@@ -865,8 +1058,15 @@ def internal_sources(
                 "sources": sources,
             }
         stmt = _apply_cursor(stmt, SourceRecord.updated_at, SourceRecord.id, cursor)
-        stmt = stmt.order_by(SourceRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
-        page = _page_rows(list(session.scalars(stmt).all()), take, lambda source: source.updated_at, lambda source: source.id)
+        stmt = stmt.order_by(
+            SourceRecord.updated_at.desc(), SourceRecord.id.desc()
+        ).limit(take + 1)
+        page = _page_rows(
+            list(session.scalars(stmt).all()),
+            take,
+            lambda source: source.updated_at,
+            lambda source: source.id,
+        )
         sources = [_source_payload(source) for source in page["rows"]]
         return {
             "count": len(sources),
@@ -900,7 +1100,9 @@ def internal_create_source(request: Request, payload: SourceWrite) -> dict[str, 
 
 
 @router.patch("/api/v1/internal/sources/{source_id}", dependencies=SOURCES_WRITE)
-def internal_patch_source(request: Request, source_id: str, payload: SourcePatch) -> dict[str, object]:
+def internal_patch_source(
+    request: Request, source_id: str, payload: SourcePatch
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         source = session.get(SourceRecord, source_id)
@@ -908,8 +1110,18 @@ def internal_patch_source(request: Request, source_id: str, payload: SourcePatch
             raise HTTPException(status_code=404, detail="source not found")
         updates = payload.model_dump(exclude_unset=True)
         for field_name, value in updates.items():
+            if field_name == "publisher_key":
+                value = normalize_publisher_key(value, source.url, source.id)
+                updates[field_name] = value
             setattr(source, field_name, value)
-        audit_log(request, session, action="sources.update", target_type="source", target_id=source.id, metadata=updates)
+        audit_log(
+            request,
+            session,
+            action="sources.update",
+            target_type="source",
+            target_id=source.id,
+            metadata=updates,
+        )
         session.commit()
         session.refresh(source)
         return {"source": _source_payload(source)}
@@ -924,14 +1136,32 @@ def internal_source_states(
 ) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        stmt = select(SourceStateRecord, SourceRecord).join(SourceRecord, SourceRecord.id == SourceStateRecord.source_id)
+        stmt = select(SourceStateRecord, SourceRecord).join(
+            SourceRecord, SourceRecord.id == SourceStateRecord.source_id
+        )
         if channel:
             stmt = stmt.where(SourceRecord.channel == channel)
-        stmt = _apply_cursor(stmt, SourceStateRecord.updated_at, SourceRecord.id, cursor)
-        stmt = stmt.order_by(SourceStateRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
-        page = _page_rows(list(session.execute(stmt).all()), take, lambda row: row[0].updated_at, lambda row: row[1].id)
-        states = [_source_state_payload(state, source) for state, source in page["rows"]]
-        return {"count": len(states), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "sourceStates": states}
+        stmt = _apply_cursor(
+            stmt, SourceStateRecord.updated_at, SourceRecord.id, cursor
+        )
+        stmt = stmt.order_by(
+            SourceStateRecord.updated_at.desc(), SourceRecord.id.desc()
+        ).limit(take + 1)
+        page = _page_rows(
+            list(session.execute(stmt).all()),
+            take,
+            lambda row: row[0].updated_at,
+            lambda row: row[1].id,
+        )
+        states = [
+            _source_state_payload(state, source) for state, source in page["rows"]
+        ]
+        return {
+            "count": len(states),
+            "hasNext": page["hasNext"],
+            "nextCursor": page["nextCursor"],
+            "sourceStates": states,
+        }
 
 
 @router.get("/api/v1/internal/source-diagnostics", dependencies=HEALTH_READ)
@@ -964,8 +1194,17 @@ def internal_source_diagnostics(
             free_access=free_access,
         )
         if page is not None:
-            rows = list(session.execute(stmt.order_by(SourceStateRecord.updated_at.desc(), SourceRecord.id.desc())).all())
-            diagnostics = [_source_diagnostic_payload(session, source, state) for source, state in rows]
+            rows = list(
+                session.execute(
+                    stmt.order_by(
+                        SourceStateRecord.updated_at.desc(), SourceRecord.id.desc()
+                    )
+                ).all()
+            )
+            diagnostics = [
+                _source_diagnostic_payload(session, source, state)
+                for source, state in rows
+            ]
             diagnostics = _filter_diagnostics(diagnostics, diagnostic_status)
             diagnostics = _sort_diagnostics(diagnostics, sort)
             page_data = _numbered_page(diagnostics, page=page, page_size=page_size)
@@ -976,10 +1215,22 @@ def internal_source_diagnostics(
                 "metrics": _diagnostic_list_metrics(diagnostics),
                 "sourceDiagnostics": page_diagnostics,
             }
-        stmt = _apply_cursor(stmt, SourceStateRecord.updated_at, SourceRecord.id, cursor)
-        stmt = stmt.order_by(SourceStateRecord.updated_at.desc(), SourceRecord.id.desc()).limit(take + 1)
-        page = _page_rows(list(session.execute(stmt).all()), take, lambda row: row[1].updated_at, lambda row: row[0].id)
-        diagnostics = [_source_diagnostic_payload(session, source, state) for source, state in page["rows"]]
+        stmt = _apply_cursor(
+            stmt, SourceStateRecord.updated_at, SourceRecord.id, cursor
+        )
+        stmt = stmt.order_by(
+            SourceStateRecord.updated_at.desc(), SourceRecord.id.desc()
+        ).limit(take + 1)
+        page = _page_rows(
+            list(session.execute(stmt).all()),
+            take,
+            lambda row: row[1].updated_at,
+            lambda row: row[0].id,
+        )
+        diagnostics = [
+            _source_diagnostic_payload(session, source, state)
+            for source, state in page["rows"]
+        ]
         return {
             "count": len(diagnostics),
             "hasNext": page["hasNext"],
@@ -1003,19 +1254,43 @@ def internal_jobs(
     with SessionLocal() as session:
         stmt = select(FetchJobRecord)
         if channel:
-            stmt = stmt.join(SourceRecord, SourceRecord.id == FetchJobRecord.source_id).where(SourceRecord.channel == channel)
+            stmt = stmt.join(
+                SourceRecord, SourceRecord.id == FetchJobRecord.source_id
+            ).where(SourceRecord.channel == channel)
         if status:
             stmt = stmt.where(FetchJobRecord.status == status)
         if page is not None:
-            rows = list(session.scalars(stmt.order_by(FetchJobRecord.created_at.desc(), FetchJobRecord.id.desc())).all())
+            rows = list(
+                session.scalars(
+                    stmt.order_by(
+                        FetchJobRecord.created_at.desc(), FetchJobRecord.id.desc()
+                    )
+                ).all()
+            )
             page_data = _numbered_page(rows, page=page, page_size=page_size)
             jobs = [_job_payload(job) for job in page_data["rows"]]
-            return {**_pagination_meta(page_data, len(jobs)), "nextCursor": None, "jobs": jobs}
+            return {
+                **_pagination_meta(page_data, len(jobs)),
+                "nextCursor": None,
+                "jobs": jobs,
+            }
         stmt = _apply_cursor(stmt, FetchJobRecord.created_at, FetchJobRecord.id, cursor)
-        stmt = stmt.order_by(FetchJobRecord.created_at.desc(), FetchJobRecord.id.desc()).limit(take + 1)
-        page = _page_rows(list(session.scalars(stmt).all()), take, lambda job: job.created_at, lambda job: job.id)
+        stmt = stmt.order_by(
+            FetchJobRecord.created_at.desc(), FetchJobRecord.id.desc()
+        ).limit(take + 1)
+        page = _page_rows(
+            list(session.scalars(stmt).all()),
+            take,
+            lambda job: job.created_at,
+            lambda job: job.id,
+        )
         jobs = [_job_payload(job) for job in page["rows"]]
-        return {"count": len(jobs), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "jobs": jobs}
+        return {
+            "count": len(jobs),
+            "hasNext": page["hasNext"],
+            "nextCursor": page["nextCursor"],
+            "jobs": jobs,
+        }
 
 
 @router.post("/api/v1/internal/jobs/{job_id}/retry", dependencies=JOBS_RETRY)
@@ -1031,56 +1306,95 @@ def internal_retry_job(request: Request, job_id: int) -> dict[str, object]:
         job.locked_by = None
         job.attempt_count = 0
         job.last_error = None
-        audit_log(request, session, action="jobs.retry", target_type="job", target_id=job.id)
+        audit_log(
+            request, session, action="jobs.retry", target_type="job", target_id=job.id
+        )
         session.commit()
         session.refresh(job)
         return {"job": _job_payload(job)}
 
 
 @router.get("/api/v1/internal/strategy-versions", dependencies=STRATEGIES_READ)
-def internal_strategy_versions(request: Request, channel: str | None = None) -> dict[str, object]:
+def internal_strategy_versions(
+    request: Request, channel: str | None = None
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        stmt = select(StrategyVersionRecord).order_by(StrategyVersionRecord.created_at.desc())
+        stmt = select(StrategyVersionRecord).order_by(
+            StrategyVersionRecord.created_at.desc()
+        )
         if channel:
             stmt = stmt.where(StrategyVersionRecord.channel == channel)
-        return {"strategyVersions": [_strategy_payload(strategy) for strategy in session.scalars(stmt).all()]}
+        return {
+            "strategyVersions": [
+                _strategy_payload(strategy) for strategy in session.scalars(stmt).all()
+            ]
+        }
 
 
 @router.post("/api/v1/internal/strategy-versions", dependencies=STRATEGIES_WRITE)
-def internal_create_strategy_version(request: Request, payload: StrategyVersionWrite) -> dict[str, object]:
+def internal_create_strategy_version(
+    request: Request, payload: StrategyVersionWrite
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         strategy = StrategyVersionRecord(**payload.model_dump())
         session.add(strategy)
-        audit_log(request, session, action="strategies.create", target_type="strategy", target_id=strategy.id)
+        audit_log(
+            request,
+            session,
+            action="strategies.create",
+            target_type="strategy",
+            target_id=strategy.id,
+        )
         session.commit()
         session.refresh(strategy)
         return {"strategyVersion": _strategy_payload(strategy)}
 
 
-@router.post("/api/v1/internal/strategy-versions/{strategy_id}/activate", dependencies=STRATEGIES_ACTIVATE)
-def internal_activate_strategy_version(request: Request, strategy_id: str) -> dict[str, object]:
+@router.post(
+    "/api/v1/internal/strategy-versions/{strategy_id}/activate",
+    dependencies=STRATEGIES_ACTIVATE,
+)
+def internal_activate_strategy_version(
+    request: Request, strategy_id: str
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         try:
-            strategy = activate_strategy_version(session, strategy_id, now=datetime.now(timezone.utc))
+            strategy = activate_strategy_version(
+                session, strategy_id, now=datetime.now(timezone.utc)
+            )
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
-        audit_log(request, session, action="strategies.activate", target_type="strategy", target_id=strategy.id)
+        audit_log(
+            request,
+            session,
+            action="strategies.activate",
+            target_type="strategy",
+            target_id=strategy.id,
+        )
         session.commit()
         session.refresh(strategy)
         return {"strategyVersion": _strategy_payload(strategy)}
 
 
 @router.post("/api/v1/internal/feedback-events", dependencies=FEEDBACK_UPDATE)
-def internal_create_feedback_event(request: Request, payload: FeedbackEventWrite) -> dict[str, object]:
+def internal_create_feedback_event(
+    request: Request, payload: FeedbackEventWrite
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         event = FeedbackEventRecord(**payload.model_dump())
         session.add(event)
         session.flush()
-        audit_log(request, session, action="feedback.create", target_type="feedback", target_id=event.id)
+        audit_log(
+            request,
+            session,
+            action="feedback.create",
+            target_type="feedback",
+            target_id=event.id,
+        )
         session.commit()
         session.refresh(event)
         return {"feedbackEvent": _feedback_payload(event)}
@@ -1107,19 +1421,48 @@ def internal_feedback_events(
         if cluster_id is not None:
             stmt = stmt.where(FeedbackEventRecord.cluster_id == cluster_id)
         if page is not None:
-            rows = list(session.scalars(stmt.order_by(FeedbackEventRecord.created_at.desc(), FeedbackEventRecord.id.desc())).all())
+            rows = list(
+                session.scalars(
+                    stmt.order_by(
+                        FeedbackEventRecord.created_at.desc(),
+                        FeedbackEventRecord.id.desc(),
+                    )
+                ).all()
+            )
             page_data = _numbered_page(rows, page=page, page_size=page_size)
             events = [_feedback_payload(event) for event in page_data["rows"]]
-            return {**_pagination_meta(page_data, len(events)), "nextCursor": None, "feedbackEvents": events}
-        stmt = _apply_cursor(stmt, FeedbackEventRecord.created_at, FeedbackEventRecord.id, cursor)
-        stmt = stmt.order_by(FeedbackEventRecord.created_at.desc(), FeedbackEventRecord.id.desc()).limit(take + 1)
-        page = _page_rows(list(session.scalars(stmt).all()), take, lambda event: event.created_at, lambda event: event.id)
+            return {
+                **_pagination_meta(page_data, len(events)),
+                "nextCursor": None,
+                "feedbackEvents": events,
+            }
+        stmt = _apply_cursor(
+            stmt, FeedbackEventRecord.created_at, FeedbackEventRecord.id, cursor
+        )
+        stmt = stmt.order_by(
+            FeedbackEventRecord.created_at.desc(), FeedbackEventRecord.id.desc()
+        ).limit(take + 1)
+        page = _page_rows(
+            list(session.scalars(stmt).all()),
+            take,
+            lambda event: event.created_at,
+            lambda event: event.id,
+        )
         events = [_feedback_payload(event) for event in page["rows"]]
-        return {"count": len(events), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "feedbackEvents": events}
+        return {
+            "count": len(events),
+            "hasNext": page["hasNext"],
+            "nextCursor": page["nextCursor"],
+            "feedbackEvents": events,
+        }
 
 
-@router.patch("/api/v1/internal/feedback-events/{feedback_id}", dependencies=FEEDBACK_UPDATE)
-def internal_patch_feedback_event(request: Request, feedback_id: int, payload: dict[str, object]) -> dict[str, object]:
+@router.patch(
+    "/api/v1/internal/feedback-events/{feedback_id}", dependencies=FEEDBACK_UPDATE
+)
+def internal_patch_feedback_event(
+    request: Request, feedback_id: int, payload: dict[str, object]
+) -> dict[str, object]:
     status = payload.get("status")
     if status not in {"unread", "read", "accepted", "ignored"}:
         raise HTTPException(status_code=422, detail="invalid feedback status")
@@ -1129,20 +1472,37 @@ def internal_patch_feedback_event(request: Request, feedback_id: int, payload: d
         if event is None:
             raise HTTPException(status_code=404, detail="feedback event not found")
         event.status = str(status)
-        audit_log(request, session, action="feedback.update", target_type="feedback", target_id=event.id, metadata={"status": status})
+        audit_log(
+            request,
+            session,
+            action="feedback.update",
+            target_type="feedback",
+            target_id=event.id,
+            metadata={"status": status},
+        )
         session.commit()
         session.refresh(event)
         return {"feedbackEvent": _feedback_payload(event)}
 
 
 @router.post("/api/v1/internal/evaluation-runs", dependencies=EVALUATIONS_RUN)
-def internal_create_evaluation_run(request: Request, payload: EvaluationRunWrite) -> dict[str, object]:
+def internal_create_evaluation_run(
+    request: Request, payload: EvaluationRunWrite
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
-        run = EvaluationRunRecord(**payload.model_dump(), status="pending", metrics_json={})
+        run = EvaluationRunRecord(
+            **payload.model_dump(), status="pending", metrics_json={}
+        )
         session.add(run)
         session.flush()
-        audit_log(request, session, action="evaluations.create", target_type="evaluation", target_id=run.id)
+        audit_log(
+            request,
+            session,
+            action="evaluations.create",
+            target_type="evaluation",
+            target_id=run.id,
+        )
         session.commit()
         session.refresh(run)
         return {"evaluationRun": _evaluation_run_payload(run)}
@@ -1163,15 +1523,40 @@ def internal_evaluation_runs(
         if channel:
             stmt = stmt.where(EvaluationRunRecord.channel == channel)
         if page is not None:
-            rows = list(session.scalars(stmt.order_by(EvaluationRunRecord.created_at.desc(), EvaluationRunRecord.id.desc())).all())
+            rows = list(
+                session.scalars(
+                    stmt.order_by(
+                        EvaluationRunRecord.created_at.desc(),
+                        EvaluationRunRecord.id.desc(),
+                    )
+                ).all()
+            )
             page_data = _numbered_page(rows, page=page, page_size=page_size)
             runs = [_evaluation_run_payload(run) for run in page_data["rows"]]
-            return {**_pagination_meta(page_data, len(runs)), "nextCursor": None, "evaluationRuns": runs}
-        stmt = _apply_cursor(stmt, EvaluationRunRecord.created_at, EvaluationRunRecord.id, cursor)
-        stmt = stmt.order_by(EvaluationRunRecord.created_at.desc(), EvaluationRunRecord.id.desc()).limit(take + 1)
-        page = _page_rows(list(session.scalars(stmt).all()), take, lambda run: run.created_at, lambda run: run.id)
+            return {
+                **_pagination_meta(page_data, len(runs)),
+                "nextCursor": None,
+                "evaluationRuns": runs,
+            }
+        stmt = _apply_cursor(
+            stmt, EvaluationRunRecord.created_at, EvaluationRunRecord.id, cursor
+        )
+        stmt = stmt.order_by(
+            EvaluationRunRecord.created_at.desc(), EvaluationRunRecord.id.desc()
+        ).limit(take + 1)
+        page = _page_rows(
+            list(session.scalars(stmt).all()),
+            take,
+            lambda run: run.created_at,
+            lambda run: run.id,
+        )
         runs = [_evaluation_run_payload(run) for run in page["rows"]]
-        return {"count": len(runs), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "evaluationRuns": runs}
+        return {
+            "count": len(runs),
+            "hasNext": page["hasNext"],
+            "nextCursor": page["nextCursor"],
+            "evaluationRuns": runs,
+        }
 
 
 @router.get("/api/v1/internal/evaluation-runs/{run_id}", dependencies=EVALUATIONS_READ)
@@ -1184,7 +1569,9 @@ def internal_evaluation_run_detail(request: Request, run_id: int) -> dict[str, o
         return {"evaluationRun": _evaluation_run_payload(run)}
 
 
-@router.post("/api/v1/internal/evaluation-runs/{run_id}/run", dependencies=EVALUATIONS_RUN)
+@router.post(
+    "/api/v1/internal/evaluation-runs/{run_id}/run", dependencies=EVALUATIONS_RUN
+)
 def internal_run_evaluation(request: Request, run_id: int) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
@@ -1192,7 +1579,13 @@ def internal_run_evaluation(request: Request, run_id: int) -> dict[str, object]:
             run = run_evaluation(session, run_id, now=datetime.now(timezone.utc))
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
-        audit_log(request, session, action="evaluations.run", target_type="evaluation", target_id=run.id)
+        audit_log(
+            request,
+            session,
+            action="evaluations.run",
+            target_type="evaluation",
+            target_id=run.id,
+        )
         session.commit()
         session.refresh(run)
         return {"evaluationRun": _evaluation_run_payload(run)}
@@ -1222,15 +1615,42 @@ def internal_events(
         if q:
             stmt = stmt.where(EventClusterRecord.canonical_title.contains(q))
         if page is not None:
-            rows = list(session.scalars(stmt.order_by(EventClusterRecord.last_seen_at.desc(), EventClusterRecord.id.desc())).all())
+            rows = list(
+                session.scalars(
+                    stmt.order_by(
+                        EventClusterRecord.last_seen_at.desc(),
+                        EventClusterRecord.id.desc(),
+                    )
+                ).all()
+            )
             page_data = _numbered_page(rows, page=page, page_size=page_size)
-            events = [_internal_event_payload(session, event) for event in page_data["rows"]]
-            return {**_pagination_meta(page_data, len(events)), "nextCursor": None, "events": events}
-        stmt = _apply_cursor(stmt, EventClusterRecord.last_seen_at, EventClusterRecord.id, cursor)
-        stmt = stmt.order_by(EventClusterRecord.last_seen_at.desc(), EventClusterRecord.id.desc()).limit(take + 1)
-        page = _page_rows(list(session.scalars(stmt).all()), take, lambda event: event.last_seen_at, lambda event: event.id)
+            events = [
+                _internal_event_payload(session, event) for event in page_data["rows"]
+            ]
+            return {
+                **_pagination_meta(page_data, len(events)),
+                "nextCursor": None,
+                "events": events,
+            }
+        stmt = _apply_cursor(
+            stmt, EventClusterRecord.last_seen_at, EventClusterRecord.id, cursor
+        )
+        stmt = stmt.order_by(
+            EventClusterRecord.last_seen_at.desc(), EventClusterRecord.id.desc()
+        ).limit(take + 1)
+        page = _page_rows(
+            list(session.scalars(stmt).all()),
+            take,
+            lambda event: event.last_seen_at,
+            lambda event: event.id,
+        )
         events = [_internal_event_payload(session, event) for event in page["rows"]]
-        return {"count": len(events), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "events": events}
+        return {
+            "count": len(events),
+            "hasNext": page["hasNext"],
+            "nextCursor": page["nextCursor"],
+            "events": events,
+        }
 
 
 @router.get("/api/v1/internal/events/{event_id}", dependencies=EVENTS_READ)
@@ -1247,7 +1667,9 @@ def internal_event_detail(request: Request, event_id: int) -> dict[str, object]:
 
 
 @router.patch("/api/v1/internal/events/{event_id}/review", dependencies=EVENTS_REVIEW)
-def internal_review_event(request: Request, event_id: int, payload: EventReviewWrite) -> dict[str, object]:
+def internal_review_event(
+    request: Request, event_id: int, payload: EventReviewWrite
+) -> dict[str, object]:
     if payload.review_status not in {"pending", "approved", "rejected"}:
         raise HTTPException(status_code=422, detail="invalid review status")
     SessionLocal = _production_sessionmaker(request)
@@ -1290,19 +1712,46 @@ def internal_daily_digests(
         if digest_date is not None:
             stmt = stmt.where(DailyDigestRecord.digest_date == digest_date)
         if page is not None:
-            rows = list(session.scalars(stmt.order_by(DailyDigestRecord.generated_at.desc(), DailyDigestRecord.id.desc())).all())
+            rows = list(
+                session.scalars(
+                    stmt.order_by(
+                        DailyDigestRecord.generated_at.desc(),
+                        DailyDigestRecord.id.desc(),
+                    )
+                ).all()
+            )
             page_data = _numbered_page(rows, page=page, page_size=page_size)
             digests = [_daily_digest_payload(digest) for digest in page_data["rows"]]
-            return {**_pagination_meta(page_data, len(digests)), "nextCursor": None, "dailyDigests": digests}
-        stmt = _apply_cursor(stmt, DailyDigestRecord.generated_at, DailyDigestRecord.id, cursor)
-        stmt = stmt.order_by(DailyDigestRecord.generated_at.desc(), DailyDigestRecord.id.desc()).limit(take + 1)
-        page = _page_rows(list(session.scalars(stmt).all()), take, lambda digest: digest.generated_at, lambda digest: digest.id)
+            return {
+                **_pagination_meta(page_data, len(digests)),
+                "nextCursor": None,
+                "dailyDigests": digests,
+            }
+        stmt = _apply_cursor(
+            stmt, DailyDigestRecord.generated_at, DailyDigestRecord.id, cursor
+        )
+        stmt = stmt.order_by(
+            DailyDigestRecord.generated_at.desc(), DailyDigestRecord.id.desc()
+        ).limit(take + 1)
+        page = _page_rows(
+            list(session.scalars(stmt).all()),
+            take,
+            lambda digest: digest.generated_at,
+            lambda digest: digest.id,
+        )
         digests = [_daily_digest_payload(digest) for digest in page["rows"]]
-        return {"count": len(digests), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "dailyDigests": digests}
+        return {
+            "count": len(digests),
+            "hasNext": page["hasNext"],
+            "nextCursor": page["nextCursor"],
+            "dailyDigests": digests,
+        }
 
 
 @router.post("/api/v1/internal/daily-digests/generate", dependencies=DAILY_PUBLISH)
-def internal_generate_daily_digest(request: Request, payload: DailyDigestGenerateWrite) -> dict[str, object]:
+def internal_generate_daily_digest(
+    request: Request, payload: DailyDigestGenerateWrite
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         result = generate_daily_digest(
@@ -1316,7 +1765,13 @@ def internal_generate_daily_digest(request: Request, payload: DailyDigestGenerat
             session.commit()
             return {"dailyDigest": None, "created": False, "eventCount": 0}
         digest = session.get(DailyDigestRecord, result.digest_id)
-        audit_log(request, session, action="daily.generate", target_type="daily_digest", target_id=result.digest_id)
+        audit_log(
+            request,
+            session,
+            action="daily.generate",
+            target_type="daily_digest",
+            target_id=result.digest_id,
+        )
         session.commit()
         session.refresh(digest)
         return {
@@ -1326,14 +1781,26 @@ def internal_generate_daily_digest(request: Request, payload: DailyDigestGenerat
         }
 
 
-@router.post("/api/v1/internal/daily-digests/{digest_id}/publish", dependencies=DAILY_PUBLISH)
-def internal_publish_daily_digest(request: Request, digest_id: int, payload: ActorWrite) -> dict[str, object]:
-    return _set_daily_digest_published(request, digest_id, published=True, actor=payload.actor)
+@router.post(
+    "/api/v1/internal/daily-digests/{digest_id}/publish", dependencies=DAILY_PUBLISH
+)
+def internal_publish_daily_digest(
+    request: Request, digest_id: int, payload: ActorWrite
+) -> dict[str, object]:
+    return _set_daily_digest_published(
+        request, digest_id, published=True, actor=payload.actor
+    )
 
 
-@router.post("/api/v1/internal/daily-digests/{digest_id}/unpublish", dependencies=DAILY_PUBLISH)
-def internal_unpublish_daily_digest(request: Request, digest_id: int, payload: ActorWrite) -> dict[str, object]:
-    return _set_daily_digest_published(request, digest_id, published=False, actor=payload.actor)
+@router.post(
+    "/api/v1/internal/daily-digests/{digest_id}/unpublish", dependencies=DAILY_PUBLISH
+)
+def internal_unpublish_daily_digest(
+    request: Request, digest_id: int, payload: ActorWrite
+) -> dict[str, object]:
+    return _set_daily_digest_published(
+        request, digest_id, published=False, actor=payload.actor
+    )
 
 
 @router.get("/api/v1/internal/pipeline-runs", dependencies=OPS_DASHBOARD)
@@ -1347,19 +1814,48 @@ def internal_pipeline_runs(
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         if page is not None:
-            rows = list(session.scalars(select(PipelineRunRecord).order_by(PipelineRunRecord.started_at.desc(), PipelineRunRecord.id.desc())).all())
+            rows = list(
+                session.scalars(
+                    select(PipelineRunRecord).order_by(
+                        PipelineRunRecord.started_at.desc(), PipelineRunRecord.id.desc()
+                    )
+                ).all()
+            )
             page_data = _numbered_page(rows, page=page, page_size=page_size)
             runs = [_pipeline_run_payload(run) for run in page_data["rows"]]
-            return {**_pagination_meta(page_data, len(runs)), "nextCursor": None, "pipelineRuns": runs}
-        stmt = _apply_cursor(select(PipelineRunRecord), PipelineRunRecord.started_at, PipelineRunRecord.id, cursor)
-        stmt = stmt.order_by(PipelineRunRecord.started_at.desc(), PipelineRunRecord.id.desc()).limit(take + 1)
-        page = _page_rows(list(session.scalars(stmt).all()), take, lambda run: run.started_at, lambda run: run.id)
+            return {
+                **_pagination_meta(page_data, len(runs)),
+                "nextCursor": None,
+                "pipelineRuns": runs,
+            }
+        stmt = _apply_cursor(
+            select(PipelineRunRecord),
+            PipelineRunRecord.started_at,
+            PipelineRunRecord.id,
+            cursor,
+        )
+        stmt = stmt.order_by(
+            PipelineRunRecord.started_at.desc(), PipelineRunRecord.id.desc()
+        ).limit(take + 1)
+        page = _page_rows(
+            list(session.scalars(stmt).all()),
+            take,
+            lambda run: run.started_at,
+            lambda run: run.id,
+        )
         runs = [_pipeline_run_payload(run) for run in page["rows"]]
-        return {"count": len(runs), "hasNext": page["hasNext"], "nextCursor": page["nextCursor"], "pipelineRuns": runs}
+        return {
+            "count": len(runs),
+            "hasNext": page["hasNext"],
+            "nextCursor": page["nextCursor"],
+            "pipelineRuns": runs,
+        }
 
 
 @router.post("/api/v1/internal/pipeline-runs", dependencies=JOBS_RETRY)
-def internal_create_pipeline_run(request: Request, payload: PipelineRunWrite) -> dict[str, object]:
+def internal_create_pipeline_run(
+    request: Request, payload: PipelineRunWrite
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     started_at = datetime.now(timezone.utc)
     with SessionLocal() as session:
@@ -1375,7 +1871,12 @@ def internal_create_pipeline_run(request: Request, payload: PipelineRunWrite) ->
         run_id = run.id
 
     try:
-        stats = run_pipeline_once(SessionLocal, worker_id=payload.worker_id, limit=payload.limit, now=started_at)
+        stats = run_pipeline_once(
+            SessionLocal,
+            worker_id=payload.worker_id,
+            limit=payload.limit,
+            now=started_at,
+        )
         status = "failed" if stats.failed else "succeeded"
         error_message = "部分信源抓取失败" if stats.failed else None
     except Exception as exc:  # noqa: BLE001 - record manual pipeline failures for operators.
@@ -1399,7 +1900,14 @@ def internal_create_pipeline_run(request: Request, payload: PipelineRunWrite) ->
             run.normalized_items = stats.normalized_items
             run.ranked_items = stats.ranked_items
             run.clusters = stats.clusters
-        audit_log(request, session, action="pipeline.run", target_type="pipeline_run", target_id=run.id, result=status)
+        audit_log(
+            request,
+            session,
+            action="pipeline.run",
+            target_type="pipeline_run",
+            target_id=run.id,
+            result=status,
+        )
         session.commit()
         session.refresh(run)
         return {"pipelineRun": _pipeline_run_payload(run)}
@@ -1408,7 +1916,9 @@ def internal_create_pipeline_run(request: Request, payload: PipelineRunWrite) ->
 def _production_sessionmaker(request: Request):
     SessionLocal = getattr(request.app.state, "production_sessionmaker", None)
     if SessionLocal is None:
-        raise HTTPException(status_code=503, detail="production database is not configured")
+        raise HTTPException(
+            status_code=503, detail="production database is not configured"
+        )
     return SessionLocal
 
 
@@ -1459,7 +1969,13 @@ def _apply_source_filters(
     query_text = (q or "").strip()
     if query_text:
         pattern = f"%{query_text}%"
-        stmt = stmt.where(or_(SourceRecord.name.ilike(pattern), SourceRecord.id.ilike(pattern), SourceRecord.url.ilike(pattern)))
+        stmt = stmt.where(
+            or_(
+                SourceRecord.name.ilike(pattern),
+                SourceRecord.id.ilike(pattern),
+                SourceRecord.url.ilike(pattern),
+            )
+        )
     source_group_values = _split_filter_values(source_group)
     if source_group_values:
         stmt = stmt.where(SourceRecord.source_group.in_(source_group_values))
@@ -1477,17 +1993,26 @@ def _source_list_metrics(sources: list[SourceRecord]) -> dict[str, int]:
     return {
         "sourceCount": len(sources),
         "enabledSourceCount": sum(1 for source in sources if source.enabled),
-        "highAuthorityCount": sum(1 for source in sources if source.authority_weight >= 90),
+        "highAuthorityCount": sum(
+            1 for source in sources if source.authority_weight >= 90
+        ),
         "pendingSocialCount": sum(
             1
             for source in sources
-            if source.source_group == "social" and source.collection_status != "collectable"
+            if source.source_group == "social"
+            and source.collection_status != "collectable"
         ),
     }
 
 
 def _clean_source_payload(payload: SourceWrite) -> SourceWrite:
-    return payload.model_copy(update={"id": payload.id.strip(), "name": payload.name.strip(), "url": payload.url.strip()})
+    return payload.model_copy(
+        update={
+            "id": payload.id.strip(),
+            "name": payload.name.strip(),
+            "url": payload.url.strip(),
+        }
+    )
 
 
 def _ensure_source_required_fields(payload: SourceWrite) -> None:
@@ -1537,7 +2062,9 @@ def _ensure_source_connectivity(request: Request, payload: SourceWrite) -> None:
         ok = bool(result.get("ok")) if isinstance(result, dict) else bool(result)
         if ok:
             return
-        message = str(result.get("message") if isinstance(result, dict) else "连通性测试失败。")
+        message = str(
+            result.get("message") if isinstance(result, dict) else "连通性测试失败。"
+        )
         _raise_source_connectivity_error(message)
 
     source = SourceRecord(
@@ -1555,10 +2082,15 @@ def _ensure_source_connectivity(request: Request, payload: SourceWrite) -> None:
         fetch_adapter=payload.fetch_adapter,
         parser_type=payload.parser_type,
         default_categories=list(payload.default_categories),
-        fetch_interval_minutes=payload.fetch_interval_minutes,
+        fetch_interval_minutes=load_collection_policy().crawl_interval_minutes,
         enabled=payload.enabled,
         visibility=payload.visibility,
         source_group=payload.source_group,
+        publisher_key=normalize_publisher_key(
+            payload.publisher_key,
+            payload.url,
+            payload.id,
+        ),
         contributor_no=payload.contributor_no,
         social_handle=payload.social_handle,
         collection_status=payload.collection_status,
@@ -1573,7 +2105,7 @@ def _ensure_source_connectivity(request: Request, payload: SourceWrite) -> None:
             headers={"User-Agent": "AIHOT Source Validator/1.0"},
         ) as client:
             result = adapter.fetch(source, client=client)
-    except KeyError as exc:
+    except KeyError:
         _raise_source_connectivity_error(f"不支持的采集方式：{payload.fetch_adapter}。")
     except httpx.HTTPError as exc:
         _raise_source_connectivity_error(f"连通性测试失败：{exc}")
@@ -1581,9 +2113,14 @@ def _ensure_source_connectivity(request: Request, payload: SourceWrite) -> None:
         _raise_source_connectivity_error(f"连通性测试失败：{exc}")
 
     if result.status != "succeeded":
-        _raise_source_connectivity_error(result.error_message or f"连通性测试失败：HTTP {result.http_status or '未知'}")
+        _raise_source_connectivity_error(
+            result.error_message
+            or f"连通性测试失败：HTTP {result.http_status or '未知'}"
+        )
     if not result.documents:
-        _raise_source_connectivity_error("连通性测试通过，但没有抓取到可用内容。请检查采集方式、页面结构或 RSS 是否有最近内容。")
+        _raise_source_connectivity_error(
+            "连通性测试通过，但没有抓取到可用内容。请检查采集方式、页面结构或 RSS 是否有最近内容。"
+        )
 
 
 def _raise_source_connectivity_error(message: str):
@@ -1596,56 +2133,109 @@ def _raise_source_connectivity_error(message: str):
     )
 
 
-def _filter_diagnostics(diagnostics: list[dict[str, object]], diagnostic_status: str | None) -> list[dict[str, object]]:
+def _filter_diagnostics(
+    diagnostics: list[dict[str, object]], diagnostic_status: str | None
+) -> list[dict[str, object]]:
     values = set(_split_filter_values(diagnostic_status))
     if not values:
         return diagnostics
-    return [diagnostic for diagnostic in diagnostics if diagnostic["diagnosticStatus"] in values]
+    return [
+        diagnostic
+        for diagnostic in diagnostics
+        if diagnostic["diagnosticStatus"] in values
+    ]
 
 
-def _sort_diagnostics(diagnostics: list[dict[str, object]], sort: str) -> list[dict[str, object]]:
+def _sort_diagnostics(
+    diagnostics: list[dict[str, object]], sort: str
+) -> list[dict[str, object]]:
     if sort == "updated_desc":
         return diagnostics
     if sort == "health_asc":
-        return sorted(diagnostics, key=lambda item: (float(item["healthScore"]), str(item["sourceId"])))
+        return sorted(
+            diagnostics,
+            key=lambda item: (float(item["healthScore"]), str(item["sourceId"])),
+        )
     if sort == "error_desc":
-        return sorted(diagnostics, key=lambda item: (-int(item["errorStreak"]), str(item["sourceId"])))
+        return sorted(
+            diagnostics,
+            key=lambda item: (-int(item["errorStreak"]), str(item["sourceId"])),
+        )
     if sort == "next_fetch":
-        return sorted(diagnostics, key=lambda item: (str(item["nextFetchAt"] or "9999"), str(item["sourceId"])))
+        return sorted(
+            diagnostics,
+            key=lambda item: (
+                str(item["nextFetchAt"] or "9999"),
+                str(item["sourceId"]),
+            ),
+        )
     if sort == "last_error":
-        return sorted(diagnostics, key=lambda item: (str(item["lastErrorAt"] or ""), str(item["sourceId"])), reverse=True)
-    return sorted(diagnostics, key=lambda item: (str(item["diagnosticStatus"]), str(item["sourceId"])))
+        return sorted(
+            diagnostics,
+            key=lambda item: (str(item["lastErrorAt"] or ""), str(item["sourceId"])),
+            reverse=True,
+        )
+    return sorted(
+        diagnostics,
+        key=lambda item: (str(item["diagnosticStatus"]), str(item["sourceId"])),
+    )
 
 
 def _diagnostic_list_metrics(diagnostics: list[dict[str, object]]) -> dict[str, int]:
-    warning_count = sum(1 for item in diagnostics if item["diagnosticStatus"] not in {"usable", "waiting"})
+    warning_count = sum(
+        1
+        for item in diagnostics
+        if item["diagnosticStatus"] not in {"usable", "waiting"}
+    )
     if diagnostics:
-        average = round(sum(float(item["healthScore"]) for item in diagnostics) / len(diagnostics))
+        average = round(
+            sum(float(item["healthScore"]) for item in diagnostics) / len(diagnostics)
+        )
     else:
         average = 0
     return {
         "sourceCount": len(diagnostics),
         "averageHealthScore": average,
-        "usableCount": sum(1 for item in diagnostics if item["diagnosticStatus"] == "usable"),
+        "usableCount": sum(
+            1 for item in diagnostics if item["diagnosticStatus"] == "usable"
+        ),
         "warningCount": warning_count,
-        "missingDateCount": sum(1 for item in diagnostics if item["diagnosticStatus"] == "missing_publish_time"),
-        "waitingCount": sum(1 for item in diagnostics if item["diagnosticStatus"] == "waiting"),
+        "missingDateCount": sum(
+            1
+            for item in diagnostics
+            if item["diagnosticStatus"] == "missing_publish_time"
+        ),
+        "waitingCount": sum(
+            1 for item in diagnostics if item["diagnosticStatus"] == "waiting"
+        ),
     }
 
 
 def _dashboard_channel_ids(session) -> list[str]:
     configured = [config.id for config in load_channel_configs()]
-    stored = session.scalars(select(SourceRecord.channel).distinct().order_by(SourceRecord.channel)).all()
+    stored = session.scalars(
+        select(SourceRecord.channel).distinct().order_by(SourceRecord.channel)
+    ).all()
     return sorted(set(configured) | set(stored))
 
 
 def _dashboard_metrics(session, channel: str | None = None) -> dict[str, int]:
     source_stmt = select(func.count()).select_from(SourceRecord)
-    health_stmt = select(func.count()).select_from(SourceStateRecord).join(
-        SourceRecord, SourceRecord.id == SourceStateRecord.source_id
+    health_stmt = (
+        select(func.count())
+        .select_from(SourceStateRecord)
+        .join(SourceRecord, SourceRecord.id == SourceStateRecord.source_id)
     )
-    pending_job_stmt = select(func.count()).select_from(FetchJobRecord).join(SourceRecord, SourceRecord.id == FetchJobRecord.source_id)
-    failed_job_stmt = select(func.count()).select_from(FetchJobRecord).join(SourceRecord, SourceRecord.id == FetchJobRecord.source_id)
+    pending_job_stmt = (
+        select(func.count())
+        .select_from(FetchJobRecord)
+        .join(SourceRecord, SourceRecord.id == FetchJobRecord.source_id)
+    )
+    failed_job_stmt = (
+        select(func.count())
+        .select_from(FetchJobRecord)
+        .join(SourceRecord, SourceRecord.id == FetchJobRecord.source_id)
+    )
     pending_event_stmt = select(func.count()).select_from(EventClusterRecord)
     daily_stmt = select(func.count()).select_from(DailyDigestRecord)
     if channel:
@@ -1653,25 +2243,35 @@ def _dashboard_metrics(session, channel: str | None = None) -> dict[str, int]:
         health_stmt = health_stmt.where(SourceRecord.channel == channel)
         pending_job_stmt = pending_job_stmt.where(SourceRecord.channel == channel)
         failed_job_stmt = failed_job_stmt.where(SourceRecord.channel == channel)
-        pending_event_stmt = pending_event_stmt.where(EventClusterRecord.channel == channel)
+        pending_event_stmt = pending_event_stmt.where(
+            EventClusterRecord.channel == channel
+        )
         daily_stmt = daily_stmt.where(DailyDigestRecord.channel == channel)
     return {
         "sourceCount": _count(session, source_stmt),
         "healthWarningCount": _count(
             session,
-            health_stmt.where((SourceStateRecord.error_streak > 0) | (SourceStateRecord.health_score < 80)),
-        ),
-        "pendingJobCount": _count(session, pending_job_stmt.where(FetchJobRecord.status == "pending")),
-        "failedJobCount": _count(
-            session,
-            failed_job_stmt.where(FetchJobRecord.status.in_(["failed", "dead", "pending"])).where(
-                FetchJobRecord.last_error.is_not(None)
+            health_stmt.where(
+                (SourceStateRecord.error_streak > 0)
+                | (SourceStateRecord.health_score < 80)
             ),
         ),
-        "pendingReviewEventCount": _count(
-            session, pending_event_stmt.where(EventClusterRecord.review_status == "pending")
+        "pendingJobCount": _count(
+            session, pending_job_stmt.where(FetchJobRecord.status == "pending")
         ),
-        "publishedDailyCount": _count(session, daily_stmt.where(DailyDigestRecord.published.is_(True))),
+        "failedJobCount": _count(
+            session,
+            failed_job_stmt.where(
+                FetchJobRecord.status.in_(["failed", "dead", "pending"])
+            ).where(FetchJobRecord.last_error.is_not(None)),
+        ),
+        "pendingReviewEventCount": _count(
+            session,
+            pending_event_stmt.where(EventClusterRecord.review_status == "pending"),
+        ),
+        "publishedDailyCount": _count(
+            session, daily_stmt.where(DailyDigestRecord.published.is_(True))
+        ),
     }
 
 
@@ -1704,12 +2304,16 @@ def _apply_cursor(stmt, sort_field, id_field, cursor: str | None):
 
 def _encode_cursor(sort_at: datetime, row_id: int | str) -> str:
     payload = {"sortAt": sort_at.isoformat(), "id": row_id}
-    return base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":")).encode("utf-8")).decode("ascii")
+    return base64.urlsafe_b64encode(
+        json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    ).decode("ascii")
 
 
 def _decode_cursor(value: str) -> dict[str, object]:
     try:
-        payload = json.loads(base64.urlsafe_b64decode(value.encode("ascii")).decode("utf-8"))
+        payload = json.loads(
+            base64.urlsafe_b64decode(value.encode("ascii")).decode("utf-8")
+        )
         sort_at = datetime.fromisoformat(str(payload["sortAt"]))
         row_id = payload["id"]
     except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
@@ -1722,19 +2326,28 @@ def _decode_cursor(value: str) -> dict[str, object]:
 
 
 def _source_upsert(payload: SourceWrite) -> SourceUpsert:
-    return SourceUpsert(**payload.model_dump())
+    return SourceUpsert(
+        **{
+            **payload.model_dump(exclude={"fetch_interval_minutes"}),
+            "fetch_interval_minutes": load_collection_policy().crawl_interval_minutes,
+        }
+    )
 
 
 def _principal_payload_for_user(session, user: UserRecord) -> Principal:
     roles = list(
         session.scalars(
-            select(UserRoleRecord.role_id).where(UserRoleRecord.user_id == user.id).order_by(UserRoleRecord.role_id)
+            select(UserRoleRecord.role_id)
+            .where(UserRoleRecord.user_id == user.id)
+            .order_by(UserRoleRecord.role_id)
         ).all()
     )
     permissions = sorted(
         set(
             session.scalars(
-                select(RolePermissionRecord.permission_id).where(RolePermissionRecord.role_id.in_(roles))
+                select(RolePermissionRecord.permission_id).where(
+                    RolePermissionRecord.role_id.in_(roles)
+                )
             ).all()
         )
     )
@@ -1758,7 +2371,9 @@ def _principal_payload_for_user(session, user: UserRecord) -> Principal:
 def _user_payload(session, user: UserRecord) -> dict[str, object]:
     roles = list(
         session.scalars(
-            select(UserRoleRecord.role_id).where(UserRoleRecord.user_id == user.id).order_by(UserRoleRecord.role_id)
+            select(UserRoleRecord.role_id)
+            .where(UserRoleRecord.user_id == user.id)
+            .order_by(UserRoleRecord.role_id)
         ).all()
     )
     prefs = session.get(UserPreferenceRecord, user.id)
@@ -1811,7 +2426,9 @@ def _permission_payload(permission: PermissionRecord) -> dict[str, object]:
 def _audit_payload(log: AuditLogRecord) -> dict[str, object]:
     return {
         "id": str(log.id),
-        "actorUserId": str(log.actor_user_id) if log.actor_user_id is not None else None,
+        "actorUserId": str(log.actor_user_id)
+        if log.actor_user_id is not None
+        else None,
         "actorUsername": log.actor_username,
         "action": log.action,
         "targetType": log.target_type,
@@ -1823,17 +2440,27 @@ def _audit_payload(log: AuditLogRecord) -> dict[str, object]:
 
 
 def _ensure_roles_exist(session, role_ids: list[str]) -> None:
-    existing = set(session.scalars(select(RoleRecord.id).where(RoleRecord.id.in_(role_ids))).all())
+    existing = set(
+        session.scalars(select(RoleRecord.id).where(RoleRecord.id.in_(role_ids))).all()
+    )
     missing = set(role_ids) - existing
     if missing:
-        raise HTTPException(status_code=422, detail=f"unknown roles: {', '.join(sorted(missing))}")
+        raise HTTPException(
+            status_code=422, detail=f"unknown roles: {', '.join(sorted(missing))}"
+        )
 
 
 def _ensure_permissions_exist(session, permission_ids: list[str]) -> None:
-    existing = set(session.scalars(select(PermissionRecord.id).where(PermissionRecord.id.in_(permission_ids))).all())
+    existing = set(
+        session.scalars(
+            select(PermissionRecord.id).where(PermissionRecord.id.in_(permission_ids))
+        ).all()
+    )
     missing = set(permission_ids) - existing
     if missing:
-        raise HTTPException(status_code=422, detail=f"unknown permissions: {', '.join(sorted(missing))}")
+        raise HTTPException(
+            status_code=422, detail=f"unknown permissions: {', '.join(sorted(missing))}"
+        )
 
 
 def _source_payload(source: SourceRecord) -> dict[str, object]:
@@ -1856,6 +2483,7 @@ def _source_payload(source: SourceRecord) -> dict[str, object]:
         "enabled": source.enabled,
         "visibility": source.visibility,
         "sourceGroup": source.source_group,
+        "publisherKey": source.publisher_key,
         "contributorNo": source.contributor_no,
         "socialHandle": source.social_handle,
         "collectionStatus": source.collection_status,
@@ -1866,7 +2494,9 @@ def _source_payload(source: SourceRecord) -> dict[str, object]:
     }
 
 
-def _source_state_payload(state: SourceStateRecord, source: SourceRecord) -> dict[str, object]:
+def _source_state_payload(
+    state: SourceStateRecord, source: SourceRecord
+) -> dict[str, object]:
     return {
         "sourceId": state.source_id,
         "channel": source.channel,
@@ -1886,7 +2516,9 @@ def _source_state_payload(state: SourceStateRecord, source: SourceRecord) -> dic
     }
 
 
-def _source_diagnostic_payload(session, source: SourceRecord, state: SourceStateRecord) -> dict[str, object]:
+def _source_diagnostic_payload(
+    session, source: SourceRecord, state: SourceStateRecord
+) -> dict[str, object]:
     latest_run = _latest_fetch_run(session, source.id)
     latest_job = _latest_fetch_job(session, source.id)
     latest_screening = _latest_screening_result(session, source.id)
@@ -1897,7 +2529,10 @@ def _source_diagnostic_payload(session, source: SourceRecord, state: SourceState
         session,
         select(func.count())
         .select_from(RawDocumentRecord)
-        .where(RawDocumentRecord.source_id == source.id, RawDocumentRecord.fetched_at >= since),
+        .where(
+            RawDocumentRecord.source_id == source.id,
+            RawDocumentRecord.fetched_at >= since,
+        ),
     )
     status = _diagnostic_status(source, state, latest_run, latest_screening)
     return {
@@ -1922,7 +2557,9 @@ def _source_diagnostic_payload(session, source: SourceRecord, state: SourceState
         "rawCount24h": raw_count,
         "lastRun": _fetch_run_payload(latest_run),
         "lastJob": _job_payload(latest_job) if latest_job else None,
-        "screening": _screening_payload(latest_screening, accepted_count, rejected_count),
+        "screening": _screening_payload(
+            latest_screening, accepted_count, rejected_count
+        ),
     }
 
 
@@ -1944,12 +2581,20 @@ def _latest_fetch_job(session, source_id: str) -> FetchJobRecord | None:
     )
 
 
-def _latest_screening_result(session, source_id: str) -> RawScreeningResultRecord | None:
+def _latest_screening_result(
+    session, source_id: str
+) -> RawScreeningResultRecord | None:
     return session.scalar(
         select(RawScreeningResultRecord)
-        .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+        .join(
+            RawDocumentRecord,
+            RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id,
+        )
         .where(RawDocumentRecord.source_id == source_id)
-        .order_by(RawScreeningResultRecord.created_at.desc(), RawScreeningResultRecord.id.desc())
+        .order_by(
+            RawScreeningResultRecord.created_at.desc(),
+            RawScreeningResultRecord.id.desc(),
+        )
         .limit(1)
     )
 
@@ -1959,7 +2604,10 @@ def _screening_count(session, source_id: str, status: str, since: datetime) -> i
         session,
         select(func.count())
         .select_from(RawScreeningResultRecord)
-        .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+        .join(
+            RawDocumentRecord,
+            RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id,
+        )
         .where(
             RawDocumentRecord.source_id == source_id,
             RawScreeningResultRecord.screen_status == status,
@@ -1985,7 +2633,9 @@ def _fetch_run_payload(run: FetchRunRecord | None) -> dict[str, object] | None:
         "acceptedItems": _metadata_int(metadata, "accepted_items"),
         "skippedOldItems": _metadata_int(metadata, "skipped_old_items"),
         "skippedMissingDate": _metadata_int(metadata, "skipped_missing_date"),
-        "skippedInvalidOriginalUrl": _metadata_int(metadata, "skipped_invalid_original_url"),
+        "skippedInvalidOriginalUrl": _metadata_int(
+            metadata, "skipped_invalid_original_url"
+        ),
         "errorMessage": run.error_message,
     }
 
@@ -2024,7 +2674,10 @@ def _diagnostic_status(
     if latest_screening:
         if latest_screening.screen_status == "accepted":
             return "usable"
-        if latest_screening.reason_code in {"missing_publish_time", "invalid_original_url"}:
+        if latest_screening.reason_code in {
+            "missing_publish_time",
+            "invalid_original_url",
+        }:
             return latest_screening.reason_code
     if latest_run:
         metadata = latest_run.metadata_json or {}
@@ -2181,27 +2834,46 @@ def _daily_document(session, digest: DailyDigestRecord) -> dict[str, object]:
     if isinstance(raw.get("sections"), list):
         sections = raw["sections"]
         lead = raw.get("lead") or _lead_from_sections(sections)
-        stats = raw.get("stats") or {"storyCount": sum(len(section.get("items", [])) for section in sections if isinstance(section, dict))}
+        stats = raw.get("stats") or {
+            "storyCount": sum(
+                len(section.get("items", []))
+                for section in sections
+                if isinstance(section, dict)
+            )
+        }
     else:
         highlights = raw.get("highlights", [])
         if not isinstance(highlights, list):
             highlights = []
-        items = [_daily_item_from_highlight(session, item) for item in highlights if isinstance(item, dict)]
+        items = [
+            _daily_item_from_highlight(session, item)
+            for item in highlights
+            if isinstance(item, dict)
+        ]
         sections = _daily_sections_from_items(digest.channel, items)
         lead = items[0] if items else None
         stats = {"storyCount": len(items)}
-    archive_item = raw.get("archiveItem") if isinstance(raw.get("archiveItem"), dict) else None
+    archive_item = (
+        raw.get("archiveItem") if isinstance(raw.get("archiveItem"), dict) else None
+    )
     return {
         "lead": lead,
         "sections": sections,
         "stats": stats,
-        "archiveItem": archive_item or _daily_archive_item(digest, lead=lead, story_count=int(stats.get("storyCount", 0))),
+        "archiveItem": archive_item
+        or _daily_archive_item(
+            digest, lead=lead, story_count=int(stats.get("storyCount", 0))
+        ),
     }
 
 
 def _daily_item_from_highlight(session, item: dict[str, object]) -> dict[str, object]:
     event_id = item.get("eventId")
-    cluster = session.get(EventClusterRecord, int(event_id)) if event_id and str(event_id).isdigit() else None
+    cluster = (
+        session.get(EventClusterRecord, int(event_id))
+        if event_id and str(event_id).isdigit()
+        else None
+    )
     payload = _event_payload(session, cluster) if cluster else {}
     return {
         "eventId": str(event_id) if event_id is not None else None,
@@ -2217,7 +2889,9 @@ def _daily_item_from_highlight(session, item: dict[str, object]) -> dict[str, ob
     }
 
 
-def _daily_sections_from_items(channel: str, items: list[dict[str, object]]) -> list[dict[str, object]]:
+def _daily_sections_from_items(
+    channel: str, items: list[dict[str, object]]
+) -> list[dict[str, object]]:
     grouped: dict[str, list[dict[str, object]]] = {}
     for item in items:
         grouped.setdefault(str(item.get("category") or "other"), []).append(item)
@@ -2234,23 +2908,43 @@ def _daily_sections_from_items(channel: str, items: list[dict[str, object]]) -> 
             )
             sections[-1]["count"] = len(sections[-1]["items"])
     for category, category_items in grouped.items():
-        sections.append({"category": category, "label": _category_label(category), "items": category_items, "count": len(category_items)})
+        sections.append(
+            {
+                "category": category,
+                "label": _category_label(category),
+                "items": category_items,
+                "count": len(category_items),
+            }
+        )
     return sections
 
 
 def _lead_from_sections(sections: list[object]) -> dict[str, object] | None:
     for section in sections:
-        if isinstance(section, dict) and isinstance(section.get("items"), list) and section["items"]:
+        if (
+            isinstance(section, dict)
+            and isinstance(section.get("items"), list)
+            and section["items"]
+        ):
             first = section["items"][0]
             return first if isinstance(first, dict) else None
     return None
 
 
-def _daily_archive_item(digest: DailyDigestRecord, *, lead: dict[str, object] | None = None, story_count: int | None = None) -> dict[str, object]:
+def _daily_archive_item(
+    digest: DailyDigestRecord,
+    *,
+    lead: dict[str, object] | None = None,
+    story_count: int | None = None,
+) -> dict[str, object]:
     if lead is None:
         raw = digest.sections_json or {}
         lead = raw.get("lead") if isinstance(raw.get("lead"), dict) else None
-        if lead is None and isinstance(raw.get("highlights"), list) and raw["highlights"]:
+        if (
+            lead is None
+            and isinstance(raw.get("highlights"), list)
+            and raw["highlights"]
+        ):
             first = raw["highlights"][0]
             lead = first if isinstance(first, dict) else None
     if story_count is None:
@@ -2266,7 +2960,9 @@ def _daily_archive_item(digest: DailyDigestRecord, *, lead: dict[str, object] | 
         "channel": digest.channel,
         "date": digest.digest_date.isoformat(),
         "title": digest.title,
-        "leadTitle": str(lead.get("title")) if isinstance(lead, dict) and lead.get("title") else "",
+        "leadTitle": str(lead.get("title"))
+        if isinstance(lead, dict) and lead.get("title")
+        else "",
         "storyCount": story_count,
         "published": digest.published,
         "generatedAt": _iso(digest.generated_at),
@@ -2286,7 +2982,14 @@ def _daily_category_order(channel: str) -> list[str]:
             "tools",
             "compliance_trade",
         ]
-    return ["ai_models", "ai_products", "industry", "papers", "agent_tools", "monetization"]
+    return [
+        "ai_models",
+        "ai_products",
+        "industry",
+        "papers",
+        "agent_tools",
+        "monetization",
+    ]
 
 
 def _category_label(category: str) -> str:
@@ -2334,14 +3037,27 @@ def _digest_summary(digest: DailyDigestRecord) -> str:
     highlights = digest.sections_json.get("highlights", [])
     if not isinstance(highlights, list) or not highlights:
         return ""
-    titles = [str(item.get("title", "")) for item in highlights if isinstance(item, dict)]
+    titles = [
+        str(item.get("title", "")) for item in highlights if isinstance(item, dict)
+    ]
     return "；".join(title for title in titles if title)
 
 
 def _event_payload(session, cluster: EventClusterRecord) -> dict[str, object]:
-    main_item = session.get(NormalizedItemRecord, cluster.main_item_id) if cluster.main_item_id is not None else None
-    source = session.get(SourceRecord, main_item.source_id) if main_item is not None else None
-    score = _model_score_for_item(session, main_item.id) if main_item is not None else None
+    main_item = (
+        session.get(NormalizedItemRecord, cluster.main_item_id)
+        if cluster.main_item_id is not None
+        else None
+    )
+    source = (
+        session.get(SourceRecord, main_item.source_id)
+        if main_item is not None
+        else None
+    )
+    score = (
+        _model_score_for_item(session, main_item.id) if main_item is not None else None
+    )
+    evidence = session.get(EventEvidenceAssessmentRecord, cluster.id)
     raw_json = score.raw_json if score is not None else {}
     return {
         "id": str(cluster.id),
@@ -2350,7 +3066,9 @@ def _event_payload(session, cluster: EventClusterRecord) -> dict[str, object]:
         "summary": _processed_summary(main_item),
         "category": score.category if score is not None else cluster.category,
         "score": cluster.cluster_score,
-        "entryReason": score.reason if score is not None and score.reason else "待 AI 处理后生成推荐理由。",
+        "entryReason": score.reason
+        if score is not None and score.reason
+        else "待 AI 处理后生成推荐理由。",
         "sellerActionLevel": score.seller_action_level if score is not None else None,
         "confidenceScore": raw_json.get("confidenceScore"),
         "tags": _list_json(raw_json.get("tags")),
@@ -2363,6 +3081,27 @@ def _event_payload(session, cluster: EventClusterRecord) -> dict[str, object]:
         "windowLabel": public_window_label(cluster.channel),
         "sourceCount": cluster.source_count,
         "memberCount": cluster.member_count,
+        "verificationStatus": evidence.verification_status
+        if evidence is not None
+        else None,
+        "independentSourceCount": evidence.independent_source_count
+        if evidence is not None
+        else None,
+        "authoritativeSourceCount": evidence.authoritative_source_count
+        if evidence is not None
+        else None,
+        "evidenceScore": evidence.evidence_score if evidence is not None else None,
+        "evidenceSummary": evidence.summary if evidence is not None else None,
+        "supportedFacts": evidence.supported_facts_json if evidence is not None else [],
+        "supportedClaims": evidence.supported_claims_json
+        if evidence is not None
+        else [],
+        "conflictingClaims": evidence.conflicting_claims_json
+        if evidence is not None
+        else [],
+        "evidenceAnalyzedAt": _iso(evidence.analyzed_at)
+        if evidence is not None
+        else None,
         "firstSeenAt": _iso(cluster.first_seen_at),
         "lastSeenAt": _iso(cluster.last_seen_at),
         "mainItem": _main_item_payload(session, main_item, source),
@@ -2379,17 +3118,34 @@ def _internal_event_payload(session, cluster: EventClusterRecord) -> dict[str, o
             "reviewedAt": _iso(cluster.reviewed_at),
         }
     )
-    main_item = session.get(NormalizedItemRecord, cluster.main_item_id) if cluster.main_item_id is not None else None
-    ranked = _ranked_item_for_item(session, main_item.id) if main_item is not None else None
-    score = _model_score_for_item(session, main_item.id) if main_item is not None else None
-    screening = _screening_for_item(session, main_item.id) if main_item is not None else None
+    main_item = (
+        session.get(NormalizedItemRecord, cluster.main_item_id)
+        if cluster.main_item_id is not None
+        else None
+    )
+    ranked = (
+        _ranked_item_for_item(session, main_item.id) if main_item is not None else None
+    )
+    score = (
+        _model_score_for_item(session, main_item.id) if main_item is not None else None
+    )
+    screening = (
+        _screening_for_item(session, main_item.id) if main_item is not None else None
+    )
     payload["rank"] = _ranked_payload(ranked)
     payload["modelScore"] = _model_score_payload(score)
     payload["screenStatus"] = screening.screen_status if screening is not None else None
     payload["screenBucket"] = screening.screen_bucket if screening is not None else None
-    payload["screenReasonCode"] = screening.reason_code if screening is not None else None
+    payload["screenReasonCode"] = (
+        screening.reason_code if screening is not None else None
+    )
     payload["screenReason"] = screening.reason_cn if screening is not None else None
-    payload["riskFlags"] = _list_json(score.raw_json.get("riskFlags")) if score is not None else []
+    payload["riskFlags"] = (
+        _list_json(score.raw_json.get("riskFlags")) if score is not None else []
+    )
+    evidence = session.get(EventEvidenceAssessmentRecord, cluster.id)
+    payload["evidenceProvider"] = evidence.provider if evidence is not None else None
+    payload["evidenceModel"] = evidence.model if evidence is not None else None
     return payload
 
 
@@ -2418,6 +3174,7 @@ def _cluster_member_payloads(session, event_id: int) -> list[dict[str, object]]:
                 "sourceGroup": source.source_group if source else None,
                 "sourceType": source.source_type if source else None,
                 "sourceTier": source.tier if source else None,
+                "publisherKey": source.publisher_key if source else None,
                 "socialHandle": source.social_handle if source else None,
                 "publishedAt": _iso(item.published_at),
                 "summary": _processed_summary(item),
@@ -2430,7 +3187,9 @@ def _cluster_member_payloads(session, event_id: int) -> list[dict[str, object]]:
     return members
 
 
-def _main_item_payload(session, item: NormalizedItemRecord | None, source: SourceRecord | None) -> dict[str, object] | None:
+def _main_item_payload(
+    session, item: NormalizedItemRecord | None, source: SourceRecord | None
+) -> dict[str, object] | None:
     if item is None:
         return None
     return {
@@ -2443,6 +3202,7 @@ def _main_item_payload(session, item: NormalizedItemRecord | None, source: Sourc
         "sourceGroup": source.source_group if source else None,
         "sourceType": source.source_type if source else None,
         "sourceTier": source.tier if source else None,
+        "publisherKey": source.publisher_key if source else None,
         "socialHandle": source.social_handle if source else None,
         "publishedAt": _iso(item.published_at),
         "summary": _processed_summary(item),
@@ -2450,18 +3210,26 @@ def _main_item_payload(session, item: NormalizedItemRecord | None, source: Sourc
 
 
 def _item_image_payload(session, item: NormalizedItemRecord) -> dict[str, object]:
-    raw = session.get(RawDocumentRecord, item.raw_document_id) if session is not None else None
+    raw = (
+        session.get(RawDocumentRecord, item.raw_document_id)
+        if session is not None
+        else None
+    )
     headers = raw.response_headers_json if raw is not None else {}
     image_url = str(headers.get("x-intel-image-url") or "").strip()
     if not image_url.startswith(("http://", "https://")):
         image_url = ""
     return {
         "imageUrl": image_url or None,
-        "imageAlt": str(headers.get("x-intel-image-alt") or item.title_cn or item.title_original),
+        "imageAlt": str(
+            headers.get("x-intel-image-alt") or item.title_cn or item.title_original
+        ),
     }
 
 
-def _safe_item_url(item: NormalizedItemRecord, source: SourceRecord | None) -> str | None:
+def _safe_item_url(
+    item: NormalizedItemRecord, source: SourceRecord | None
+) -> str | None:
     if source is None:
         return item.canonical_url
     if not is_publishable_original_url(item.canonical_url, source.url):
@@ -2469,7 +3237,9 @@ def _safe_item_url(item: NormalizedItemRecord, source: SourceRecord | None) -> s
     return item.canonical_url
 
 
-def _processed_event_title(cluster: EventClusterRecord, item: NormalizedItemRecord | None) -> str:
+def _processed_event_title(
+    cluster: EventClusterRecord, item: NormalizedItemRecord | None
+) -> str:
     if item is not None and item.title_cn:
         return item.title_cn
     return cluster.canonical_title
@@ -2482,11 +3252,15 @@ def _processed_summary(item: NormalizedItemRecord | None) -> str:
 
 
 def _ranked_item_for_item(session, item_id: int) -> RankedItemRecord | None:
-    return session.scalar(select(RankedItemRecord).where(RankedItemRecord.item_id == item_id).limit(1))
+    return session.scalar(
+        select(RankedItemRecord).where(RankedItemRecord.item_id == item_id).limit(1)
+    )
 
 
 def _model_score_for_item(session, item_id: int) -> ModelScoreRecord | None:
-    return session.scalar(select(ModelScoreRecord).where(ModelScoreRecord.item_id == item_id).limit(1))
+    return session.scalar(
+        select(ModelScoreRecord).where(ModelScoreRecord.item_id == item_id).limit(1)
+    )
 
 
 def _screening_for_item(session, item_id: int) -> RawScreeningResultRecord | None:
@@ -2501,12 +3275,28 @@ def _screening_for_item(session, item_id: int) -> RawScreeningResultRecord | Non
     )
 
 
-def _is_public_cluster_ready(session, cluster: EventClusterRecord, *, require_selected: bool) -> bool:
-    main_item = session.get(NormalizedItemRecord, cluster.main_item_id) if cluster.main_item_id is not None else None
-    source = session.get(SourceRecord, main_item.source_id) if main_item is not None else None
-    screening = _screening_for_item(session, main_item.id) if main_item is not None else None
-    score = _model_score_for_item(session, main_item.id) if main_item is not None else None
-    ranked = _ranked_item_for_item(session, main_item.id) if main_item is not None else None
+def _is_public_cluster_ready(
+    session, cluster: EventClusterRecord, *, require_selected: bool
+) -> bool:
+    main_item = (
+        session.get(NormalizedItemRecord, cluster.main_item_id)
+        if cluster.main_item_id is not None
+        else None
+    )
+    source = (
+        session.get(SourceRecord, main_item.source_id)
+        if main_item is not None
+        else None
+    )
+    screening = (
+        _screening_for_item(session, main_item.id) if main_item is not None else None
+    )
+    score = (
+        _model_score_for_item(session, main_item.id) if main_item is not None else None
+    )
+    ranked = (
+        _ranked_item_for_item(session, main_item.id) if main_item is not None else None
+    )
     return public_cluster_ready(
         cluster=cluster,
         item=main_item,
@@ -2572,7 +3362,9 @@ def _evaluation_metrics_payload(values: dict[str, object]) -> dict[str, object]:
     }
 
 
-def _set_daily_digest_published(request: Request, digest_id: int, *, published: bool, actor: str) -> dict[str, object]:
+def _set_daily_digest_published(
+    request: Request, digest_id: int, *, published: bool, actor: str
+) -> dict[str, object]:
     SessionLocal = _production_sessionmaker(request)
     with SessionLocal() as session:
         digest = session.get(DailyDigestRecord, digest_id)
@@ -2593,38 +3385,61 @@ def _set_daily_digest_published(request: Request, digest_id: int, *, published: 
         return {"dailyDigest": _daily_digest_payload(digest)}
 
 
-def _quality_channel_payload(session, *, channel: str, started_at: datetime) -> dict[str, object]:
+def _quality_channel_payload(
+    session, *, channel: str, started_at: datetime
+) -> dict[str, object]:
     metrics = _quality_metrics(session, channel=channel, started_at=started_at)
     return {
         "channel": channel,
         "metrics": metrics,
         "conversion": {
-            "fetchSuccessRate": _ratio(metrics["successfulFetchRuns"], metrics["fetchRuns"]),
-            "screenAcceptRate": _ratio(metrics["acceptedScreenings"], metrics["screenedItems"]),
+            "fetchSuccessRate": _ratio(
+                metrics["successfulFetchRuns"], metrics["fetchRuns"]
+            ),
+            "screenAcceptRate": _ratio(
+                metrics["acceptedScreenings"], metrics["screenedItems"]
+            ),
             "selectedRate": _ratio(metrics["selectedItems"], metrics["scoredItems"]),
             "approvedRate": _ratio(metrics["approvedEvents"], metrics["eventClusters"]),
         },
         "bottlenecks": _quality_bottlenecks(metrics),
-        "rejectionReasons": _quality_rejection_reasons(session, channel=channel, started_at=started_at),
-        "rejectionSamples": _quality_rejection_samples(session, channel=channel, started_at=started_at),
-        "categoryBreakdown": _quality_category_breakdown(session, channel=channel, started_at=started_at),
-        "sourceContributions": _quality_source_contributions(session, channel=channel, started_at=started_at),
+        "rejectionReasons": _quality_rejection_reasons(
+            session, channel=channel, started_at=started_at
+        ),
+        "rejectionSamples": _quality_rejection_samples(
+            session, channel=channel, started_at=started_at
+        ),
+        "categoryBreakdown": _quality_category_breakdown(
+            session, channel=channel, started_at=started_at
+        ),
+        "sourceContributions": _quality_source_contributions(
+            session, channel=channel, started_at=started_at
+        ),
     }
 
 
 def _quality_metrics(session, *, channel: str, started_at: datetime) -> dict[str, int]:
     return {
-        "sourceCount": _count(session, select(func.count()).select_from(SourceRecord).where(SourceRecord.channel == channel)),
+        "sourceCount": _count(
+            session,
+            select(func.count())
+            .select_from(SourceRecord)
+            .where(SourceRecord.channel == channel),
+        ),
         "enabledSourceCount": _count(
             session,
-            select(func.count()).select_from(SourceRecord).where(SourceRecord.channel == channel, SourceRecord.enabled.is_(True)),
+            select(func.count())
+            .select_from(SourceRecord)
+            .where(SourceRecord.channel == channel, SourceRecord.enabled.is_(True)),
         ),
         "fetchRuns": _count(
             session,
             select(func.count())
             .select_from(FetchRunRecord)
             .join(SourceRecord, SourceRecord.id == FetchRunRecord.source_id)
-            .where(SourceRecord.channel == channel, FetchRunRecord.started_at >= started_at),
+            .where(
+                SourceRecord.channel == channel, FetchRunRecord.started_at >= started_at
+            ),
         ),
         "successfulFetchRuns": _count(
             session,
@@ -2642,7 +3457,10 @@ def _quality_metrics(session, *, channel: str, started_at: datetime) -> dict[str
             select(func.count())
             .select_from(RawDocumentRecord)
             .join(SourceRecord, SourceRecord.id == RawDocumentRecord.source_id)
-            .where(SourceRecord.channel == channel, RawDocumentRecord.fetched_at >= started_at),
+            .where(
+                SourceRecord.channel == channel,
+                RawDocumentRecord.fetched_at >= started_at,
+            ),
         ),
         "screenedItems": _count(
             session,
@@ -2664,27 +3482,45 @@ def _quality_metrics(session, *, channel: str, started_at: datetime) -> dict[str
             session,
             select(func.count())
             .select_from(NormalizedItemRecord)
-            .where(NormalizedItemRecord.channel == channel, NormalizedItemRecord.fetched_at >= started_at),
+            .where(
+                NormalizedItemRecord.channel == channel,
+                NormalizedItemRecord.fetched_at >= started_at,
+            ),
         ),
         "scoredItems": _count(
             session,
             select(func.count())
             .select_from(ModelScoreRecord)
-            .join(NormalizedItemRecord, NormalizedItemRecord.id == ModelScoreRecord.item_id)
-            .where(NormalizedItemRecord.channel == channel, ModelScoreRecord.created_at >= started_at),
+            .join(
+                NormalizedItemRecord,
+                NormalizedItemRecord.id == ModelScoreRecord.item_id,
+            )
+            .where(
+                NormalizedItemRecord.channel == channel,
+                ModelScoreRecord.created_at >= started_at,
+            ),
         ),
         "rankedItems": _count(
             session,
             select(func.count())
             .select_from(RankedItemRecord)
-            .join(NormalizedItemRecord, NormalizedItemRecord.id == RankedItemRecord.item_id)
-            .where(NormalizedItemRecord.channel == channel, RankedItemRecord.created_at >= started_at),
+            .join(
+                NormalizedItemRecord,
+                NormalizedItemRecord.id == RankedItemRecord.item_id,
+            )
+            .where(
+                NormalizedItemRecord.channel == channel,
+                RankedItemRecord.created_at >= started_at,
+            ),
         ),
         "selectedItems": _count(
             session,
             select(func.count())
             .select_from(RankedItemRecord)
-            .join(NormalizedItemRecord, NormalizedItemRecord.id == RankedItemRecord.item_id)
+            .join(
+                NormalizedItemRecord,
+                NormalizedItemRecord.id == RankedItemRecord.item_id,
+            )
             .where(
                 NormalizedItemRecord.channel == channel,
                 RankedItemRecord.created_at >= started_at,
@@ -2695,7 +3531,10 @@ def _quality_metrics(session, *, channel: str, started_at: datetime) -> dict[str
             session,
             select(func.count())
             .select_from(EventClusterRecord)
-            .where(EventClusterRecord.channel == channel, EventClusterRecord.last_seen_at >= started_at),
+            .where(
+                EventClusterRecord.channel == channel,
+                EventClusterRecord.last_seen_at >= started_at,
+            ),
         ),
         "approvedEvents": _count(
             session,
@@ -2729,13 +3568,21 @@ def _screening_count_stmt(*, channel: str, started_at: datetime):
     return (
         select(func.count())
         .select_from(RawScreeningResultRecord)
-        .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+        .join(
+            RawDocumentRecord,
+            RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id,
+        )
         .join(SourceRecord, SourceRecord.id == RawDocumentRecord.source_id)
-        .where(SourceRecord.channel == channel, RawScreeningResultRecord.created_at >= started_at)
+        .where(
+            SourceRecord.channel == channel,
+            RawScreeningResultRecord.created_at >= started_at,
+        )
     )
 
 
-def _quality_rejection_reasons(session, *, channel: str, started_at: datetime) -> list[dict[str, object]]:
+def _quality_rejection_reasons(
+    session, *, channel: str, started_at: datetime
+) -> list[dict[str, object]]:
     rows = session.execute(
         select(
             RawScreeningResultRecord.reason_code,
@@ -2743,34 +3590,52 @@ def _quality_rejection_reasons(session, *, channel: str, started_at: datetime) -
             func.max(RawScreeningResultRecord.reason_cn),
             func.count(),
         )
-        .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+        .join(
+            RawDocumentRecord,
+            RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id,
+        )
         .join(SourceRecord, SourceRecord.id == RawDocumentRecord.source_id)
         .where(
             SourceRecord.channel == channel,
             RawScreeningResultRecord.created_at >= started_at,
             RawScreeningResultRecord.screen_status == "rejected",
         )
-        .group_by(RawScreeningResultRecord.reason_code, RawScreeningResultRecord.screen_bucket)
+        .group_by(
+            RawScreeningResultRecord.reason_code, RawScreeningResultRecord.screen_bucket
+        )
         .order_by(func.count().desc(), RawScreeningResultRecord.reason_code)
         .limit(10)
     ).all()
     return [
-        {"reasonCode": reason_code, "bucket": bucket, "reason": reason or "", "count": count}
+        {
+            "reasonCode": reason_code,
+            "bucket": bucket,
+            "reason": reason or "",
+            "count": count,
+        }
         for reason_code, bucket, reason, count in rows
     ]
 
 
-def _quality_rejection_samples(session, *, channel: str, started_at: datetime) -> list[dict[str, object]]:
+def _quality_rejection_samples(
+    session, *, channel: str, started_at: datetime
+) -> list[dict[str, object]]:
     rows = session.execute(
         select(RawScreeningResultRecord, RawDocumentRecord, SourceRecord)
-        .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+        .join(
+            RawDocumentRecord,
+            RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id,
+        )
         .join(SourceRecord, SourceRecord.id == RawDocumentRecord.source_id)
         .where(
             SourceRecord.channel == channel,
             RawScreeningResultRecord.created_at >= started_at,
             RawScreeningResultRecord.screen_status == "rejected",
         )
-        .order_by(RawScreeningResultRecord.created_at.desc(), RawScreeningResultRecord.id.desc())
+        .order_by(
+            RawScreeningResultRecord.created_at.desc(),
+            RawScreeningResultRecord.id.desc(),
+        )
         .limit(20)
     ).all()
     return [
@@ -2793,12 +3658,17 @@ def _quality_rejection_samples(session, *, channel: str, started_at: datetime) -
     ]
 
 
-def _quality_category_breakdown(session, *, channel: str, started_at: datetime) -> list[dict[str, object]]:
+def _quality_category_breakdown(
+    session, *, channel: str, started_at: datetime
+) -> list[dict[str, object]]:
     categories: dict[str, dict[str, object]] = {}
     scored_rows = session.execute(
         select(ModelScoreRecord.category, func.count())
         .join(NormalizedItemRecord, NormalizedItemRecord.id == ModelScoreRecord.item_id)
-        .where(NormalizedItemRecord.channel == channel, ModelScoreRecord.created_at >= started_at)
+        .where(
+            NormalizedItemRecord.channel == channel,
+            ModelScoreRecord.created_at >= started_at,
+        )
         .group_by(ModelScoreRecord.category)
     ).all()
     for category, scored_count in scored_rows:
@@ -2822,7 +3692,12 @@ def _quality_category_breakdown(session, *, channel: str, started_at: datetime) 
     for category, selected_count in selected_rows:
         row = categories.setdefault(
             str(category),
-            {"category": str(category), "scoredItems": 0, "selectedItems": 0, "approvedEvents": 0},
+            {
+                "category": str(category),
+                "scoredItems": 0,
+                "selectedItems": 0,
+                "approvedEvents": 0,
+            },
         )
         row["selectedItems"] = selected_count
     approved_rows = session.execute(
@@ -2837,13 +3712,23 @@ def _quality_category_breakdown(session, *, channel: str, started_at: datetime) 
     for category, approved_count in approved_rows:
         row = categories.setdefault(
             str(category),
-            {"category": str(category), "scoredItems": 0, "selectedItems": 0, "approvedEvents": 0},
+            {
+                "category": str(category),
+                "scoredItems": 0,
+                "selectedItems": 0,
+                "approvedEvents": 0,
+            },
         )
         row["approvedEvents"] = approved_count
-    return sorted(categories.values(), key=lambda item: (-int(item["scoredItems"]), str(item["category"])))
+    return sorted(
+        categories.values(),
+        key=lambda item: (-int(item["scoredItems"]), str(item["category"])),
+    )
 
 
-def _quality_source_contributions(session, *, channel: str, started_at: datetime) -> list[dict[str, object]]:
+def _quality_source_contributions(
+    session, *, channel: str, started_at: datetime
+) -> list[dict[str, object]]:
     sources = session.execute(
         select(SourceRecord, SourceStateRecord)
         .join(SourceStateRecord, SourceStateRecord.source_id == SourceRecord.id)
@@ -2856,13 +3741,19 @@ def _quality_source_contributions(session, *, channel: str, started_at: datetime
             session,
             select(func.count())
             .select_from(RawDocumentRecord)
-            .where(RawDocumentRecord.source_id == source.id, RawDocumentRecord.fetched_at >= started_at),
+            .where(
+                RawDocumentRecord.source_id == source.id,
+                RawDocumentRecord.fetched_at >= started_at,
+            ),
         )
         accepted_count = _count(
             session,
             select(func.count())
             .select_from(RawScreeningResultRecord)
-            .join(RawDocumentRecord, RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id)
+            .join(
+                RawDocumentRecord,
+                RawDocumentRecord.id == RawScreeningResultRecord.raw_document_id,
+            )
             .where(
                 RawDocumentRecord.source_id == source.id,
                 RawScreeningResultRecord.created_at >= started_at,
@@ -2873,7 +3764,10 @@ def _quality_source_contributions(session, *, channel: str, started_at: datetime
             session,
             select(func.count())
             .select_from(RankedItemRecord)
-            .join(NormalizedItemRecord, NormalizedItemRecord.id == RankedItemRecord.item_id)
+            .join(
+                NormalizedItemRecord,
+                NormalizedItemRecord.id == RankedItemRecord.item_id,
+            )
             .where(
                 NormalizedItemRecord.source_id == source.id,
                 RankedItemRecord.created_at >= started_at,
@@ -2894,7 +3788,14 @@ def _quality_source_contributions(session, *, channel: str, started_at: datetime
                 "selectedItems": selected_count,
             }
         )
-    return sorted(rows, key=lambda item: (-int(item["rawDocuments"]), -int(item["acceptedScreenings"]), item["sourceId"]))[:12]
+    return sorted(
+        rows,
+        key=lambda item: (
+            -int(item["rawDocuments"]),
+            -int(item["acceptedScreenings"]),
+            item["sourceId"],
+        ),
+    )[:12]
 
 
 def _quality_bottlenecks(metrics: dict[str, int]) -> list[str]:
@@ -2903,11 +3804,15 @@ def _quality_bottlenecks(metrics: dict[str, int]) -> list[str]:
     if metrics["rawDocuments"] == 0:
         return ["抓取运行存在，但没有当天原始条目，优先扩充当天高频更新信源。"]
     if metrics["acceptedScreenings"] == 0:
-        return ["已有原始条目，但 AI 初筛没有通过项，优先检查频道相关性规则和信源匹配度。"]
+        return [
+            "已有原始条目，但 AI 初筛没有通过项，优先检查频道相关性规则和信源匹配度。"
+        ]
     if metrics["selectedItems"] == 0:
         return ["已有 AI 初筛通过项，但没有精选，优先校准精筛分数、置信度和精选阈值。"]
     if metrics["approvedEvents"] < metrics["eventClusters"]:
-        return ["已有事件簇，但自动评审未全部通过，优先检查中文字段、推荐理由和 provider 约束。"]
+        return [
+            "已有事件簇，但自动评审未全部通过，优先检查中文字段、推荐理由和 provider 约束。"
+        ]
     return ["抓取、初筛、精筛、精选和自动发布链路均有产出，继续扩充高质量信源。"]
 
 

@@ -1,28 +1,37 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import httpx
-from sqlalchemy import select
+from sqlalchemy import exists, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from intel_engine.clustering import ClusterCandidate, cluster_candidates
+from intel_engine.clustering import ClusterCandidate, cluster_candidates, same_event
 from intel_engine.channel_config import get_channel_config
+from intel_engine.corroboration import (
+    CorroborationMember,
+    CorroborationResult,
+    corroborate_event,
+)
 from intel_engine.daily import generate_daily_digest
 from intel_engine.fetchers import get_fetch_adapter
 from intel_engine.llm import (
     FakeLLMProvider,
+    EventAnalysisProvider,
+    EventEvidenceAnalysis,
     LLMProvider,
     ModelScore,
     ScreeningProvider,
     ScreeningResult,
+    build_event_analysis_provider,
     build_scoring_provider,
     build_screening_provider,
 )
 from intel_engine.models import (
     ClusterMemberRecord,
     EventClusterRecord,
+    EventEvidenceAssessmentRecord,
     FetchJobRecord,
     ModelScoreRecord,
     NormalizedItemRecord,
@@ -47,7 +56,12 @@ from intel_engine.review import (
     validate_model_score,
     validate_screening_result,
 )
-from intel_engine.scheduler import claim_fetch_jobs, mark_job_failed, mark_job_succeeded, schedule_due_sources
+from intel_engine.scheduler import (
+    claim_fetch_jobs,
+    mark_job_failed,
+    mark_job_succeeded,
+    schedule_due_sources,
+)
 from intel_engine.settings import Settings
 
 
@@ -69,7 +83,8 @@ class PipelineStats:
             claimed=self.claimed + other.claimed,
             succeeded=self.succeeded + other.succeeded,
             failed=self.failed + other.failed,
-            raw_documents_inserted=self.raw_documents_inserted + other.raw_documents_inserted,
+            raw_documents_inserted=self.raw_documents_inserted
+            + other.raw_documents_inserted,
             duplicates=self.duplicates + other.duplicates,
             normalized_items=self.normalized_items + other.normalized_items,
             ranked_items=self.ranked_items + other.ranked_items,
@@ -81,6 +96,11 @@ class PipelineStats:
 class ReprocessStats:
     items: int = 0
     failed: int = 0
+
+
+@dataclass(frozen=True)
+class EvidenceBackfillStats:
+    events: int = 0
 
 
 def run_scheduler_once(
@@ -105,12 +125,15 @@ def run_worker_once(
     client: httpx.Client | None = None,
     llm_provider: LLMProvider | None = None,
     screening_provider: ScreeningProvider | None = None,
+    event_analysis_provider: EventAnalysisProvider | None = None,
 ) -> PipelineStats:
     resolved_now = now or utc_now()
     total = PipelineStats()
     for _index in range(limit):
         with SessionLocal() as session:
-            jobs = claim_fetch_jobs(session, worker_id=worker_id, limit=1, now=resolved_now)
+            jobs = claim_fetch_jobs(
+                session, worker_id=worker_id, limit=1, now=resolved_now
+            )
             session.commit()
         if not jobs:
             break
@@ -124,6 +147,7 @@ def run_worker_once(
                 client=client,
                 llm_provider=llm_provider,
                 screening_provider=screening_provider,
+                event_analysis_provider=event_analysis_provider,
             )
             session.commit()
             total = total.add(stats)
@@ -139,6 +163,7 @@ def run_pipeline_once(
     client: httpx.Client | None = None,
     llm_provider: LLMProvider | None = None,
     screening_provider: ScreeningProvider | None = None,
+    event_analysis_provider: EventAnalysisProvider | None = None,
 ) -> PipelineStats:
     resolved_now = now or utc_now()
     scheduled = run_scheduler_once(SessionLocal, now=resolved_now, limit=limit)
@@ -150,6 +175,7 @@ def run_pipeline_once(
         client=client,
         llm_provider=llm_provider,
         screening_provider=screening_provider,
+        event_analysis_provider=event_analysis_provider,
     )
     total = worked.add(scheduled)
     _auto_generate_recent_daily(SessionLocal, now=resolved_now)
@@ -171,7 +197,11 @@ def reprocess_existing_items(
     processed = 0
     failed = 0
     with SessionLocal() as session:
-        stmt = select(NormalizedItemRecord).order_by(NormalizedItemRecord.fetched_at.desc()).limit(limit)
+        stmt = (
+            select(NormalizedItemRecord)
+            .order_by(NormalizedItemRecord.fetched_at.desc())
+            .limit(limit)
+        )
         if channel:
             stmt = stmt.where(NormalizedItemRecord.channel == channel)
         items = list(session.scalars(stmt).all())
@@ -187,7 +217,9 @@ def reprocess_existing_items(
                 continue
             strategy = _ensure_active_strategy(session, current.channel)
             try:
-                _upsert_model_score(session, current, source, strategy, llm_provider=provider)
+                _upsert_model_score(
+                    session, current, source, strategy, llm_provider=provider
+                )
             except Exception:  # noqa: BLE001 - keep historical backfill moving when one item fails.
                 session.rollback()
                 failed += 1
@@ -195,6 +227,59 @@ def reprocess_existing_items(
             session.commit()
             processed += 1
     return ReprocessStats(items=processed, failed=failed)
+
+
+def backfill_event_evidence(
+    SessionLocal: sessionmaker[Session],
+    *,
+    channel: str | None = None,
+    limit: int | None = None,
+    use_ai: bool = False,
+    event_analysis_provider: EventAnalysisProvider | None = None,
+) -> EvidenceBackfillStats:
+    processed = 0
+    with SessionLocal() as session:
+        channels = (
+            [channel]
+            if channel is not None
+            else list(
+                session.scalars(
+                    select(EventClusterRecord.channel)
+                    .distinct()
+                    .order_by(EventClusterRecord.channel)
+                ).all()
+            )
+        )
+        for channel_id in channels:
+            _acquire_cluster_advisory_lock(session, channel_id)
+            stmt = (
+                select(EventClusterRecord)
+                .where(EventClusterRecord.channel == channel_id)
+                .order_by(EventClusterRecord.id)
+            )
+            if limit is not None:
+                stmt = stmt.limit(max(0, limit - processed))
+            clusters = list(session.scalars(stmt).all())
+            resolved_provider: EventAnalysisProvider | None = None
+            provider_error: str | None = None
+            if use_ai or event_analysis_provider is not None:
+                resolved_provider, provider_error = _resolve_event_analysis_provider(
+                    event_analysis_provider
+                )
+            for cluster in clusters:
+                _upsert_event_evidence_assessment(
+                    session,
+                    cluster,
+                    event_analysis_provider=resolved_provider,
+                    provider_error=provider_error,
+                )
+                processed += 1
+                if limit is not None and processed >= limit:
+                    break
+            if limit is not None and processed >= limit:
+                break
+        session.commit()
+    return EvidenceBackfillStats(events=processed)
 
 
 def process_fetch_job(
@@ -205,16 +290,24 @@ def process_fetch_job(
     client: httpx.Client | None = None,
     llm_provider: LLMProvider | None = None,
     screening_provider: ScreeningProvider | None = None,
+    event_analysis_provider: EventAnalysisProvider | None = None,
 ) -> PipelineStats:
     resolved_now = now or utc_now()
     job = _get_job(session, job_id)
     source = _get_source(session, job.source_id)
     try:
-        result = get_fetch_adapter(source.fetch_adapter, now=resolved_now).fetch(source, client=client)
+        result = get_fetch_adapter(source.fetch_adapter, now=resolved_now).fetch(
+            source, client=client
+        )
         raw_result = RawStore(session).save_fetch_result(job, result, now=resolved_now)
 
         if result.status != "succeeded":
-            mark_job_failed(session, job.id, error_message=result.error_message or "fetch failed", now=resolved_now)
+            mark_job_failed(
+                session,
+                job.id,
+                error_message=result.error_message or "fetch failed",
+                now=resolved_now,
+            )
             return PipelineStats(
                 failed=1,
                 raw_documents_inserted=raw_result.documents_inserted,
@@ -223,7 +316,9 @@ def process_fetch_job(
 
         raw_documents = list(
             session.scalars(
-                select(RawDocumentRecord).where(RawDocumentRecord.fetch_run_id == raw_result.fetch_run_id)
+                select(RawDocumentRecord).where(
+                    RawDocumentRecord.fetch_run_id == raw_result.fetch_run_id
+                )
             ).all()
         )
         normalized_count = 0
@@ -238,12 +333,16 @@ def process_fetch_job(
                 now=resolved_now,
                 screening_provider=screening_provider,
             )
-            item = _normalize_raw_document(session, source, raw_document, screening=screening)
+            item = _normalize_raw_document(
+                session, source, raw_document, screening=screening
+            )
             if item is None:
                 continue
             normalized_count += 1
             prefilter = _upsert_prefilter(session, item, strategy)
-            model_score = _upsert_model_score(session, item, source, strategy, llm_provider=llm_provider)
+            model_score = _upsert_model_score(
+                session, item, source, strategy, llm_provider=llm_provider
+            )
             score_validation = validate_model_score(model_score, channel=source.channel)
             if not score_validation.accepted:
                 continue
@@ -259,7 +358,11 @@ def process_fetch_job(
             )
             ranked_count += 1
 
-        clusters_created = _persist_ranked_clusters(session, channel=source.channel)
+        clusters_created = _persist_ranked_clusters(
+            session,
+            channel=source.channel,
+            event_analysis_provider=event_analysis_provider,
+        )
         mark_job_succeeded(
             session,
             job.id,
@@ -306,7 +409,8 @@ def _normalize_raw_document(
     ):
         return None
     if screening is not None and (
-        screening.screen_status != "accepted" or screening.screen_bucket not in ACCEPTED_BUCKETS
+        screening.screen_status != "accepted"
+        or screening.screen_bucket not in ACCEPTED_BUCKETS
     ):
         return None
     item = NormalizedItemRecord(
@@ -347,7 +451,11 @@ def _ensure_active_strategy(session: Session, channel: str) -> StrategyVersionRe
         prefilter_prompt_version="prefilter-v1",
         score_prompt_version="score-v1",
         rank_formula_version="rank-v1",
-        thresholds_json={"record": 70, "selected": _default_selected_threshold(channel), "confidence": 80},
+        thresholds_json={
+            "record": 70,
+            "selected": _default_selected_threshold(channel),
+            "confidence": 80,
+        },
         model_config_json={
             "provider": Settings().llm_provider,
             "screeningModel": Settings().llm_screening_model,
@@ -385,7 +493,9 @@ def _upsert_screening_result(
         .where(RawScreeningResultRecord.strategy_version == strategy.id)
         .limit(1)
     )
-    result = _screen_raw_document(raw_document, source, now=now, screening_provider=screening_provider)
+    result = _screen_raw_document(
+        raw_document, source, now=now, screening_provider=screening_provider
+    )
     result = _apply_screening_guardrails(result, raw_document, source)
     published_at = _effective_published_at(source, raw_document, result)
     published_was_inferred = (
@@ -404,15 +514,24 @@ def _upsert_screening_result(
     if not validation.accepted:
         result = result.model_copy(
             update={
-                "screen_status": "rejected" if result.screen_status != "failed" else "failed",
-                "screen_bucket": "invalid" if result.screen_bucket in ACCEPTED_BUCKETS else result.screen_bucket,
+                "screen_status": "rejected"
+                if result.screen_status != "failed"
+                else "failed",
+                "screen_bucket": "invalid"
+                if result.screen_bucket in ACCEPTED_BUCKETS
+                else result.screen_bucket,
                 "reason_code": validation.reason_code or result.reason_code,
                 "reason_cn": validation.reason_cn or result.reason_cn,
             }
         )
     elif published_was_inferred:
         result = result.model_copy(
-            update={"raw_json": {**dict(result.raw_json), "publishedAtInferred": "fetched_at"}}
+            update={
+                "raw_json": {
+                    **dict(result.raw_json),
+                    "publishedAtInferred": "fetched_at",
+                }
+            }
         )
     raw_json = dict(result.raw_json)
     provider = str(raw_json.get("provider") or "unknown")
@@ -549,10 +668,17 @@ def _apply_screening_guardrails(
 ) -> ScreeningResult:
     if source.channel != "amazon":
         return result
-    if result.screen_status == "accepted" and result.relevance_score >= 70 and result.confidence_score >= 70:
+    if (
+        result.screen_status == "accepted"
+        and result.relevance_score >= 70
+        and result.confidence_score >= 70
+    ):
         return result
     reason_code = result.reason_code.lower()
-    if reason_code not in AMAZON_GUARDRAIL_REASON_CODES and result.screen_status != "accepted":
+    if (
+        reason_code not in AMAZON_GUARDRAIL_REASON_CODES
+        and result.screen_status != "accepted"
+    ):
         return result
 
     text = " ".join(
@@ -585,7 +711,9 @@ def _apply_screening_guardrails(
         update={
             "screen_status": "accepted",
             "screen_bucket": "related",
-            "category": result.category if result.category in AMAZON_SCREENING_CATEGORIES else _amazon_guardrail_category(text),
+            "category": result.category
+            if result.category in AMAZON_SCREENING_CATEGORIES
+            else _amazon_guardrail_category(text),
             "relevance_score": max(result.relevance_score, 72),
             "confidence_score": max(result.confidence_score, 72),
             "tags": tags[:5],
@@ -601,7 +729,9 @@ def _effective_published_at(
     raw_document: RawDocumentRecord,
     screening: ScreeningResult | RawScreeningResultRecord | None = None,
 ) -> datetime | None:
-    published_at = _parse_datetime(raw_document.response_headers_json.get("x-intel-published-at"))
+    published_at = _parse_datetime(
+        raw_document.response_headers_json.get("x-intel-published-at")
+    )
     if published_at is not None:
         return published_at
     if _can_infer_amazon_published_at(source, raw_document, screening):
@@ -645,13 +775,31 @@ def _has_amazon_seller_ops_signal(text: str) -> bool:
 
 
 def _amazon_guardrail_category(text: str) -> str:
-    if any(term in text for term in ("fba", "fulfillment", "inventory", "inbound", "storage", "placement")):
+    if any(
+        term in text
+        for term in (
+            "fba",
+            "fulfillment",
+            "inventory",
+            "inbound",
+            "storage",
+            "placement",
+        )
+    ):
         return "fba_logistics"
-    if any(term in text for term in ("advertising", "campaign", "ppc", "amazon ads", "dsp")):
+    if any(
+        term in text for term in ("advertising", "campaign", "ppc", "amazon ads", "dsp")
+    ):
         return "ads_ppc"
-    if any(term in text for term in ("fee", "reimbursement", "margin", "payment", "commission")):
+    if any(
+        term in text
+        for term in ("fee", "reimbursement", "margin", "payment", "commission")
+    ):
         return "fees_margin"
-    if any(term in text for term in ("account health", "suspension", "appeal", "brand registry")):
+    if any(
+        term in text
+        for term in ("account health", "suspension", "appeal", "brand registry")
+    ):
         return "account_health"
     if any(term in text for term in ("listing", "review", "keyword", "a+", "search")):
         return "listing_seo"
@@ -660,7 +808,9 @@ def _amazon_guardrail_category(text: str) -> str:
     return "policy"
 
 
-def _screening_payload(raw_document: RawDocumentRecord, source: SourceRecord, *, now: datetime) -> dict[str, object]:
+def _screening_payload(
+    raw_document: RawDocumentRecord, source: SourceRecord, *, now: datetime
+) -> dict[str, object]:
     return {
         "rawDocumentId": raw_document.id,
         "channel": source.channel,
@@ -674,7 +824,9 @@ def _screening_payload(raw_document: RawDocumentRecord, source: SourceRecord, *,
             "socialHandle": source.social_handle,
             "collectionStatus": source.collection_status,
         },
-        "titleOriginal": _truncate_text(raw_document.response_headers_json.get("x-intel-title") or source.name, 300),
+        "titleOriginal": _truncate_text(
+            raw_document.response_headers_json.get("x-intel-title") or source.name, 300
+        ),
         "summaryOriginal": _truncate_text(raw_document.body_text, 3000),
         "url": raw_document.canonical_url,
         "publishedAt": raw_document.response_headers_json.get("x-intel-published-at"),
@@ -713,7 +865,14 @@ def _channel_screening_rules(channel: str) -> dict[str, object]:
             ],
         }
     return {
-        "allowedCategories": ["ai_models", "ai_products", "agent_tools", "papers", "industry", "monetization"],
+        "allowedCategories": [
+            "ai_models",
+            "ai_products",
+            "agent_tools",
+            "papers",
+            "industry",
+            "monetization",
+        ],
         "tagRules": "标签 2-5 个；除品牌、模型名、产品名、账号名外必须使用中文短词；禁止 news/update/AI/Amazon 等泛标签。",
         "reasonRules": "推荐理由必须说明为什么值得关注，关联模型能力、产品变化、开发者动作或行业影响。",
         "accepted": [
@@ -740,7 +899,12 @@ def _upsert_prefilter(
         .where(PrefilterResultRecord.strategy_version == strategy.id)
         .limit(1)
     )
-    decision = PreScreenDecision(bucket="relevant", is_relevant=True, reason="规则预筛通过", signals=["has_title"])
+    decision = PreScreenDecision(
+        bucket="relevant",
+        is_relevant=True,
+        reason="规则预筛通过",
+        signals=["has_title"],
+    )
     if existing is None:
         session.add(
             PrefilterResultRecord(
@@ -823,7 +987,9 @@ def _score_item(
 
     settings = Settings()
     if settings.llm_provider == "fake":
-        return FakeLLMProvider(_fake_score(item, source)).score_item(_model_payload(item, source))
+        return FakeLLMProvider(_fake_score(item, source)).score_item(
+            _model_payload(item, source)
+        )
 
     try:
         return build_scoring_provider(settings).score_item(_model_payload(item, source))
@@ -839,7 +1005,9 @@ def _score_item(
         return fallback.model_copy(update={"raw_json": fallback_raw})
 
 
-def _model_payload(item: NormalizedItemRecord, source: SourceRecord) -> dict[str, object]:
+def _model_payload(
+    item: NormalizedItemRecord, source: SourceRecord
+) -> dict[str, object]:
     return {
         "itemId": item.id,
         "channel": item.channel,
@@ -891,7 +1059,11 @@ def _upsert_ranked_item(
     screening: RawScreeningResultRecord,
     observed_at: datetime,
 ) -> RankedItemRecord:
-    base_threshold = float(strategy.thresholds_json.get(model_score.category, strategy.thresholds_json.get("selected", 80)))
+    base_threshold = float(
+        strategy.thresholds_json.get(
+            model_score.category, strategy.thresholds_json.get("selected", 80)
+        )
+    )
     threshold = adjusted_selected_threshold(
         channel=item.channel,
         base_threshold=base_threshold,
@@ -900,7 +1072,10 @@ def _upsert_ranked_item(
         source_count=1,
         risk_flags=model_score.risk_flags,
     )
-    policy = RankPolicy(default_threshold=float(threshold), category_thresholds={model_score.category: float(threshold)})
+    policy = RankPolicy(
+        default_threshold=float(threshold),
+        category_thresholds={model_score.category: float(threshold)},
+    )
     decision = policy.evaluate(
         RankPolicyInput(
             channel=item.channel,
@@ -916,14 +1091,22 @@ def _upsert_ranked_item(
     selected = decision.selected
     selection_reason = decision.selection_reason
     confidence_threshold = float(strategy.thresholds_json.get("confidence", 80))
-    confidence_score = model_score.confidence_score if model_score.confidence_score is not None else screening.confidence_score
+    confidence_score = (
+        model_score.confidence_score
+        if model_score.confidence_score is not None
+        else screening.confidence_score
+    )
     if confidence_score < confidence_threshold:
         selected = False
         selection_reason = "低于精选置信度阈值"
-    if model_score.raw_json.get("provider") != "deepseek" or model_score.raw_json.get("fallbackReason"):
+    if model_score.raw_json.get("provider") != "deepseek" or model_score.raw_json.get(
+        "fallbackReason"
+    ):
         selected = False
         selection_reason = "非 DeepSeek 正式精筛结果，不进入精选"
-    ranked = session.get(RankedItemRecord, {"item_id": item.id, "strategy_version": strategy.id})
+    ranked = session.get(
+        RankedItemRecord, {"item_id": item.id, "strategy_version": strategy.id}
+    )
     payload = {
         "source_weight": decision.source_weight,
         "category_weight": decision.category_weight,
@@ -936,7 +1119,9 @@ def _upsert_ranked_item(
         "selection_reason": selection_reason,
     }
     if ranked is None:
-        ranked = RankedItemRecord(item_id=item.id, strategy_version=strategy.id, **payload)
+        ranked = RankedItemRecord(
+            item_id=item.id, strategy_version=strategy.id, **payload
+        )
         session.add(ranked)
     else:
         for key, value in payload.items():
@@ -945,20 +1130,22 @@ def _upsert_ranked_item(
     return ranked
 
 
-def _persist_ranked_clusters(session: Session, *, channel: str) -> int:
+def _persist_ranked_clusters(
+    session: Session,
+    *,
+    channel: str,
+    event_analysis_provider: EventAnalysisProvider | None = None,
+) -> int:
+    _acquire_cluster_advisory_lock(session, channel)
     rows = session.execute(
         select(NormalizedItemRecord, SourceRecord, RankedItemRecord)
         .join(SourceRecord, SourceRecord.id == NormalizedItemRecord.source_id)
         .join(RankedItemRecord, RankedItemRecord.item_id == NormalizedItemRecord.id)
         .where(NormalizedItemRecord.channel == channel)
+        .where(~exists().where(ClusterMemberRecord.item_id == NormalizedItemRecord.id))
     ).all()
     candidates: list[ClusterCandidate] = []
     for item, source, ranked in rows:
-        member_exists = session.scalar(
-            select(ClusterMemberRecord.cluster_id).where(ClusterMemberRecord.item_id == item.id).limit(1)
-        )
-        if member_exists is not None:
-            continue
         candidates.append(
             ClusterCandidate(
                 item_id=item.id,
@@ -975,55 +1162,434 @@ def _persist_ranked_clusters(session: Session, *, channel: str) -> int:
             )
         )
 
+    if not candidates:
+        return 0
+
+    cluster_stmt = select(EventClusterRecord).where(
+        EventClusterRecord.channel == channel
+    )
+    published_times = [
+        candidate.published_at
+        for candidate in candidates
+        if candidate.published_at is not None
+    ]
+    if published_times:
+        cluster_window = timedelta(hours=max(72, channel_rolling_window_hours(channel)))
+        cluster_stmt = cluster_stmt.where(
+            EventClusterRecord.last_seen_at >= min(published_times) - cluster_window,
+            EventClusterRecord.first_seen_at <= max(published_times) + cluster_window,
+        )
+    existing_clusters = list(session.scalars(cluster_stmt).all())
+    existing_candidates = {
+        cluster.id: candidate
+        for cluster in existing_clusters
+        if (candidate := _cluster_main_candidate(session, cluster)) is not None
+    }
+    resolved_provider, provider_error = _resolve_event_analysis_provider(
+        event_analysis_provider
+    )
+
     created = 0
     for draft in cluster_candidates(candidates):
-        cluster = EventClusterRecord(
-            channel=draft.channel,
-            canonical_title=draft.canonical_title,
-            main_item_id=draft.main_item_id,
-            category=draft.category,
-            first_seen_at=draft.first_seen_at or utc_now(),
-            last_seen_at=draft.last_seen_at or utc_now(),
-            member_count=draft.member_count,
-            source_count=draft.source_count,
-            cluster_score=draft.cluster_score,
-            embedding=draft.embedding,
+        draft_members = [
+            candidate
+            for candidate in candidates
+            if candidate.item_id in draft.member_item_ids
+        ]
+        draft_main = next(
+            candidate
+            for candidate in draft_members
+            if candidate.item_id == draft.main_item_id
         )
-        main_item = session.get(NormalizedItemRecord, draft.main_item_id)
-        main_source = session.get(SourceRecord, main_item.source_id) if main_item is not None else None
-        main_screening = _screening_for_item(session, draft.main_item_id)
-        main_score = _model_score_for_item(session, draft.main_item_id)
-        main_ranked = _ranked_for_item(session, draft.main_item_id)
+        cluster = next(
+            (
+                existing
+                for existing in existing_clusters
+                if (existing_candidate := existing_candidates.get(existing.id))
+                is not None
+                and _same_cluster_event(existing_candidate, draft_main)
+            ),
+            None,
+        )
+        if cluster is None:
+            cluster = EventClusterRecord(
+                channel=draft.channel,
+                canonical_title=draft.canonical_title,
+                main_item_id=draft.main_item_id,
+                category=draft.category,
+                first_seen_at=draft.first_seen_at or utc_now(),
+                last_seen_at=draft.last_seen_at or utc_now(),
+                member_count=0,
+                source_count=0,
+                cluster_score=draft.cluster_score,
+                embedding=draft.embedding,
+            )
+            session.add(cluster)
+            session.flush()
+            existing_clusters.append(cluster)
+            created += 1
+
+        for candidate in draft_members:
+            if (
+                session.get(
+                    ClusterMemberRecord,
+                    {"cluster_id": cluster.id, "item_id": candidate.item_id},
+                )
+                is None
+            ):
+                session.add(
+                    ClusterMemberRecord(
+                        cluster_id=cluster.id,
+                        item_id=candidate.item_id,
+                        source_id=candidate.source_id,
+                        relation_score=100
+                        if candidate.item_id == draft.main_item_id
+                        else 85,
+                        is_main=candidate.item_id == draft.main_item_id,
+                    )
+                )
+        session.flush()
+        _refresh_cluster(session, cluster)
+        _upsert_event_evidence_assessment(
+            session,
+            cluster,
+            event_analysis_provider=resolved_provider,
+            provider_error=provider_error,
+        )
+        refreshed_candidate = _cluster_main_candidate(session, cluster)
+        if refreshed_candidate is not None:
+            existing_candidates[cluster.id] = refreshed_candidate
+    session.flush()
+    return created
+
+
+def _acquire_cluster_advisory_lock(session: Session, channel: str) -> None:
+    bind = session.get_bind()
+    if bind.dialect.name != "postgresql":
+        return
+    session.execute(
+        text("SELECT pg_advisory_xact_lock(hashtext(:lock_key))"),
+        {"lock_key": f"intel-engine:event-clustering:{channel}"},
+    )
+
+
+def _same_cluster_event(first: ClusterCandidate, second: ClusterCandidate) -> bool:
+    if first.canonical_url and first.canonical_url == second.canonical_url:
+        return True
+    if first.content_hash and first.content_hash == second.content_hash:
+        return True
+    if first.published_at is None or second.published_at is None:
+        return False
+    window_hours = max(72, channel_rolling_window_hours(first.channel))
+    if abs(first.published_at - second.published_at) > timedelta(hours=window_hours):
+        return False
+    return same_event(first, second)
+
+
+def _cluster_main_candidate(
+    session: Session,
+    cluster: EventClusterRecord,
+) -> ClusterCandidate | None:
+    if cluster.main_item_id is None:
+        return None
+    item = session.get(NormalizedItemRecord, cluster.main_item_id)
+    source = session.get(SourceRecord, item.source_id) if item is not None else None
+    ranked = _ranked_for_item(session, item.id) if item is not None else None
+    if item is None or source is None or ranked is None:
+        return None
+    return ClusterCandidate(
+        item_id=item.id,
+        channel=item.channel,
+        source_id=item.source_id,
+        source_tier=source.tier,
+        source_authority_weight=source.authority_weight,
+        title=item.title_cn or item.title_original,
+        canonical_url=item.canonical_url,
+        content_hash=item.content_hash,
+        category=ranked_category(session, item.id),
+        published_at=item.published_at,
+        final_score=ranked.final_score,
+    )
+
+
+def _refresh_cluster(session: Session, cluster: EventClusterRecord) -> None:
+    member_records = list(
+        session.scalars(
+            select(ClusterMemberRecord).where(
+                ClusterMemberRecord.cluster_id == cluster.id
+            )
+        ).all()
+    )
+    resolved_members: list[
+        tuple[
+            ClusterMemberRecord,
+            NormalizedItemRecord,
+            SourceRecord,
+            RankedItemRecord,
+        ]
+    ] = []
+    for member in member_records:
+        item = session.get(NormalizedItemRecord, member.item_id)
+        source = session.get(SourceRecord, member.source_id)
+        ranked = _ranked_for_item(session, member.item_id)
+        if item is not None and source is not None and ranked is not None:
+            resolved_members.append((member, item, source, ranked))
+    if not resolved_members:
+        return
+
+    tier_priority = {"T1": 4, "T1.5": 3, "T2": 2, "T3": 1}
+    _main_member, main_item, main_source, main_ranked = max(
+        resolved_members,
+        key=lambda row: (
+            tier_priority.get(row[2].tier, 0),
+            row[2].authority_weight,
+            row[3].final_score,
+            row[1].published_at.timestamp() if row[1].published_at else 0,
+        ),
+    )
+    for member, *_rest in resolved_members:
+        member.is_main = member.item_id == main_item.id
+        if member.is_main:
+            member.relation_score = 100
+
+    published_times = [
+        item.published_at
+        for _member, item, _source, _ranked in resolved_members
+        if item.published_at is not None
+    ]
+    cluster.main_item_id = main_item.id
+    cluster.canonical_title = main_item.title_cn or main_item.title_original
+    cluster.category = ranked_category(session, main_item.id)
+    cluster.member_count = len(resolved_members)
+    cluster.source_count = len(
+        {source.id for _member, _item, source, _ranked in resolved_members}
+    )
+    cluster.cluster_score = max(
+        ranked.final_score for _member, _item, _source, ranked in resolved_members
+    )
+    if published_times:
+        cluster.first_seen_at = min(published_times)
+        cluster.last_seen_at = max(published_times)
+
+    if cluster.reviewed_by in {None, "ai-reviewer"}:
         review = auto_review_decision(
             item=main_item,
             source=main_source,
-            screening=main_screening,
-            score=main_score,
+            screening=_screening_for_item(session, main_item.id),
+            score=_model_score_for_item(session, main_item.id),
             ranked=main_ranked,
         )
         cluster.review_status = review.status
         cluster.review_note = review.note
         cluster.reviewed_by = "ai-reviewer"
         cluster.reviewed_at = utc_now()
-        session.add(cluster)
-        session.flush()
-        for candidate in candidates:
-            if candidate.item_id in draft.member_item_ids:
-                session.add(
-                    ClusterMemberRecord(
-                        cluster_id=cluster.id,
-                        item_id=candidate.item_id,
-                        source_id=candidate.source_id,
-                        relation_score=100 if candidate.item_id == draft.main_item_id else 85,
-                        is_main=candidate.item_id == draft.main_item_id,
-                    )
-                )
-        created += 1
     session.flush()
-    return created
 
 
-def _screening_for_item(session: Session, item_id: int) -> RawScreeningResultRecord | None:
+def _resolve_event_analysis_provider(
+    provider: EventAnalysisProvider | None,
+) -> tuple[EventAnalysisProvider | None, str | None]:
+    if provider is not None:
+        return provider, None
+    settings = Settings()
+    if settings.llm_provider == "fake":
+        return None, None
+    try:
+        return build_event_analysis_provider(settings), None
+    except Exception as exc:  # noqa: BLE001 - deterministic corroboration remains available.
+        return None, str(exc)
+
+
+def _upsert_event_evidence_assessment(
+    session: Session,
+    cluster: EventClusterRecord,
+    *,
+    event_analysis_provider: EventAnalysisProvider | None,
+    provider_error: str | None,
+) -> EventEvidenceAssessmentRecord:
+    corroboration_members: list[CorroborationMember] = []
+    payload_members: list[dict[str, object]] = []
+    member_records = list(
+        session.scalars(
+            select(ClusterMemberRecord)
+            .where(ClusterMemberRecord.cluster_id == cluster.id)
+            .order_by(
+                ClusterMemberRecord.is_main.desc(),
+                ClusterMemberRecord.item_id,
+            )
+        ).all()
+    )
+    for member in member_records:
+        item = session.get(NormalizedItemRecord, member.item_id)
+        source = session.get(SourceRecord, member.source_id)
+        score = _model_score_for_item(session, member.item_id)
+        if item is None or source is None:
+            continue
+        raw_json = score.raw_json if score is not None else {}
+        key_facts = _string_values(raw_json.get("keyFacts"))
+        risk_flags = _string_values(raw_json.get("riskFlags"))
+        publisher_key = (
+            source.publisher_key
+            if source.publisher_key and source.publisher_key != "unknown"
+            else f"source:{source.id}"
+        )
+        corroboration_members.append(
+            CorroborationMember(
+                publisher_key=publisher_key,
+                source_tier=source.tier,
+                title=item.title_cn or item.title_original,
+                source_id=source.id,
+                summary=item.summary_cn or item.summary_original,
+                key_facts=key_facts,
+                risk_flags=risk_flags,
+            )
+        )
+        payload_members.append(
+            {
+                "itemId": item.id,
+                "sourceId": source.id,
+                "publisherKey": publisher_key,
+                "sourceTier": source.tier,
+                "title": item.title_cn or item.title_original,
+                "summary": _truncate_text(
+                    item.summary_cn or item.summary_original,
+                    1800,
+                ),
+                "keyFacts": list(key_facts),
+                "riskFlags": list(risk_flags),
+            }
+        )
+
+    fallback = corroborate_event(corroboration_members)
+    ai_analysis: EventEvidenceAnalysis | None = None
+    ai_error = provider_error
+    if event_analysis_provider is not None and fallback.independent_source_count >= 2:
+        try:
+            ai_analysis = event_analysis_provider.analyze_event(
+                {
+                    "eventId": cluster.id,
+                    "channel": cluster.channel,
+                    "title": cluster.canonical_title,
+                    "members": payload_members,
+                    "rules": {
+                        "minimumIndependentPublishers": 2,
+                        "publisherIdentityField": "publisherKey",
+                    },
+                }
+            )
+        except Exception as exc:  # noqa: BLE001 - deterministic fallback is mandatory.
+            ai_error = str(exc)
+
+    combined = _combine_event_evidence(fallback, ai_analysis)
+    raw_json: dict[str, object] = {
+        "fallbackStatus": fallback.verification_status,
+        "fallbackSummary": fallback.summary,
+    }
+    provider = "rules"
+    model = "corroboration-v1"
+    if ai_analysis is not None:
+        raw_json.update(ai_analysis.raw_json)
+        raw_json["aiConfidenceScore"] = ai_analysis.confidence_score
+        raw_json["aiVerificationStatus"] = ai_analysis.verification_status
+        raw_json["aiSupportedFacts"] = list(ai_analysis.supported_facts)
+        raw_json["aiConflictingClaims"] = list(ai_analysis.conflicting_claims)
+        raw_json["aiSummary"] = ai_analysis.summary
+        raw_json["aiDisagreesWithRules"] = (
+            ai_analysis.verification_status != fallback.verification_status
+        )
+        provider = str(ai_analysis.raw_json.get("provider") or "ai")
+        model = str(ai_analysis.raw_json.get("model") or "event-evidence-v1")
+    if ai_error:
+        raw_json["fallbackReason"] = ai_error
+
+    record = session.get(EventEvidenceAssessmentRecord, cluster.id)
+    payload = {
+        "provider": provider,
+        "model": model,
+        "verification_status": combined.verification_status,
+        "independent_source_count": combined.independent_source_count,
+        "authoritative_source_count": combined.authoritative_source_count,
+        "evidence_score": combined.evidence_score,
+        "supported_facts_json": list(combined.supported_facts),
+        "supported_claims_json": _supported_claim_payload(combined),
+        "conflicting_claims_json": list(combined.conflicting_claims),
+        "summary": combined.summary,
+        "raw_json": raw_json,
+        "analyzed_at": utc_now(),
+    }
+    if record is None:
+        record = EventEvidenceAssessmentRecord(event_id=cluster.id, **payload)
+        session.add(record)
+    else:
+        for key, value in payload.items():
+            setattr(record, key, value)
+    session.flush()
+    return record
+
+
+def _combine_event_evidence(
+    fallback: CorroborationResult,
+    ai_analysis: EventEvidenceAnalysis | None,
+) -> CorroborationResult:
+    if ai_analysis is None:
+        return fallback
+
+    conclusions_disagree = (
+        ai_analysis.verification_status != fallback.verification_status
+    )
+    status = fallback.verification_status
+    summary = fallback.summary
+    if conclusions_disagree and fallback.verification_status != "conflicted":
+        status = "insufficient"
+        summary = "确定性证据与 AI 分析结论不一致，暂不晋级，需要人工复核。"
+        evidence_score = min(fallback.evidence_score, 39.0)
+    elif conclusions_disagree:
+        evidence_score = fallback.evidence_score
+    else:
+        evidence_score = round(
+            fallback.evidence_score * 0.7 + ai_analysis.confidence_score * 0.3,
+            2,
+        )
+    if status == "single_source":
+        evidence_score = min(evidence_score, 49.0)
+    elif status == "insufficient":
+        evidence_score = min(evidence_score, 39.0)
+    elif status == "conflicted":
+        evidence_score = min(evidence_score, 44.0)
+    return CorroborationResult(
+        verification_status=status,
+        independent_source_count=fallback.independent_source_count,
+        authoritative_source_count=fallback.authoritative_source_count,
+        evidence_score=evidence_score,
+        supported_claims=fallback.supported_claims,
+        supported_facts=fallback.supported_facts,
+        conflicting_claims=fallback.conflicting_claims,
+        summary=summary,
+    )
+
+
+def _supported_claim_payload(
+    evidence: CorroborationResult,
+) -> list[dict[str, object]]:
+    return [
+        {
+            "claim": supported.claim,
+            "publisherKeys": list(supported.publisher_keys),
+            "sourceIds": list(supported.source_ids),
+        }
+        for supported in evidence.supported_claims
+    ]
+
+
+def _string_values(value: object) -> tuple[str, ...]:
+    if not isinstance(value, list):
+        return ()
+    return tuple(str(item).strip() for item in value if str(item).strip())
+
+
+def _screening_for_item(
+    session: Session, item_id: int
+) -> RawScreeningResultRecord | None:
     item = session.get(NormalizedItemRecord, item_id)
     if item is None:
         return None
@@ -1036,17 +1602,29 @@ def _screening_for_item(session: Session, item_id: int) -> RawScreeningResultRec
 
 
 def _model_score_for_item(session: Session, item_id: int) -> ModelScoreRecord | None:
-    return session.scalar(select(ModelScoreRecord).where(ModelScoreRecord.item_id == item_id).limit(1))
+    return session.scalar(
+        select(ModelScoreRecord).where(ModelScoreRecord.item_id == item_id).limit(1)
+    )
 
 
 def _ranked_for_item(session: Session, item_id: int) -> RankedItemRecord | None:
-    return session.scalar(select(RankedItemRecord).where(RankedItemRecord.item_id == item_id).limit(1))
+    return session.scalar(
+        select(RankedItemRecord).where(RankedItemRecord.item_id == item_id).limit(1)
+    )
 
 
-def _auto_generate_recent_daily(SessionLocal: sessionmaker[Session], *, now: datetime) -> None:
+def _auto_generate_recent_daily(
+    SessionLocal: sessionmaker[Session], *, now: datetime
+) -> None:
     digest_date = now.astimezone(OPERATIONAL_TIMEZONE).date()
     with SessionLocal() as session:
-        channels = list(session.scalars(select(StrategyVersionRecord.channel).where(StrategyVersionRecord.status == "active")).all())
+        channels = list(
+            session.scalars(
+                select(StrategyVersionRecord.channel).where(
+                    StrategyVersionRecord.status == "active"
+                )
+            ).all()
+        )
         for channel in sorted(set(channels)):
             strategy = _ensure_active_strategy(session, channel)
             generate_daily_digest(
@@ -1061,7 +1639,9 @@ def _auto_generate_recent_daily(SessionLocal: sessionmaker[Session], *, now: dat
 
 
 def ranked_category(session: Session, item_id: int) -> str:
-    model_score = session.scalar(select(ModelScoreRecord).where(ModelScoreRecord.item_id == item_id).limit(1))
+    model_score = session.scalar(
+        select(ModelScoreRecord).where(ModelScoreRecord.item_id == item_id).limit(1)
+    )
     if model_score is None:
         return "general"
     return model_score.category

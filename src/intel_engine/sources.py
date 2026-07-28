@@ -2,11 +2,59 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from intel_engine.models import SourceRecord, SourceStateRecord, utc_now
+
+
+PUBLISHER_KEY_ALIASES = {
+    "amazon": "company:amazon",
+    "github:amzn": "company:amazon",
+    "github:aws": "company:amazon",
+    "github_org:amzn": "company:amazon",
+    "github_org:aws": "company:amazon",
+    "github:microsoft": "company:microsoft",
+    "github_org:microsoft": "company:microsoft",
+    "github:google": "company:google",
+    "github:google-deepmind": "company:google",
+    "github:google-ai-edge": "company:google",
+    "github_org:google": "company:google",
+    "github_org:google-deepmind": "company:google",
+    "github_org:google-ai-edge": "company:google",
+    "github_org:genkit-ai": "company:google",
+    "github_org:tensorflow": "company:google",
+    "github_org:keras-team": "company:google",
+    "github:openai": "company:openai",
+    "github_org:openai": "company:openai",
+    "github:anthropics": "company:anthropic",
+    "github_org:anthropics": "company:anthropic",
+    "github:huggingface": "company:huggingface",
+    "github_org:huggingface": "company:huggingface",
+    "github:nvidia": "company:nvidia",
+    "github_org:nvidia": "company:nvidia",
+    "github_org:nvidia-nemo": "company:nvidia",
+    "github_org:nvlabs": "company:nvidia",
+    "github_org:autogluon": "company:amazon",
+    "research:arxiv": "research:arxiv",
+}
+
+PUBLISHER_HOST_ALIASES = {
+    "openai.com": "company:openai",
+    "anthropic.com": "company:anthropic",
+    "google.com": "company:google",
+    "googleblog.com": "company:google",
+    "deepmind.google": "company:google",
+    "microsoft.com": "company:microsoft",
+    "amazon.com": "company:amazon",
+    "aboutamazon.com": "company:amazon",
+    "meta.com": "company:meta",
+    "huggingface.co": "company:huggingface",
+    "nvidia.com": "company:nvidia",
+    "arxiv.org": "research:arxiv",
+}
 
 
 @dataclass(frozen=True)
@@ -29,6 +77,7 @@ class SourceUpsert:
     enabled: bool
     visibility: str
     source_group: str = "media"
+    publisher_key: str | None = None
     contributor_no: str | None = None
     social_handle: str | None = None
     collection_status: str = "collectable"
@@ -49,7 +98,9 @@ class SourceRegistry:
     def upsert_source(self, source: SourceUpsert) -> SourceUpsertResult:
         record = self.session.get(SourceRecord, source.id)
         created = record is None
-        previous_interval = record.fetch_interval_minutes if record is not None else None
+        previous_interval = (
+            record.fetch_interval_minutes if record is not None else None
+        )
         if record is None:
             record = SourceRecord(id=source.id)
             self.session.add(record)
@@ -71,6 +122,11 @@ class SourceRegistry:
         record.enabled = source.enabled
         record.visibility = source.visibility
         record.source_group = source.source_group
+        record.publisher_key = normalize_publisher_key(
+            source.publisher_key,
+            source.url,
+            source.id,
+        )
         record.contributor_no = source.contributor_no
         record.social_handle = source.social_handle
         record.collection_status = source.collection_status
@@ -79,9 +135,19 @@ class SourceRegistry:
 
         state = self.session.get(SourceStateRecord, source.id)
         if state is None:
-            self.session.add(SourceStateRecord(source_id=source.id, next_fetch_at=datetime(1970, 1, 1, tzinfo=timezone.utc)))
-        elif previous_interval != source.fetch_interval_minutes and state.last_success_at is not None:
-            state.next_fetch_at = state.last_success_at + timedelta(minutes=source.fetch_interval_minutes)
+            self.session.add(
+                SourceStateRecord(
+                    source_id=source.id,
+                    next_fetch_at=datetime(1970, 1, 1, tzinfo=timezone.utc),
+                )
+            )
+        elif (
+            previous_interval != source.fetch_interval_minutes
+            and state.last_success_at is not None
+        ):
+            state.next_fetch_at = state.last_success_at + timedelta(
+                minutes=source.fetch_interval_minutes
+            )
 
         self.session.flush()
         return SourceUpsertResult(source_id=source.id, created=created)
@@ -92,7 +158,9 @@ class SourceRegistry:
             raise KeyError(f"Unknown source: {source_id}")
         return record
 
-    def list_sources(self, channel: str | None = None, enabled: bool | None = None) -> list[SourceRecord]:
+    def list_sources(
+        self, channel: str | None = None, enabled: bool | None = None
+    ) -> list[SourceRecord]:
         stmt = select(SourceRecord).order_by(SourceRecord.channel, SourceRecord.id)
         if channel is not None:
             stmt = stmt.where(SourceRecord.channel == channel)
@@ -147,3 +215,34 @@ class SourceRegistry:
         state.updated_at = utc_now()
         self.session.flush()
         return state
+
+
+def publisher_key_from_url(url: str, source_id: str) -> str:
+    parsed = urlparse(url)
+    hostname = (parsed.hostname or "").lower().removeprefix("www.")
+    path_parts = [part for part in parsed.path.split("/") if part]
+    if hostname == "github.com" and path_parts:
+        return f"github_org:{path_parts[0].lower()}"
+    if hostname.endswith("feedburner.com") and path_parts:
+        return f"feedburner:{path_parts[0].lower()}"
+    if hostname == "medium.com" and path_parts:
+        publisher = path_parts[-1].removeprefix("@").lower()
+        return f"medium:{publisher}" if publisher else f"source:{source_id}"
+    return hostname or f"source:{source_id}"
+
+
+def normalize_publisher_key(
+    publisher_key: str | None,
+    url: str,
+    source_id: str,
+) -> str:
+    normalized_input = publisher_key.strip().casefold() if publisher_key else ""
+    derived = normalized_input or publisher_key_from_url(url, source_id)
+    if derived in PUBLISHER_KEY_ALIASES:
+        return PUBLISHER_KEY_ALIASES[derived]
+
+    hostname = (urlparse(url).hostname or "").lower().removeprefix("www.")
+    for host_suffix, canonical_key in PUBLISHER_HOST_ALIASES.items():
+        if hostname == host_suffix or hostname.endswith(f".{host_suffix}"):
+            return canonical_key
+    return derived

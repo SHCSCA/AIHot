@@ -1,12 +1,25 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from intel_engine.channel_config import CHANNELS_DIR, SourceConfig, load_channel_configs
-from intel_engine.sources import SourceRegistry, SourceUpsert
+from intel_engine.channel_config import (
+    CHANNELS_DIR,
+    CollectionPolicy,
+    SourceConfig,
+    load_channel_configs,
+    load_collection_policy,
+)
+from intel_engine.models import SourceRecord, SourceStateRecord
+from intel_engine.sources import (
+    SourceRegistry,
+    SourceUpsert,
+    normalize_publisher_key,
+)
 
 
 @dataclass(frozen=True)
@@ -139,8 +152,17 @@ def source_upsert_from_config(channel_id: str, source: SourceConfig) -> SourceUp
         enabled=source.enabled,
         visibility=_visibility(source),
         source_group=_source_group(source),
-        contributor_no=source.metadata.get("contributor_no") if isinstance(source.metadata.get("contributor_no"), str) else None,
-        social_handle=source.metadata.get("social_handle") if isinstance(source.metadata.get("social_handle"), str) else None,
+        publisher_key=(
+            source.metadata.get("publisher_key")
+            if isinstance(source.metadata.get("publisher_key"), str)
+            else None
+        ),
+        contributor_no=source.metadata.get("contributor_no")
+        if isinstance(source.metadata.get("contributor_no"), str)
+        else None,
+        social_handle=source.metadata.get("social_handle")
+        if isinstance(source.metadata.get("social_handle"), str)
+        else None,
         collection_status=_collection_status(source),
         free_access=_free_access(source),
         notes=None,
@@ -150,20 +172,59 @@ def source_upsert_from_config(channel_id: str, source: SourceConfig) -> SourceUp
 def seed_sources_from_channel_configs(
     session: Session,
     channels_dir: Path = CHANNELS_DIR,
+    *,
+    policy: CollectionPolicy | None = None,
 ) -> SourceSeedStats:
+    effective_policy = policy or load_collection_policy()
     registry = SourceRegistry(session)
     created = 0
     updated = 0
     total = 0
 
-    for channel in load_channel_configs(channels_dir):
+    for channel in load_channel_configs(channels_dir, policy=effective_policy):
         for source in channel.sources:
             total += 1
-            result = registry.upsert_source(source_upsert_from_config(channel.id, source))
+            result = registry.upsert_source(
+                source_upsert_from_config(channel.id, source)
+            )
             if result.created:
                 created += 1
             else:
                 updated += 1
 
+    _synchronize_existing_sources(session, effective_policy)
     session.flush()
     return SourceSeedStats(created=created, updated=updated, total=total)
+
+
+def _synchronize_existing_sources(
+    session: Session,
+    policy: CollectionPolicy,
+) -> None:
+    for source in session.scalars(select(SourceRecord)).all():
+        source.fetch_interval_minutes = policy.crawl_interval_minutes
+        migrated_fallbacks = {
+            source.id,
+            f"{source.source_group}:{source.id}",
+            "unknown",
+        }
+        explicit_publisher = (
+            None if source.publisher_key in migrated_fallbacks else source.publisher_key
+        )
+        source.publisher_key = normalize_publisher_key(
+            explicit_publisher,
+            source.url,
+            source.id,
+        )
+        state = session.get(SourceStateRecord, source.id)
+        if state is None:
+            session.add(
+                SourceStateRecord(
+                    source_id=source.id,
+                    next_fetch_at=datetime(1970, 1, 1, tzinfo=timezone.utc),
+                )
+            )
+        elif state.last_success_at is not None:
+            state.next_fetch_at = state.last_success_at + timedelta(
+                minutes=policy.crawl_interval_minutes
+            )

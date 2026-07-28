@@ -1,0 +1,5491 @@
+schema_version: 1
+catalog_id: ai_expansion
+channel: ai
+description: Validated, collectable AI source expansion catalog. Scheduling is inherited from channel-level policy.
+sources:
+- id: arxiv_cs_lg_expansion_rss
+  source_type: rss
+  name: arXiv Machine Learning RSS
+  url: https://export.arxiv.org/rss/cs.LG
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 86
+  default_categories:
+  - papers
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: research:arxiv
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: arxiv_cs_cl_expansion_rss
+  source_type: rss
+  name: arXiv Computation and Language RSS
+  url: https://export.arxiv.org/rss/cs.CL
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 86
+  default_categories:
+  - papers
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: research:arxiv
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: arxiv_cs_cv_expansion_rss
+  source_type: rss
+  name: arXiv Computer Vision RSS
+  url: https://export.arxiv.org/rss/cs.CV
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 86
+  default_categories:
+  - papers
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: research:arxiv
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: arxiv_cs_ro_expansion_rss
+  source_type: rss
+  name: arXiv Robotics RSS
+  url: https://export.arxiv.org/rss/cs.RO
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 84
+  default_categories:
+  - papers
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: research:arxiv
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: arxiv_cs_ne_expansion_rss
+  source_type: rss
+  name: arXiv Neural and Evolutionary Computing RSS
+  url: https://export.arxiv.org/rss/cs.NE
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - papers
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: research:arxiv
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: arxiv_stat_ml_expansion_rss
+  source_type: rss
+  name: arXiv Statistics Machine Learning RSS
+  url: https://export.arxiv.org/rss/stat.ML
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 84
+  default_categories:
+  - papers
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: research:arxiv
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: arxiv_cs_ir_expansion_rss
+  source_type: rss
+  name: arXiv Information Retrieval RSS
+  url: https://export.arxiv.org/rss/cs.IR
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - papers
+  - ai_models
+  - agent_tools
+  parser_type: rss
+  enabled: true
+  publisher_key: research:arxiv
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: arxiv_eess_iv_expansion_rss
+  source_type: rss
+  name: arXiv Image and Video Processing RSS
+  url: https://export.arxiv.org/rss/eess.IV
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - papers
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: research:arxiv
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: apple_machine_learning_research_rss
+  source_type: rss
+  name: Apple Machine Learning Research RSS
+  url: https://machinelearning.apple.com/rss.xml
+  language: en
+  region: global
+  trust_level: official
+  base_weight: 90
+  default_categories:
+  - papers
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: company:apple
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: google_research_blog_rss
+  source_type: rss
+  name: Google Research Blog RSS
+  url: https://research.google/blog/rss/
+  language: en
+  region: global
+  trust_level: official
+  base_weight: 92
+  default_categories:
+  - papers
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: company:google
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: mozilla_ai_blog_rss
+  source_type: rss
+  name: Mozilla AI Blog RSS
+  url: https://blog.mozilla.ai/rss/
+  language: en
+  region: global
+  trust_level: official
+  base_weight: 84
+  default_categories:
+  - ai_models
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: foundation:mozilla
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: cmu_machine_learning_blog_rss
+  source_type: rss
+  name: CMU Machine Learning Blog RSS
+  url: https://blog.ml.cmu.edu/feed/
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 84
+  default_categories:
+  - papers
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: university:carnegie_mellon
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: mit_csail_news_rss
+  source_type: rss
+  name: MIT CSAIL News RSS
+  url: https://www.csail.mit.edu/rss.xml
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 86
+  default_categories:
+  - papers
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: university:mit_csail
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: venturebeat_ai_rss_expansion
+  source_type: rss
+  name: VentureBeat AI RSS
+  url: https://venturebeat.com/category/ai/feed
+  language: en
+  region: global
+  trust_level: media
+  base_weight: 76
+  default_categories:
+  - industry
+  - ai_products
+  - monetization
+  parser_type: rss
+  enabled: true
+  publisher_key: media:venturebeat
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: the_decoder_rss_expansion
+  source_type: rss
+  name: The Decoder RSS
+  url: https://the-decoder.com/feed/
+  language: en
+  region: global
+  trust_level: media
+  base_weight: 74
+  default_categories:
+  - industry
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: media:the_decoder
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: wired_ai_rss_expansion
+  source_type: rss
+  name: WIRED AI RSS
+  url: https://www.wired.com/feed/tag/ai/latest/rss
+  language: en
+  region: global
+  trust_level: media
+  base_weight: 76
+  default_categories:
+  - industry
+  - ai_products
+  - monetization
+  parser_type: rss
+  enabled: true
+  publisher_key: media:wired
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: ars_technica_ai_rss
+  source_type: rss
+  name: Ars Technica Technology Lab RSS
+  url: https://feeds.arstechnica.com/arstechnica/technology-lab
+  language: en
+  region: global
+  trust_level: media
+  base_weight: 76
+  default_categories:
+  - industry
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: media:ars_technica
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: ieee_spectrum_ai_rss
+  source_type: rss
+  name: IEEE Spectrum Artificial Intelligence RSS
+  url: https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - industry
+  - papers
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: professional_org:ieee
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: ai_business_rss
+  source_type: rss
+  name: AI Business RSS
+  url: https://aibusiness.com/rss.xml
+  language: en
+  region: global
+  trust_level: media
+  base_weight: 72
+  default_categories:
+  - industry
+  - monetization
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: media:ai_business
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: the_gradient_rss_expansion
+  source_type: rss
+  name: The Gradient RSS
+  url: https://thegradient.pub/rss/
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 80
+  default_categories:
+  - papers
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: media:the_gradient
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: kdnuggets_rss_expansion
+  source_type: rss
+  name: KDnuggets RSS
+  url: https://www.kdnuggets.com/feed
+  language: en
+  region: global
+  trust_level: media
+  base_weight: 72
+  default_categories:
+  - industry
+  - agent_tools
+  - monetization
+  parser_type: rss
+  enabled: true
+  publisher_key: media:kdnuggets
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: machine_learning_mastery_rss
+  source_type: rss
+  name: Machine Learning Mastery RSS
+  url: https://machinelearningmastery.com/feed/
+  language: en
+  region: global
+  trust_level: expert
+  base_weight: 74
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: expert:machine_learning_mastery
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: towards_data_science_rss
+  source_type: rss
+  name: Towards Data Science RSS
+  url: https://towardsdatascience.com/feed
+  language: en
+  region: global
+  trust_level: media
+  base_weight: 70
+  default_categories:
+  - industry
+  - ai_models
+  - agent_tools
+  parser_type: rss
+  enabled: true
+  publisher_key: media:towards_data_science
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: gradient_flow_rss
+  source_type: rss
+  name: Gradient Flow RSS
+  url: https://gradientflow.com/feed/
+  language: en
+  region: global
+  trust_level: expert
+  base_weight: 74
+  default_categories:
+  - industry
+  - ai_models
+  - monetization
+  parser_type: rss
+  enabled: true
+  publisher_key: media:gradient_flow
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: last_week_in_ai_rss
+  source_type: rss
+  name: Last Week in AI RSS
+  url: https://lastweekin.ai/feed
+  language: en
+  region: global
+  trust_level: media
+  base_weight: 76
+  default_categories:
+  - industry
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: media:last_week_in_ai
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: cloudflare_ai_blog_rss
+  source_type: rss
+  name: Cloudflare AI Blog RSS
+  url: https://blog.cloudflare.com/tag/ai/rss/
+  language: en
+  region: global
+  trust_level: official
+  base_weight: 84
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: company:cloudflare
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: weaviate_blog_rss_expansion
+  source_type: rss
+  name: Weaviate Blog RSS
+  url: https://weaviate.io/blog/rss.xml
+  language: en
+  region: global
+  trust_level: official
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: company:weaviate
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: ollama_blog_rss_expansion
+  source_type: rss
+  name: Ollama Blog RSS
+  url: https://ollama.com/blog/rss.xml
+  language: en
+  region: global
+  trust_level: official
+  base_weight: 86
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: company:ollama
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_copilot_changelog_rss
+  source_type: rss
+  name: GitHub Copilot Changelog RSS
+  url: https://github.blog/changelog/label/copilot/feed/
+  language: en
+  region: global
+  trust_level: official
+  base_weight: 88
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: company:github
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: jetbrains_ai_blog_rss_expansion
+  source_type: rss
+  name: JetBrains AI Blog RSS
+  url: https://blog.jetbrains.com/ai/feed/
+  language: en
+  region: global
+  trust_level: official
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: company:jetbrains
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: sourcegraph_blog_rss_expansion
+  source_type: rss
+  name: Sourcegraph Blog RSS
+  url: https://sourcegraph.com/blog/feed.rss
+  language: en
+  region: global
+  trust_level: official
+  base_weight: 80
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: company:sourcegraph
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: latent_space_rss_expansion
+  source_type: rss
+  name: Latent Space RSS
+  url: https://www.latent.space/feed
+  language: en
+  region: global
+  trust_level: expert
+  base_weight: 80
+  default_categories:
+  - industry
+  - ai_models
+  - agent_tools
+  - monetization
+  parser_type: rss
+  enabled: true
+  publisher_key: media:latent_space
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: import_ai_rss_expansion
+  source_type: rss
+  name: Import AI RSS
+  url: https://importai.substack.com/feed
+  language: en
+  region: global
+  trust_level: expert
+  base_weight: 78
+  default_categories:
+  - industry
+  - ai_models
+  - papers
+  parser_type: rss
+  enabled: true
+  publisher_key: media:import_ai
+  source_group: industry_media
+  collection_status: collectable
+  free_access: true
+- id: github_significant_gravitas_autogpt_releases
+  source_type: rss
+  name: Significant-Gravitas/AutoGPT Releases
+  url: https://github.com/Significant-Gravitas/AutoGPT/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:significant-gravitas
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_firecrawl_firecrawl_releases
+  source_type: rss
+  name: firecrawl/firecrawl Releases
+  url: https://github.com/firecrawl/firecrawl/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:firecrawl
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_langgenius_dify_releases
+  source_type: rss
+  name: langgenius/dify Releases
+  url: https://github.com/langgenius/dify/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:langgenius
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_open_webui_open_webui_releases
+  source_type: rss
+  name: open-webui/open-webui Releases
+  url: https://github.com/open-webui/open-webui/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:open-webui
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_langchain_ai_langchain_releases
+  source_type: rss
+  name: langchain-ai/langchain Releases
+  url: https://github.com/langchain-ai/langchain/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:langchain-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_browser_use_browser_use_releases
+  source_type: rss
+  name: browser-use/browser-use Releases
+  url: https://github.com/browser-use/browser-use/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:browser-use
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_vllm_project_vllm_releases
+  source_type: rss
+  name: vllm-project/vllm Releases
+  url: https://github.com/vllm-project/vllm/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:vllm-project
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_paddlepaddle_paddleocr_releases
+  source_type: rss
+  name: PaddlePaddle/PaddleOCR Releases
+  url: https://github.com/PaddlePaddle/PaddleOCR/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:paddlepaddle
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_infiniflow_ragflow_releases
+  source_type: rss
+  name: infiniflow/ragflow Releases
+  url: https://github.com/infiniflow/ragflow/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:infiniflow
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_daytonaio_daytona_releases
+  source_type: rss
+  name: daytonaio/daytona Releases
+  url: https://github.com/daytonaio/daytona/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:daytonaio
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_mintplex_labs_anything_llm_releases
+  source_type: rss
+  name: Mintplex-Labs/anything-llm Releases
+  url: https://github.com/Mintplex-Labs/anything-llm/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:mintplex-labs
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_mem0ai_mem0_releases
+  source_type: rss
+  name: mem0ai/mem0 Releases
+  url: https://github.com/mem0ai/mem0/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:mem0ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_ultralytics_yolov5_releases
+  source_type: rss
+  name: ultralytics/yolov5 Releases
+  url: https://github.com/ultralytics/yolov5/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:ultralytics
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_crewaiinc_crewai_releases
+  source_type: rss
+  name: crewAIInc/crewAI Releases
+  url: https://github.com/crewAIInc/crewAI/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:crewaiinc
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_flowiseai_flowise_releases
+  source_type: rss
+  name: FlowiseAI/Flowise Releases
+  url: https://github.com/FlowiseAI/Flowise/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:flowiseai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_berriai_litellm_releases
+  source_type: rss
+  name: BerriAI/litellm Releases
+  url: https://github.com/BerriAI/litellm/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:berriai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_aaif_goose_goose_releases
+  source_type: rss
+  name: aaif-goose/goose Releases
+  url: https://github.com/aaif-goose/goose/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:aaif-goose
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_run_llama_llama_index_releases
+  source_type: rss
+  name: run-llama/llama_index Releases
+  url: https://github.com/run-llama/llama_index/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:run-llama
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_cherryhq_cherry_studio_releases
+  source_type: rss
+  name: CherryHQ/cherry-studio Releases
+  url: https://github.com/CherryHQ/cherry-studio/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:cherryhq
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_jeecgboot_jeecgboot_releases
+  source_type: rss
+  name: jeecgboot/JeecgBoot Releases
+  url: https://github.com/jeecgboot/JeecgBoot/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:jeecgboot
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_zhayujie_cowagent_releases
+  source_type: rss
+  name: zhayujie/CowAgent Releases
+  url: https://github.com/zhayujie/CowAgent/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:zhayujie
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_milvus_io_milvus_releases
+  source_type: rss
+  name: milvus-io/milvus Releases
+  url: https://github.com/milvus-io/milvus/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:milvus-io
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_agno_agi_agno_releases
+  source_type: rss
+  name: agno-agi/agno Releases
+  url: https://github.com/agno-agi/agno/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:agno-agi
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_hpcaitech_colossalai_releases
+  source_type: rss
+  name: hpcaitech/ColossalAI Releases
+  url: https://github.com/hpcaitech/ColossalAI/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:hpcaitech
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_quivrhq_quivr_releases
+  source_type: rss
+  name: QuivrHQ/quivr Releases
+  url: https://github.com/QuivrHQ/quivr/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:quivrhq
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_chatchat_space_langchain_chatchat_releases
+  source_type: rss
+  name: chatchat-space/Langchain-Chatchat Releases
+  url: https://github.com/chatchat-space/Langchain-Chatchat/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:chatchat-space
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_langchain_ai_langgraph_releases
+  source_type: rss
+  name: langchain-ai/langgraph Releases
+  url: https://github.com/langchain-ai/langgraph/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:langchain-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_hkuds_lightrag_releases
+  source_type: rss
+  name: HKUDS/LightRAG Releases
+  url: https://github.com/HKUDS/LightRAG/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:hkuds
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_google_ai_edge_mediapipe_releases
+  source_type: rss
+  name: google-ai-edge/mediapipe Releases
+  url: https://github.com/google-ai-edge/mediapipe/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:google-ai-edge
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_copilotkit_copilotkit_releases
+  source_type: rss
+  name: CopilotKit/CopilotKit Releases
+  url: https://github.com/CopilotKit/CopilotKit/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:copilotkit
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_khoj_ai_khoj_releases
+  source_type: rss
+  name: khoj-ai/khoj Releases
+  url: https://github.com/khoj-ai/khoj/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:khoj-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_itzcrazykns_vane_releases
+  source_type: rss
+  name: ItzCrazyKns/Vane Releases
+  url: https://github.com/ItzCrazyKns/Vane/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:itzcrazykns
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_microsoft_graphrag_releases
+  source_type: rss
+  name: microsoft/graphrag Releases
+  url: https://github.com/microsoft/graphrag/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:microsoft
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_qdrant_qdrant_releases
+  source_type: rss
+  name: qdrant/qdrant Releases
+  url: https://github.com/qdrant/qdrant/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:qdrant
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_langfuse_langfuse_releases
+  source_type: rss
+  name: langfuse/langfuse Releases
+  url: https://github.com/langfuse/langfuse/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:langfuse
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_onyx_dot_app_onyx_releases
+  source_type: rss
+  name: onyx-dot-app/onyx Releases
+  url: https://github.com/onyx-dot-app/onyx/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:onyx-dot-app
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_sgl_project_sglang_releases
+  source_type: rss
+  name: sgl-project/sglang Releases
+  url: https://github.com/sgl-project/sglang/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:sgl-project
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_stanford_oval_storm_releases
+  source_type: rss
+  name: stanford-oval/storm Releases
+  url: https://github.com/stanford-oval/storm/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:stanford-oval
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_topoteretes_cognee_releases
+  source_type: rss
+  name: topoteretes/cognee Releases
+  url: https://github.com/topoteretes/cognee/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:topoteretes
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_composiohq_composio_releases
+  source_type: rss
+  name: ComposioHQ/composio Releases
+  url: https://github.com/ComposioHQ/composio/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:composiohq
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_getzep_graphiti_releases
+  source_type: rss
+  name: getzep/graphiti Releases
+  url: https://github.com/getzep/graphiti/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:getzep
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_fincept_corporation_finceptterminal_releases
+  source_type: rss
+  name: Fincept-Corporation/FinceptTerminal Releases
+  url: https://github.com/Fincept-Corporation/FinceptTerminal/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:fincept-corporation
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_labring_fastgpt_releases
+  source_type: rss
+  name: labring/FastGPT Releases
+  url: https://github.com/labring/FastGPT/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:labring
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_chroma_core_chroma_releases
+  source_type: rss
+  name: chroma-core/chroma Releases
+  url: https://github.com/chroma-core/chroma/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:chroma-core
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_scrapegraphai_scrapegraph_ai_releases
+  source_type: rss
+  name: ScrapeGraphAI/Scrapegraph-ai Releases
+  url: https://github.com/ScrapeGraphAI/Scrapegraph-ai/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:scrapegraphai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_humansignal_label_studio_releases
+  source_type: rss
+  name: HumanSignal/label-studio Releases
+  url: https://github.com/HumanSignal/label-studio/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:humansignal
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_mlflow_mlflow_releases
+  source_type: rss
+  name: mlflow/mlflow Releases
+  url: https://github.com/mlflow/mlflow/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:mlflow
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_deepset_ai_haystack_releases
+  source_type: rss
+  name: deepset-ai/haystack Releases
+  url: https://github.com/deepset-ai/haystack/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:deepset-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_cinnamon_kotaemon_releases
+  source_type: rss
+  name: Cinnamon/kotaemon Releases
+  url: https://github.com/Cinnamon/kotaemon/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:cinnamon
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_systran_faster_whisper_releases
+  source_type: rss
+  name: SYSTRAN/faster-whisper Releases
+  url: https://github.com/SYSTRAN/faster-whisper/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:systran
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_letta_ai_letta_releases
+  source_type: rss
+  name: letta-ai/letta Releases
+  url: https://github.com/letta-ai/letta/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:letta-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_promptfoo_promptfoo_releases
+  source_type: rss
+  name: promptfoo/promptfoo Releases
+  url: https://github.com/promptfoo/promptfoo/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:promptfoo
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_tencent_ncnn_releases
+  source_type: rss
+  name: Tencent/ncnn Releases
+  url: https://github.com/Tencent/ncnn/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:tencent
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_1panel_dev_maxkb_releases
+  source_type: rss
+  name: 1Panel-dev/MaxKB Releases
+  url: https://github.com/1Panel-dev/MaxKB/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:1panel-dev
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_jina_ai_serve_releases
+  source_type: rss
+  name: jina-ai/serve Releases
+  url: https://github.com/jina-ai/serve/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:jina-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_comet_ml_opik_releases
+  source_type: rss
+  name: comet-ml/opik Releases
+  url: https://github.com/comet-ml/opik/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:comet-ml
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_kortix_ai_suna_releases
+  source_type: rss
+  name: kortix-ai/suna Releases
+  url: https://github.com/kortix-ai/suna/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:kortix-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_eosphoros_ai_db_gpt_releases
+  source_type: rss
+  name: eosphoros-ai/DB-GPT Releases
+  url: https://github.com/eosphoros-ai/DB-GPT/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:eosphoros-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_avaiga_taipy_releases
+  source_type: rss
+  name: Avaiga/taipy Releases
+  url: https://github.com/Avaiga/taipy/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:avaiga
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_elizaos_eliza_releases
+  source_type: rss
+  name: elizaOS/eliza Releases
+  url: https://github.com/elizaOS/eliza/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:elizaos
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_emcie_co_parlant_releases
+  source_type: rss
+  name: emcie-co/parlant Releases
+  url: https://github.com/emcie-co/parlant/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:emcie-co
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_arc53_docsgpt_releases
+  source_type: rss
+  name: arc53/DocsGPT Releases
+  url: https://github.com/arc53/DocsGPT/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:arc53
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_transformeroptimus_superagi_releases
+  source_type: rss
+  name: TransformerOptimus/SuperAGI Releases
+  url: https://github.com/TransformerOptimus/SuperAGI/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:transformeroptimus
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_leon_ai_leon_releases
+  source_type: rss
+  name: leon-ai/leon Releases
+  url: https://github.com/leon-ai/leon/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:leon-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_langbot_app_langbot_releases
+  source_type: rss
+  name: langbot-app/LangBot Releases
+  url: https://github.com/langbot-app/LangBot/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:langbot-app
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_canner_wrenai_releases
+  source_type: rss
+  name: Canner/WrenAI Releases
+  url: https://github.com/Canner/WrenAI/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:canner
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_weaviate_weaviate_releases
+  source_type: rss
+  name: weaviate/weaviate Releases
+  url: https://github.com/weaviate/weaviate/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:weaviate
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_raga_ai_hub_ragaai_catalyst_releases
+  source_type: rss
+  name: raga-ai-hub/RagaAI-Catalyst Releases
+  url: https://github.com/raga-ai-hub/RagaAI-Catalyst/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:raga-ai-hub
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_modsetter_surfsense_releases
+  source_type: rss
+  name: MODSetter/SurfSense Releases
+  url: https://github.com/MODSetter/SurfSense/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:modsetter
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_plandex_ai_plandex_releases
+  source_type: rss
+  name: plandex-ai/plandex Releases
+  url: https://github.com/plandex-ai/plandex/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:plandex-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_vibrantlabsai_ragas_releases
+  source_type: rss
+  name: vibrantlabsai/ragas Releases
+  url: https://github.com/vibrantlabsai/ragas/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:vibrantlabsai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_nanobrowser_nanobrowser_releases
+  source_type: rss
+  name: nanobrowser/nanobrowser Releases
+  url: https://github.com/nanobrowser/nanobrowser/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:nanobrowser
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_e2b_dev_e2b_releases
+  source_type: rss
+  name: e2b-dev/E2B Releases
+  url: https://github.com/e2b-dev/E2B/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:e2b-dev
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_neuml_txtai_releases
+  source_type: rss
+  name: neuml/txtai Releases
+  url: https://github.com/neuml/txtai/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:neuml
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_langchain4j_langchain4j_releases
+  source_type: rss
+  name: langchain4j/langchain4j Releases
+  url: https://github.com/langchain4j/langchain4j/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:langchain4j
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_portkey_ai_gateway_releases
+  source_type: rss
+  name: Portkey-AI/gateway Releases
+  url: https://github.com/Portkey-AI/gateway/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:portkey-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_bentoml_openllm_releases
+  source_type: rss
+  name: bentoml/OpenLLM Releases
+  url: https://github.com/bentoml/OpenLLM/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:bentoml
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_codexu_note_gen_releases
+  source_type: rss
+  name: codexu/note-gen Releases
+  url: https://github.com/codexu/note-gen/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:codexu
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_simular_ai_agent_s_releases
+  source_type: rss
+  name: simular-ai/Agent-S Releases
+  url: https://github.com/simular-ai/Agent-S/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:simular-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_flagopen_flagembedding_releases
+  source_type: rss
+  name: FlagOpen/FlagEmbedding Releases
+  url: https://github.com/FlagOpen/FlagEmbedding/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:flagopen
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_dataelement_bisheng_releases
+  source_type: rss
+  name: dataelement/bisheng Releases
+  url: https://github.com/dataelement/bisheng/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:dataelement
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_wandb_wandb_releases
+  source_type: rss
+  name: wandb/wandb Releases
+  url: https://github.com/wandb/wandb/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:wandb
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_the_pocket_pocketflow_releases
+  source_type: rss
+  name: The-Pocket/PocketFlow Releases
+  url: https://github.com/The-Pocket/PocketFlow/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:the-pocket
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_lancedb_lancedb_releases
+  source_type: rss
+  name: lancedb/lancedb Releases
+  url: https://github.com/lancedb/lancedb/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:lancedb
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_kedro_org_kedro_releases
+  source_type: rss
+  name: kedro-org/kedro Releases
+  url: https://github.com/kedro-org/kedro/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:kedro-org
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_arize_ai_phoenix_releases
+  source_type: rss
+  name: Arize-ai/phoenix Releases
+  url: https://github.com/Arize-ai/phoenix/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:arize-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_ultralytics_yolov3_releases
+  source_type: rss
+  name: ultralytics/yolov3 Releases
+  url: https://github.com/ultralytics/yolov3/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:ultralytics
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_openvinotoolkit_openvino_releases
+  source_type: rss
+  name: openvinotoolkit/openvino Releases
+  url: https://github.com/openvinotoolkit/openvino/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:openvinotoolkit
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_oramasearch_orama_releases
+  source_type: rss
+  name: oramasearch/orama Releases
+  url: https://github.com/oramasearch/orama/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:oramasearch
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_skypilot_org_skypilot_releases
+  source_type: rss
+  name: skypilot-org/skypilot Releases
+  url: https://github.com/skypilot-org/skypilot/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:skypilot-org
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_sigoden_aichat_releases
+  source_type: rss
+  name: sigoden/aichat Releases
+  url: https://github.com/sigoden/aichat/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:sigoden
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_netflix_metaflow_releases
+  source_type: rss
+  name: Netflix/metaflow Releases
+  url: https://github.com/Netflix/metaflow/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:netflix
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_yzhao062_pyod_releases
+  source_type: rss
+  name: yzhao062/pyod Releases
+  url: https://github.com/yzhao062/pyod/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:yzhao062
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_pycaret_pycaret_releases
+  source_type: rss
+  name: pycaret/pycaret Releases
+  url: https://github.com/pycaret/pycaret/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:pycaret
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_xorbitsai_inference_releases
+  source_type: rss
+  name: xorbitsai/inference Releases
+  url: https://github.com/xorbitsai/inference/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:xorbitsai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_activeloopai_deeplake_releases
+  source_type: rss
+  name: activeloopai/deeplake Releases
+  url: https://github.com/activeloopai/deeplake/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:activeloopai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_dusty_nv_jetson_inference_releases
+  source_type: rss
+  name: dusty-nv/jetson-inference Releases
+  url: https://github.com/dusty-nv/jetson-inference/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:dusty-nv
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_bentoml_bentoml_releases
+  source_type: rss
+  name: bentoml/BentoML Releases
+  url: https://github.com/bentoml/BentoML/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:bentoml
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_0xplaygrounds_rig_releases
+  source_type: rss
+  name: 0xPlaygrounds/rig Releases
+  url: https://github.com/0xPlaygrounds/rig/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:0xplaygrounds
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_sciphi_ai_r2r_releases
+  source_type: rss
+  name: SciPhi-AI/R2R Releases
+  url: https://github.com/SciPhi-AI/R2R/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:sciphi-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_evidentlyai_evidently_releases
+  source_type: rss
+  name: evidentlyai/evidently Releases
+  url: https://github.com/evidentlyai/evidently/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:evidentlyai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_2fastlabs_agent_squad_releases
+  source_type: rss
+  name: 2FastLabs/agent-squad Releases
+  url: https://github.com/2FastLabs/agent-squad/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:2fastlabs
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_yaoapp_yao_releases
+  source_type: rss
+  name: YaoApp/yao Releases
+  url: https://github.com/YaoApp/yao/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:yaoapp
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_traceloop_openllmetry_releases
+  source_type: rss
+  name: traceloop/openllmetry Releases
+  url: https://github.com/traceloop/openllmetry/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:traceloop
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_feast_dev_feast_releases
+  source_type: rss
+  name: feast-dev/feast Releases
+  url: https://github.com/feast-dev/feast/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:feast-dev
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_flyteorg_flyte_releases
+  source_type: rss
+  name: flyteorg/flyte Releases
+  url: https://github.com/flyteorg/flyte/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:flyteorg
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_kyegomez_swarms_releases
+  source_type: rss
+  name: kyegomez/swarms Releases
+  url: https://github.com/kyegomez/swarms/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:kyegomez
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_zipstack_unstract_releases
+  source_type: rss
+  name: Zipstack/unstract Releases
+  url: https://github.com/Zipstack/unstract/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:zipstack
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_lance_format_lance_releases
+  source_type: rss
+  name: lance-format/lance Releases
+  url: https://github.com/lance-format/lance/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:lance-format
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_postgresml_postgresml_releases
+  source_type: rss
+  name: postgresml/postgresml Releases
+  url: https://github.com/postgresml/postgresml/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:postgresml
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_clearml_clearml_releases
+  source_type: rss
+  name: clearml/clearml Releases
+  url: https://github.com/clearml/clearml/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:clearml
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_crestalnetwork_intentkit_releases
+  source_type: rss
+  name: crestalnetwork/intentkit Releases
+  url: https://github.com/crestalnetwork/intentkit/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:crestalnetwork
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_airweave_ai_airweave_releases
+  source_type: rss
+  name: airweave-ai/airweave Releases
+  url: https://github.com/airweave-ai/airweave/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:airweave-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_lavague_ai_lavague_releases
+  source_type: rss
+  name: lavague-ai/LaVague Releases
+  url: https://github.com/lavague-ai/LaVague/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:lavague-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_adbar_trafilatura_releases
+  source_type: rss
+  name: adbar/trafilatura Releases
+  url: https://github.com/adbar/trafilatura/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:adbar
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_jeinlee1991_chinese_llm_benchmark_releases
+  source_type: rss
+  name: jeinlee1991/chinese-llm-benchmark Releases
+  url: https://github.com/jeinlee1991/chinese-llm-benchmark/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:jeinlee1991
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_xerrors_yuxi_releases
+  source_type: rss
+  name: xerrors/Yuxi Releases
+  url: https://github.com/xerrors/Yuxi/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:xerrors
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_genkit_ai_genkit_releases
+  source_type: rss
+  name: genkit-ai/genkit Releases
+  url: https://github.com/genkit-ai/genkit/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:genkit-ai
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_argmaxinc_argmax_oss_swift_releases
+  source_type: rss
+  name: argmaxinc/argmax-oss-swift Releases
+  url: https://github.com/argmaxinc/argmax-oss-swift/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:argmaxinc
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_plastic_labs_honcho_releases
+  source_type: rss
+  name: plastic-labs/honcho Releases
+  url: https://github.com/plastic-labs/honcho/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:plastic-labs
+  source_group: developer_tools
+  collection_status: collectable
+  free_access: true
+- id: github_ollama_ollama_releases
+  source_type: rss
+  name: ollama/ollama Releases
+  url: https://github.com/ollama/ollama/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:ollama
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_huggingface_transformers_releases
+  source_type: rss
+  name: huggingface/transformers Releases
+  url: https://github.com/huggingface/transformers/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:huggingface
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_huggingface_diffusers_releases
+  source_type: rss
+  name: huggingface/diffusers Releases
+  url: https://github.com/huggingface/diffusers/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:huggingface
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_huggingface_peft_releases
+  source_type: rss
+  name: huggingface/peft Releases
+  url: https://github.com/huggingface/peft/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:huggingface
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_tensorflow_tfjs_releases
+  source_type: rss
+  name: tensorflow/tfjs Releases
+  url: https://github.com/tensorflow/tfjs/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:tensorflow
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_pytorch_vision_releases
+  source_type: rss
+  name: pytorch/vision Releases
+  url: https://github.com/pytorch/vision/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:pytorch
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_nvidia_megatron_lm_releases
+  source_type: rss
+  name: NVIDIA/Megatron-LM Releases
+  url: https://github.com/NVIDIA/Megatron-LM/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:nvidia
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_huggingface_transformers_js_releases
+  source_type: rss
+  name: huggingface/transformers.js Releases
+  url: https://github.com/huggingface/transformers.js/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:huggingface
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_stability_ai_stablestudio_releases
+  source_type: rss
+  name: Stability-AI/StableStudio Releases
+  url: https://github.com/Stability-AI/StableStudio/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:stability-ai
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_01_ai_yi_releases
+  source_type: rss
+  name: 01-ai/Yi Releases
+  url: https://github.com/01-ai/Yi/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:01-ai
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_huggingface_text_embeddings_inference_releases
+  source_type: rss
+  name: huggingface/text-embeddings-inference Releases
+  url: https://github.com/huggingface/text-embeddings-inference/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 78
+  default_categories:
+  - ai_models
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:huggingface
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_stability_ai_stableswarmui_releases
+  source_type: rss
+  name: Stability-AI/StableSwarmUI Releases
+  url: https://github.com/Stability-AI/StableSwarmUI/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 78
+  default_categories:
+  - ai_models
+  - ai_products
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:stability-ai
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_huggingface_huggingface_hub_releases
+  source_type: rss
+  name: huggingface/huggingface_hub Releases
+  url: https://github.com/huggingface/huggingface_hub/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 78
+  default_categories:
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:huggingface
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_tensorflow_hub_releases
+  source_type: rss
+  name: tensorflow/hub Releases
+  url: https://github.com/tensorflow/hub/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 78
+  default_categories:
+  - agent_tools
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:tensorflow
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_stability_ai_stability_sdk_releases
+  source_type: rss
+  name: Stability-AI/stability-sdk Releases
+  url: https://github.com/Stability-AI/stability-sdk/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 78
+  default_categories:
+  - ai_models
+  - industry
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:stability-ai
+  source_group: model_vendor
+  collection_status: collectable
+  free_access: true
+- id: github_automatic1111_stable_diffusion_webui_releases
+  source_type: rss
+  name: AUTOMATIC1111/stable-diffusion-webui Releases
+  url: https://github.com/AUTOMATIC1111/stable-diffusion-webui/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:automatic1111
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_langflow_ai_langflow_releases
+  source_type: rss
+  name: langflow-ai/langflow Releases
+  url: https://github.com/langflow-ai/langflow/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:langflow-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_comfy_org_comfyui_releases
+  source_type: rss
+  name: Comfy-Org/ComfyUI Releases
+  url: https://github.com/Comfy-Org/ComfyUI/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:comfy-org
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_harry0703_moneyprinterturbo_releases
+  source_type: rss
+  name: harry0703/MoneyPrinterTurbo Releases
+  url: https://github.com/harry0703/MoneyPrinterTurbo/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:harry0703
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_tauricresearch_tradingagents_releases
+  source_type: rss
+  name: TauricResearch/TradingAgents Releases
+  url: https://github.com/TauricResearch/TradingAgents/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:tauricresearch
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_opencv_opencv_releases
+  source_type: rss
+  name: opencv/opencv Releases
+  url: https://github.com/opencv/opencv/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:opencv
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_openhands_openhands_releases
+  source_type: rss
+  name: OpenHands/OpenHands Releases
+  url: https://github.com/OpenHands/OpenHands/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:openhands
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_tesseract_ocr_tesseract_releases
+  source_type: rss
+  name: tesseract-ocr/tesseract Releases
+  url: https://github.com/tesseract-ocr/tesseract/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:tesseract-ocr
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_hiyouga_llamafactory_releases
+  source_type: rss
+  name: hiyouga/LlamaFactory Releases
+  url: https://github.com/hiyouga/LlamaFactory/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:hiyouga
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_binary_husky_gpt_academic_releases
+  source_type: rss
+  name: binary-husky/gpt_academic Releases
+  url: https://github.com/binary-husky/gpt_academic/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:binary-husky
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_foundationagents_metagpt_releases
+  source_type: rss
+  name: FoundationAgents/MetaGPT Releases
+  url: https://github.com/FoundationAgents/MetaGPT/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:foundationagents
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_unslothai_unsloth_releases
+  source_type: rss
+  name: unslothai/unsloth Releases
+  url: https://github.com/unslothai/unsloth/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:unslothai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_keras_team_keras_releases
+  source_type: rss
+  name: keras-team/keras Releases
+  url: https://github.com/keras-team/keras/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:keras-team
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_deepfakes_faceswap_releases
+  source_type: rss
+  name: deepfakes/faceswap Releases
+  url: https://github.com/deepfakes/faceswap/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 88
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:deepfakes
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_roboflow_supervision_releases
+  source_type: rss
+  name: roboflow/supervision Releases
+  url: https://github.com/roboflow/supervision/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:roboflow
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_mudler_localai_releases
+  source_type: rss
+  name: mudler/LocalAI Releases
+  url: https://github.com/mudler/LocalAI/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:mudler
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_microsoft_qlib_releases
+  source_type: rss
+  name: microsoft/qlib Releases
+  url: https://github.com/microsoft/qlib/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:microsoft
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_coqui_ai_tts_releases
+  source_type: rss
+  name: coqui-ai/TTS Releases
+  url: https://github.com/coqui-ai/TTS/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:coqui-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_streamlit_streamlit_releases
+  source_type: rss
+  name: streamlit/streamlit Releases
+  url: https://github.com/streamlit/streamlit/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:streamlit
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_janhq_jan_releases
+  source_type: rss
+  name: janhq/jan Releases
+  url: https://github.com/janhq/jan/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:janhq
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_ray_project_ray_releases
+  source_type: rss
+  name: ray-project/ray Releases
+  url: https://github.com/ray-project/ray/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:ray-project
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_gradio_app_gradio_releases
+  source_type: rss
+  name: gradio-app/gradio Releases
+  url: https://github.com/gradio-app/gradio/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:gradio-app
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_2noise_chattts_releases
+  source_type: rss
+  name: 2noise/ChatTTS Releases
+  url: https://github.com/2noise/ChatTTS/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:2noise
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_naptha_tesseract_js_releases
+  source_type: rss
+  name: naptha/tesseract.js Releases
+  url: https://github.com/naptha/tesseract.js/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:naptha
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_astrbotdevs_astrbot_releases
+  source_type: rss
+  name: AstrBotDevs/AstrBot Releases
+  url: https://github.com/AstrBotDevs/AstrBot/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:astrbotdevs
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_tencentarc_gfpgan_releases
+  source_type: rss
+  name: TencentARC/GFPGAN Releases
+  url: https://github.com/TencentARC/GFPGAN/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:tencentarc
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_babysor_mockingbird_releases
+  source_type: rss
+  name: babysor/MockingBird Releases
+  url: https://github.com/babysor/MockingBird/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:babysor
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_hankcs_hanlp_releases
+  source_type: rss
+  name: hankcs/HanLP Releases
+  url: https://github.com/hankcs/HanLP/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:hankcs
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_bvlc_caffe_releases
+  source_type: rss
+  name: BVLC/caffe Releases
+  url: https://github.com/BVLC/caffe/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:bvlc
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_cmu_perceptual_computing_lab_openpose_releases
+  source_type: rss
+  name: CMU-Perceptual-Computing-Lab/openpose Releases
+  url: https://github.com/CMU-Perceptual-Computing-Lab/openpose/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:cmu-perceptual-computing-lab
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_explosion_spacy_releases
+  source_type: rss
+  name: explosion/spaCy Releases
+  url: https://github.com/explosion/spaCy/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:explosion
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_lutzroeder_netron_releases
+  source_type: rss
+  name: lutzroeder/netron Releases
+  url: https://github.com/lutzroeder/netron/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:lutzroeder
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_lightning_ai_pytorch_lightning_releases
+  source_type: rss
+  name: Lightning-AI/pytorch-lightning Releases
+  url: https://github.com/Lightning-AI/pytorch-lightning/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:lightning-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_sillytavern_sillytavern_releases
+  source_type: rss
+  name: SillyTavern/SillyTavern Releases
+  url: https://github.com/SillyTavern/SillyTavern/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:sillytavern
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_jaidedai_easyocr_releases
+  source_type: rss
+  name: JaidedAI/EasyOCR Releases
+  url: https://github.com/JaidedAI/EasyOCR/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:jaidedai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_microsoft_semantic_kernel_releases
+  source_type: rss
+  name: microsoft/semantic-kernel Releases
+  url: https://github.com/microsoft/semantic-kernel/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:microsoft
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_agentscope_ai_agentscope_releases
+  source_type: rss
+  name: agentscope-ai/agentscope Releases
+  url: https://github.com/agentscope-ai/agentscope/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:agentscope-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_fastai_fastai_releases
+  source_type: rss
+  name: fastai/fastai Releases
+  url: https://github.com/fastai/fastai/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:fastai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_srbhr_resume_matcher_releases
+  source_type: rss
+  name: srbhr/Resume-Matcher Releases
+  url: https://github.com/srbhr/Resume-Matcher/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:srbhr
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_invoke_ai_invokeai_releases
+  source_type: rss
+  name: invoke-ai/InvokeAI Releases
+  url: https://github.com/invoke-ai/InvokeAI/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:invoke-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_yamadashy_repomix_releases
+  source_type: rss
+  name: yamadashy/repomix Releases
+  url: https://github.com/yamadashy/repomix/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:yamadashy
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_zackriya_solutions_meetily_releases
+  source_type: rss
+  name: Zackriya-Solutions/meetily Releases
+  url: https://github.com/Zackriya-Solutions/meetily/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:zackriya-solutions
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_mastra_ai_mastra_releases
+  source_type: rss
+  name: mastra-ai/mastra Releases
+  url: https://github.com/mastra-ai/mastra/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:mastra-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_vercel_ai_releases
+  source_type: rss
+  name: vercel/ai Releases
+  url: https://github.com/vercel/ai/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:vercel
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_shap_shap_releases
+  source_type: rss
+  name: shap/shap Releases
+  url: https://github.com/shap/shap/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:shap
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_lucidrains_vit_pytorch_releases
+  source_type: rss
+  name: lucidrains/vit-pytorch Releases
+  url: https://github.com/lucidrains/vit-pytorch/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:lucidrains
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_anil_matcha_open_generative_ai_releases
+  source_type: rss
+  name: Anil-matcha/Open-Generative-AI Releases
+  url: https://github.com/Anil-matcha/Open-Generative-AI/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:anil-matcha
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_lyogavin_airllm_releases
+  source_type: rss
+  name: lyogavin/airllm Releases
+  url: https://github.com/lyogavin/airllm/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:lyogavin
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_paddlepaddle_paddle_releases
+  source_type: rss
+  name: PaddlePaddle/Paddle Releases
+  url: https://github.com/PaddlePaddle/Paddle/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:paddlepaddle
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_pyg_team_pytorch_geometric_releases
+  source_type: rss
+  name: pyg-team/pytorch_geometric Releases
+  url: https://github.com/pyg-team/pytorch_geometric/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:pyg-team
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_sinaptik_ai_pandas_ai_releases
+  source_type: rss
+  name: sinaptik-ai/pandas-ai Releases
+  url: https://github.com/sinaptik-ai/pandas-ai/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:sinaptik-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_serengil_deepface_releases
+  source_type: rss
+  name: serengil/deepface Releases
+  url: https://github.com/serengil/deepface/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:serengil
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_sebastianruder_nlp_progress_releases
+  source_type: rss
+  name: sebastianruder/NLP-progress Releases
+  url: https://github.com/sebastianruder/NLP-progress/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:sebastianruder
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_recommenders_team_recommenders_releases
+  source_type: rss
+  name: recommenders-team/recommenders Releases
+  url: https://github.com/recommenders-team/recommenders/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:recommenders-team
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_bee_san_ciphey_releases
+  source_type: rss
+  name: bee-san/Ciphey Releases
+  url: https://github.com/bee-san/Ciphey/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:bee-san
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_rasahq_rasa_releases
+  source_type: rss
+  name: RasaHQ/rasa Releases
+  url: https://github.com/RasaHQ/rasa/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:rasahq
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_onnx_onnx_releases
+  source_type: rss
+  name: onnx/onnx Releases
+  url: https://github.com/onnx/onnx/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:onnx
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_microsoft_onnxruntime_releases
+  source_type: rss
+  name: microsoft/onnxruntime Releases
+  url: https://github.com/microsoft/onnxruntime/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:microsoft
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_ai4finance_foundation_fingpt_releases
+  source_type: rss
+  name: AI4Finance-Foundation/FinGPT Releases
+  url: https://github.com/AI4Finance-Foundation/FinGPT/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:ai4finance-foundation
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_screenpipe_screenpipe_releases
+  source_type: rss
+  name: screenpipe/screenpipe Releases
+  url: https://github.com/screenpipe/screenpipe/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 85
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:screenpipe
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_unity_technologies_ml_agents_releases
+  source_type: rss
+  name: Unity-Technologies/ml-agents Releases
+  url: https://github.com/Unity-Technologies/ml-agents/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:unity-technologies
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_ymcui_chinese_llama_alpaca_releases
+  source_type: rss
+  name: ymcui/Chinese-LLaMA-Alpaca Releases
+  url: https://github.com/ymcui/Chinese-LLaMA-Alpaca/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:ymcui
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_mlc_ai_web_llm_releases
+  source_type: rss
+  name: mlc-ai/web-llm Releases
+  url: https://github.com/mlc-ai/web-llm/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:mlc-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_microsoft_airsim_releases
+  source_type: rss
+  name: microsoft/AirSim Releases
+  url: https://github.com/microsoft/AirSim/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:microsoft
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_ufund_me_qbot_releases
+  source_type: rss
+  name: UFund-Me/Qbot Releases
+  url: https://github.com/UFund-Me/Qbot/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:ufund-me
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_nvidia_nemo_speech_releases
+  source_type: rss
+  name: NVIDIA-NeMo/Speech Releases
+  url: https://github.com/NVIDIA-NeMo/Speech/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:nvidia-nemo
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_google_magika_releases
+  source_type: rss
+  name: google/magika Releases
+  url: https://github.com/google/magika/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:google
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_camel_ai_camel_releases
+  source_type: rss
+  name: camel-ai/camel Releases
+  url: https://github.com/camel-ai/camel/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:camel-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_piskvorky_gensim_releases
+  source_type: rss
+  name: piskvorky/gensim Releases
+  url: https://github.com/piskvorky/gensim/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:piskvorky
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_ai_shifu_chatall_releases
+  source_type: rss
+  name: ai-shifu/ChatALL Releases
+  url: https://github.com/ai-shifu/ChatALL/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:ai-shifu
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_cvat_ai_cvat_releases
+  source_type: rss
+  name: cvat-ai/cvat Releases
+  url: https://github.com/cvat-ai/cvat/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:cvat-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_wkentaro_labelme_releases
+  source_type: rss
+  name: wkentaro/labelme Releases
+  url: https://github.com/wkentaro/labelme/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:wkentaro
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_camenduru_stable_diffusion_webui_colab_releases
+  source_type: rss
+  name: camenduru/stable-diffusion-webui-colab Releases
+  url: https://github.com/camenduru/stable-diffusion-webui-colab/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:camenduru
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_dottxt_ai_outlines_releases
+  source_type: rss
+  name: dottxt-ai/outlines Releases
+  url: https://github.com/dottxt-ai/outlines/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:dottxt-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_unstructured_io_unstructured_releases
+  source_type: rss
+  name: Unstructured-IO/unstructured Releases
+  url: https://github.com/Unstructured-IO/unstructured/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:unstructured-io
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_ggml_org_ggml_releases
+  source_type: rss
+  name: ggml-org/ggml Releases
+  url: https://github.com/ggml-org/ggml/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:ggml-org
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_languagetool_org_languagetool_releases
+  source_type: rss
+  name: languagetool-org/languagetool Releases
+  url: https://github.com/languagetool-org/languagetool/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:languagetool-org
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_nltk_nltk_releases
+  source_type: rss
+  name: nltk/nltk Releases
+  url: https://github.com/nltk/nltk/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:nltk
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_blinkdl_rwkv_lm_releases
+  source_type: rss
+  name: BlinkDL/RWKV-LM Releases
+  url: https://github.com/BlinkDL/RWKV-LM/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:blinkdl
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_greydgl_pentestgpt_releases
+  source_type: rss
+  name: GreyDGL/PentestGPT Releases
+  url: https://github.com/GreyDGL/PentestGPT/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:greydgl
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_davisking_dlib_releases
+  source_type: rss
+  name: davisking/dlib Releases
+  url: https://github.com/davisking/dlib/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:davisking
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_flairnlp_flair_releases
+  source_type: rss
+  name: flairNLP/flair Releases
+  url: https://github.com/flairNLP/flair/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:flairnlp
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_carla_simulator_carla_releases
+  source_type: rss
+  name: carla-simulator/carla Releases
+  url: https://github.com/carla-simulator/carla/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:carla-simulator
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_lightning_ai_litgpt_releases
+  source_type: rss
+  name: Lightning-AI/litgpt Releases
+  url: https://github.com/Lightning-AI/litgpt/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:lightning-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_divamgupta_diffusionbee_stable_diffusion_ui_releases
+  source_type: rss
+  name: divamgupta/diffusionbee-stable-diffusion-ui Releases
+  url: https://github.com/divamgupta/diffusionbee-stable-diffusion-ui/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:divamgupta
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_paddlepaddle_paddlenlp_releases
+  source_type: rss
+  name: PaddlePaddle/PaddleNLP Releases
+  url: https://github.com/PaddlePaddle/PaddleNLP/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:paddlepaddle
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_alicevision_meshroom_releases
+  source_type: rss
+  name: alicevision/Meshroom Releases
+  url: https://github.com/alicevision/Meshroom/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:alicevision
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_colmap_colmap_releases
+  source_type: rss
+  name: colmap/colmap Releases
+  url: https://github.com/colmap/colmap/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:colmap
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_google_sentencepiece_releases
+  source_type: rss
+  name: google/sentencepiece Releases
+  url: https://github.com/google/sentencepiece/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:google
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_nerfstudio_project_nerfstudio_releases
+  source_type: rss
+  name: nerfstudio-project/nerfstudio Releases
+  url: https://github.com/nerfstudio-project/nerfstudio/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:nerfstudio-project
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_ludwig_ai_ludwig_releases
+  source_type: rss
+  name: ludwig-ai/ludwig Releases
+  url: https://github.com/ludwig-ai/ludwig/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:ludwig-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_speechbrain_speechbrain_releases
+  source_type: rss
+  name: speechbrain/speechbrain Releases
+  url: https://github.com/speechbrain/speechbrain/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:speechbrain
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_qubvel_org_segmentation_models_pytorch_releases
+  source_type: rss
+  name: qubvel-org/segmentation_models.pytorch Releases
+  url: https://github.com/qubvel-org/segmentation_models.pytorch/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:qubvel-org
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_lucidrains_dalle2_pytorch_releases
+  source_type: rss
+  name: lucidrains/DALLE2-pytorch Releases
+  url: https://github.com/lucidrains/DALLE2-pytorch/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:lucidrains
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_kornia_kornia_releases
+  source_type: rss
+  name: kornia/kornia Releases
+  url: https://github.com/kornia/kornia/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:kornia
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_rerun_io_rerun_releases
+  source_type: rss
+  name: rerun-io/rerun Releases
+  url: https://github.com/rerun-io/rerun/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:rerun-io
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_pointcloudlibrary_pcl_releases
+  source_type: rss
+  name: PointCloudLibrary/pcl Releases
+  url: https://github.com/PointCloudLibrary/pcl/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:pointcloudlibrary
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_voxel51_fiftyone_releases
+  source_type: rss
+  name: voxel51/fiftyone Releases
+  url: https://github.com/voxel51/fiftyone/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:voxel51
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_doccano_doccano_releases
+  source_type: rss
+  name: doccano/doccano Releases
+  url: https://github.com/doccano/doccano/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:doccano
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_lucidrains_denoising_diffusion_pytorch_releases
+  source_type: rss
+  name: lucidrains/denoising-diffusion-pytorch Releases
+  url: https://github.com/lucidrains/denoising-diffusion-pytorch/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:lucidrains
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_autogluon_autogluon_releases
+  source_type: rss
+  name: autogluon/autogluon Releases
+  url: https://github.com/autogluon/autogluon/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:autogluon
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_esimov_caire_releases
+  source_type: rss
+  name: esimov/caire Releases
+  url: https://github.com/esimov/caire/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:esimov
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_acly_krita_ai_diffusion_releases
+  source_type: rss
+  name: Acly/krita-ai-diffusion Releases
+  url: https://github.com/Acly/krita-ai-diffusion/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:acly
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_niedev_rtranslator_releases
+  source_type: rss
+  name: niedev/RTranslator Releases
+  url: https://github.com/niedev/RTranslator/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:niedev
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_stanfordnlp_corenlp_releases
+  source_type: rss
+  name: stanfordnlp/CoreNLP Releases
+  url: https://github.com/stanfordnlp/CoreNLP/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:stanfordnlp
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_cvhub520_x_anylabeling_releases
+  source_type: rss
+  name: CVHub520/X-AnyLabeling Releases
+  url: https://github.com/CVHub520/X-AnyLabeling/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:cvhub520
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_openrlhf_openrlhf_releases
+  source_type: rss
+  name: OpenRLHF/OpenRLHF Releases
+  url: https://github.com/OpenRLHF/OpenRLHF/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:openrlhf
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_sloria_textblob_releases
+  source_type: rss
+  name: sloria/TextBlob Releases
+  url: https://github.com/sloria/TextBlob/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:sloria
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_peterl1n_robustvideomatting_releases
+  source_type: rss
+  name: PeterL1n/RobustVideoMatting Releases
+  url: https://github.com/PeterL1n/RobustVideoMatting/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:peterl1n
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_miurla_morphic_releases
+  source_type: rss
+  name: miurla/morphic Releases
+  url: https://github.com/miurla/morphic/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:miurla
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_realsenseai_librealsense_releases
+  source_type: rss
+  name: realsenseai/librealsense Releases
+  url: https://github.com/realsenseai/librealsense/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:realsenseai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_clips_pattern_releases
+  source_type: rss
+  name: clips/pattern Releases
+  url: https://github.com/clips/pattern/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:clips
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_ashawkey_stable_dreamfusion_releases
+  source_type: rss
+  name: ashawkey/stable-dreamfusion Releases
+  url: https://github.com/ashawkey/stable-dreamfusion/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:ashawkey
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_lykosai_stabilitymatrix_releases
+  source_type: rss
+  name: LykosAI/StabilityMatrix Releases
+  url: https://github.com/LykosAI/StabilityMatrix/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:lykosai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_lucidrains_imagen_pytorch_releases
+  source_type: rss
+  name: lucidrains/imagen-pytorch Releases
+  url: https://github.com/lucidrains/imagen-pytorch/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:lucidrains
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_nebuly_ai_optimate_releases
+  source_type: rss
+  name: nebuly-ai/optimate Releases
+  url: https://github.com/nebuly-ai/optimate/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:nebuly-ai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_bytedeco_javacv_releases
+  source_type: rss
+  name: bytedeco/javacv Releases
+  url: https://github.com/bytedeco/javacv/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:bytedeco
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_carson_katri_dream_textures_releases
+  source_type: rss
+  name: carson-katri/dream-textures Releases
+  url: https://github.com/carson-katri/dream-textures/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:carson-katri
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_exadel_inc_compreface_releases
+  source_type: rss
+  name: exadel-inc/CompreFace Releases
+  url: https://github.com/exadel-inc/CompreFace/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:exadel-inc
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_jessevig_bertviz_releases
+  source_type: rss
+  name: jessevig/bertviz Releases
+  url: https://github.com/jessevig/bertviz/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:jessevig
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_mochidiffusion_mochidiffusion_releases
+  source_type: rss
+  name: MochiDiffusion/MochiDiffusion Releases
+  url: https://github.com/MochiDiffusion/MochiDiffusion/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:mochidiffusion
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_lucidrains_palm_rlhf_pytorch_releases
+  source_type: rss
+  name: lucidrains/PaLM-rlhf-pytorch Releases
+  url: https://github.com/lucidrains/PaLM-rlhf-pytorch/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:lucidrains
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_stanfordnlp_stanza_releases
+  source_type: rss
+  name: stanfordnlp/stanza Releases
+  url: https://github.com/stanfordnlp/stanza/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:stanfordnlp
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_maartengr_bertopic_releases
+  source_type: rss
+  name: MaartenGr/BERTopic Releases
+  url: https://github.com/MaartenGr/BERTopic/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:maartengr
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_ai4finance_foundation_finrobot_releases
+  source_type: rss
+  name: AI4Finance-Foundation/FinRobot Releases
+  url: https://github.com/AI4Finance-Foundation/FinRobot/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:ai4finance-foundation
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_blaizzy_mlx_audio_releases
+  source_type: rss
+  name: Blaizzy/mlx-audio Releases
+  url: https://github.com/Blaizzy/mlx-audio/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:blaizzy
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_cloneofsimo_lora_releases
+  source_type: rss
+  name: cloneofsimo/lora Releases
+  url: https://github.com/cloneofsimo/lora/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:cloneofsimo
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_hybridgroup_gocv_releases
+  source_type: rss
+  name: hybridgroup/gocv Releases
+  url: https://github.com/hybridgroup/gocv/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:hybridgroup
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_open_mmlab_mmagic_releases
+  source_type: rss
+  name: open-mmlab/mmagic Releases
+  url: https://github.com/open-mmlab/mmagic/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:open-mmlab
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_tensorlayer_tensorlayer_releases
+  source_type: rss
+  name: tensorlayer/TensorLayer Releases
+  url: https://github.com/tensorlayer/TensorLayer/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:tensorlayer
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_abdbarho_stable_diffusion_webui_docker_releases
+  source_type: rss
+  name: AbdBarho/stable-diffusion-webui-docker Releases
+  url: https://github.com/AbdBarho/stable-diffusion-webui-docker/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:abdbarho
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_abdullahalfaraj_auto_photoshop_stablediffusion_plugin_releases
+  source_type: rss
+  name: AbdullahAlfaraj/Auto-Photoshop-StableDiffusion-Plugin Releases
+  url: https://github.com/AbdullahAlfaraj/Auto-Photoshop-StableDiffusion-Plugin/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:abdullahalfaraj
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_eutropicai_final2x_releases
+  source_type: rss
+  name: EutropicAI/Final2x Releases
+  url: https://github.com/EutropicAI/Final2x/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:eutropicai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_civitai_civitai_releases
+  source_type: rss
+  name: civitai/civitai Releases
+  url: https://github.com/civitai/civitai/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:civitai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_vladmandic_sdnext_releases
+  source_type: rss
+  name: vladmandic/sdnext Releases
+  url: https://github.com/vladmandic/sdnext/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:vladmandic
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_peterl1n_backgroundmattingv2_releases
+  source_type: rss
+  name: PeterL1n/BackgroundMattingV2 Releases
+  url: https://github.com/PeterL1n/BackgroundMattingV2/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:peterl1n
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_ymcui_chinese_llama_alpaca_2_releases
+  source_type: rss
+  name: ymcui/Chinese-LLaMA-Alpaca-2 Releases
+  url: https://github.com/ymcui/Chinese-LLaMA-Alpaca-2/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:ymcui
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_flwrlabs_flower_releases
+  source_type: rss
+  name: flwrlabs/flower Releases
+  url: https://github.com/flwrlabs/flower/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:flwrlabs
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_deeppavlov_deeppavlov_releases
+  source_type: rss
+  name: deeppavlov/DeepPavlov Releases
+  url: https://github.com/deeppavlov/DeepPavlov/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:deeppavlov
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_paddlepaddle_models_releases
+  source_type: rss
+  name: PaddlePaddle/models Releases
+  url: https://github.com/PaddlePaddle/models/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:paddlepaddle
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_mylxsw_aidea_releases
+  source_type: rss
+  name: mylxsw/aidea Releases
+  url: https://github.com/mylxsw/aidea/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:mylxsw
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_clovaai_donut_releases
+  source_type: rss
+  name: clovaai/donut Releases
+  url: https://github.com/clovaai/donut/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:clovaai
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_datajuicer_data_juicer_releases
+  source_type: rss
+  name: datajuicer/data-juicer Releases
+  url: https://github.com/datajuicer/data-juicer/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:datajuicer
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_leejet_stable_diffusion_cpp_releases
+  source_type: rss
+  name: leejet/stable-diffusion.cpp Releases
+  url: https://github.com/leejet/stable-diffusion.cpp/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  parser_type: rss
+  enabled: true
+  publisher_key: github_user:leejet
+  source_group: open_source
+  collection_status: collectable
+  free_access: true
+- id: github_nvlabs_instant_ngp_releases
+  source_type: rss
+  name: NVlabs/instant-ngp Releases
+  url: https://github.com/NVlabs/instant-ngp/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - papers
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:nvlabs
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: github_mlfoundations_open_clip_releases
+  source_type: rss
+  name: mlfoundations/open_clip Releases
+  url: https://github.com/mlfoundations/open_clip/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - papers
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:mlfoundations
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: github_bigscience_workshop_petals_releases
+  source_type: rss
+  name: bigscience-workshop/petals Releases
+  url: https://github.com/bigscience-workshop/petals/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - papers
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:bigscience-workshop
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: github_google_deepmind_sonnet_releases
+  source_type: rss
+  name: google-deepmind/sonnet Releases
+  url: https://github.com/google-deepmind/sonnet/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - papers
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:google-deepmind
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: github_nvlabs_sana_releases
+  source_type: rss
+  name: NVlabs/Sana Releases
+  url: https://github.com/NVlabs/Sana/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - papers
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:nvlabs
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: github_eleutherai_gpt_neox_releases
+  source_type: rss
+  name: EleutherAI/gpt-neox Releases
+  url: https://github.com/EleutherAI/gpt-neox/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - papers
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:eleutherai
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: github_google_deepmind_lab_releases
+  source_type: rss
+  name: google-deepmind/lab Releases
+  url: https://github.com/google-deepmind/lab/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 82
+  default_categories:
+  - ai_models
+  - papers
+  - ai_products
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:google-deepmind
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true
+- id: github_bigscience_workshop_promptsource_releases
+  source_type: rss
+  name: bigscience-workshop/promptsource Releases
+  url: https://github.com/bigscience-workshop/promptsource/releases.atom
+  language: en
+  region: global
+  trust_level: authority
+  base_weight: 78
+  default_categories:
+  - ai_models
+  - papers
+  parser_type: rss
+  enabled: true
+  publisher_key: github_org:bigscience-workshop
+  source_group: research_institution
+  collection_status: collectable
+  free_access: true

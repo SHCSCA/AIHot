@@ -50,7 +50,9 @@ class UtcDateTime(TypeDecorator[datetime]):
 
 
 class TimestampMixin:
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
     updated_at: Mapped[datetime] = mapped_column(
         UtcDateTime(),
         default=utc_now,
@@ -71,9 +73,17 @@ class SourceRecord(TimestampMixin, Base):
             "fetch_adapter in ('rss', 'http_article', 'github', 'api', 'playwright', 'aihot_api', 'html_list')",
             name="ck_sources_fetch_adapter",
         ),
-        CheckConstraint("visibility in ('public', 'internal', 'hidden')", name="ck_sources_visibility"),
-        CheckConstraint("authority_weight >= 0 and authority_weight <= 100", name="ck_sources_authority_weight"),
-        CheckConstraint("noise_level >= 0 and noise_level <= 1", name="ck_sources_noise_level"),
+        CheckConstraint(
+            "visibility in ('public', 'internal', 'hidden')",
+            name="ck_sources_visibility",
+        ),
+        CheckConstraint(
+            "authority_weight >= 0 and authority_weight <= 100",
+            name="ck_sources_authority_weight",
+        ),
+        CheckConstraint(
+            "noise_level >= 0 and noise_level <= 1", name="ck_sources_noise_level"
+        ),
         CheckConstraint("fetch_interval_minutes > 0", name="ck_sources_fetch_interval"),
         Index("ix_sources_channel_enabled", "channel", "enabled"),
         Index("ix_sources_tier", "tier"),
@@ -92,14 +102,25 @@ class SourceRecord(TimestampMixin, Base):
     noise_level: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     fetch_adapter: Mapped[str] = mapped_column(String(64), nullable=False)
     parser_type: Mapped[str] = mapped_column(String(64), nullable=False)
-    default_categories: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    default_categories: Mapped[list[str]] = mapped_column(
+        JSON, default=list, nullable=False
+    )
     fetch_interval_minutes: Mapped[int] = mapped_column(Integer, nullable=False)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
-    visibility: Mapped[str] = mapped_column(String(32), default="public", nullable=False)
-    source_group: Mapped[str] = mapped_column(String(32), default="media", nullable=False)
+    visibility: Mapped[str] = mapped_column(
+        String(32), default="public", nullable=False
+    )
+    source_group: Mapped[str] = mapped_column(
+        String(32), default="media", nullable=False
+    )
+    publisher_key: Mapped[str] = mapped_column(
+        String(255), default="unknown", index=True, nullable=False
+    )
     contributor_no: Mapped[str | None] = mapped_column(String(32), nullable=True)
     social_handle: Mapped[str | None] = mapped_column(String(128), nullable=True)
-    collection_status: Mapped[str] = mapped_column(String(32), default="collectable", nullable=False)
+    collection_status: Mapped[str] = mapped_column(
+        String(32), default="collectable", nullable=False
+    )
     free_access: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -107,23 +128,39 @@ class SourceRecord(TimestampMixin, Base):
 class SourceStateRecord(Base):
     __tablename__ = "source_states"
     __table_args__ = (
-        CheckConstraint("duplicate_ratio >= 0 and duplicate_ratio <= 1", name="ck_source_states_duplicate_ratio"),
-        CheckConstraint("noise_ratio >= 0 and noise_ratio <= 1", name="ck_source_states_noise_ratio"),
-        CheckConstraint("health_score >= 0 and health_score <= 100", name="ck_source_states_health_score"),
+        CheckConstraint(
+            "duplicate_ratio >= 0 and duplicate_ratio <= 1",
+            name="ck_source_states_duplicate_ratio",
+        ),
+        CheckConstraint(
+            "noise_ratio >= 0 and noise_ratio <= 1", name="ck_source_states_noise_ratio"
+        ),
+        CheckConstraint(
+            "health_score >= 0 and health_score <= 100",
+            name="ck_source_states_health_score",
+        ),
     )
 
-    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id", ondelete="CASCADE"), primary_key=True)
-    last_success_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("sources.id", ondelete="CASCADE"), primary_key=True
+    )
+    last_success_at: Mapped[datetime | None] = mapped_column(
+        UtcDateTime(), nullable=True
+    )
     last_error_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     error_streak: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    next_fetch_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, index=True, nullable=False)
+    next_fetch_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, index=True, nullable=False
+    )
     backoff_until: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     avg_latency_ms: Mapped[float | None] = mapped_column(Float, nullable=True)
     items_per_run: Mapped[float | None] = mapped_column(Float, nullable=True)
     duplicate_ratio: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     noise_ratio: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     health_score: Mapped[float] = mapped_column(Float, default=100.0, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, onupdate=utc_now, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, onupdate=utc_now, nullable=False
+    )
 
 
 class FetchJobRecord(TimestampMixin, Base):
@@ -140,10 +177,14 @@ class FetchJobRecord(TimestampMixin, Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id", ondelete="CASCADE"), nullable=False)
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("sources.id", ondelete="CASCADE"), nullable=False
+    )
     status: Mapped[str] = mapped_column(String(32), default="pending", nullable=False)
     priority: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
-    run_after: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    run_after: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
     locked_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     locked_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
     attempt_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
@@ -153,51 +194,76 @@ class FetchJobRecord(TimestampMixin, Base):
 class FetchRunRecord(Base):
     __tablename__ = "fetch_runs"
     __table_args__ = (
-        CheckConstraint("status in ('started', 'succeeded', 'failed', 'partial')", name="ck_fetch_runs_status"),
+        CheckConstraint(
+            "status in ('started', 'succeeded', 'failed', 'partial')",
+            name="ck_fetch_runs_status",
+        ),
         CheckConstraint("bytes_received >= 0", name="ck_fetch_runs_bytes_received"),
         CheckConstraint("item_count >= 0", name="ck_fetch_runs_item_count"),
         Index("ix_fetch_runs_source_started", "source_id", "started_at"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    job_id: Mapped[int | None] = mapped_column(ForeignKey("fetch_jobs.id", ondelete="SET NULL"), nullable=True)
-    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id", ondelete="CASCADE"), nullable=False)
+    job_id: Mapped[int | None] = mapped_column(
+        ForeignKey("fetch_jobs.id", ondelete="SET NULL"), nullable=True
+    )
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("sources.id", ondelete="CASCADE"), nullable=False
+    )
     status: Mapped[str] = mapped_column(String(32), default="started", nullable=False)
-    started_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
     finished_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
     content_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
     bytes_received: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     item_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
 
 
 class RawDocumentRecord(Base):
     __tablename__ = "raw_documents"
     __table_args__ = (
-        UniqueConstraint("source_id", "content_hash", name="uq_raw_documents_source_hash"),
+        UniqueConstraint(
+            "source_id", "content_hash", name="uq_raw_documents_source_hash"
+        ),
         Index("ix_raw_documents_source_fetched", "source_id", "fetched_at"),
         Index("ix_raw_documents_canonical_url", "canonical_url"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    fetch_run_id: Mapped[int] = mapped_column(ForeignKey("fetch_runs.id", ondelete="CASCADE"), nullable=False)
-    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id", ondelete="CASCADE"), nullable=False)
+    fetch_run_id: Mapped[int] = mapped_column(
+        ForeignKey("fetch_runs.id", ondelete="CASCADE"), nullable=False
+    )
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("sources.id", ondelete="CASCADE"), nullable=False
+    )
     url: Mapped[str] = mapped_column(Text, nullable=False)
     canonical_url: Mapped[str] = mapped_column(Text, nullable=False)
     content_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
     body_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
     body_html: Mapped[str | None] = mapped_column(Text, nullable=True)
-    response_headers_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    response_headers_json: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
-    fetched_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    fetched_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
 
 
 class RawScreeningResultRecord(Base):
     __tablename__ = "raw_screening_results"
     __table_args__ = (
-        UniqueConstraint("raw_document_id", "strategy_version", name="uq_raw_screening_results_raw_strategy"),
+        UniqueConstraint(
+            "raw_document_id",
+            "strategy_version",
+            name="uq_raw_screening_results_raw_strategy",
+        ),
         CheckConstraint(
             "screen_status in ('accepted', 'rejected', 'failed')",
             name="ck_raw_screening_results_status",
@@ -206,15 +272,25 @@ class RawScreeningResultRecord(Base):
             "screen_bucket in ('core', 'related', 'watch', 'irrelevant', 'invalid')",
             name="ck_raw_screening_results_bucket",
         ),
-        CheckConstraint("relevance_score >= 0 and relevance_score <= 100", name="ck_raw_screening_results_relevance"),
-        CheckConstraint("confidence_score >= 0 and confidence_score <= 100", name="ck_raw_screening_results_confidence"),
+        CheckConstraint(
+            "relevance_score >= 0 and relevance_score <= 100",
+            name="ck_raw_screening_results_relevance",
+        ),
+        CheckConstraint(
+            "confidence_score >= 0 and confidence_score <= 100",
+            name="ck_raw_screening_results_confidence",
+        ),
         Index("ix_raw_screening_results_status_created", "screen_status", "created_at"),
         Index("ix_raw_screening_results_raw_document", "raw_document_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    raw_document_id: Mapped[int] = mapped_column(ForeignKey("raw_documents.id", ondelete="CASCADE"), nullable=False)
-    strategy_version: Mapped[str] = mapped_column(ForeignKey("strategy_versions.id"), nullable=False)
+    raw_document_id: Mapped[int] = mapped_column(
+        ForeignKey("raw_documents.id", ondelete="CASCADE"), nullable=False
+    )
+    strategy_version: Mapped[str] = mapped_column(
+        ForeignKey("strategy_versions.id"), nullable=False
+    )
     provider: Mapped[str] = mapped_column(String(64), nullable=False)
     model: Mapped[str] = mapped_column(String(128), nullable=False)
     screen_status: Mapped[str] = mapped_column(String(32), nullable=False)
@@ -228,13 +304,17 @@ class RawScreeningResultRecord(Base):
     reason_code: Mapped[str] = mapped_column(String(64), nullable=False)
     reason_cn: Mapped[str] = mapped_column(Text, default="", nullable=False)
     raw_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
 
 
 class NormalizedItemRecord(TimestampMixin, Base):
     __tablename__ = "normalized_items"
     __table_args__ = (
-        UniqueConstraint("channel", "content_hash", name="uq_normalized_items_channel_hash"),
+        UniqueConstraint(
+            "channel", "content_hash", name="uq_normalized_items_channel_hash"
+        ),
         Index("ix_normalized_items_channel_published", "channel", "published_at"),
         Index("ix_normalized_items_source_id", "source_id"),
         Index("ix_normalized_items_canonical_url", "canonical_url"),
@@ -242,8 +322,12 @@ class NormalizedItemRecord(TimestampMixin, Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     channel: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
-    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id", ondelete="CASCADE"), nullable=False)
-    raw_document_id: Mapped[int] = mapped_column(ForeignKey("raw_documents.id", ondelete="CASCADE"), nullable=False)
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("sources.id", ondelete="CASCADE"), nullable=False
+    )
+    raw_document_id: Mapped[int] = mapped_column(
+        ForeignKey("raw_documents.id", ondelete="CASCADE"), nullable=False
+    )
     title_original: Mapped[str] = mapped_column(Text, nullable=False)
     title_cn: Mapped[str | None] = mapped_column(Text, nullable=True)
     url: Mapped[str] = mapped_column(Text, nullable=False)
@@ -251,7 +335,9 @@ class NormalizedItemRecord(TimestampMixin, Base):
     summary_original: Mapped[str] = mapped_column(Text, default="", nullable=False)
     summary_cn: Mapped[str | None] = mapped_column(Text, nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
-    fetched_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    fetched_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
     language: Mapped[str] = mapped_column(String(16), nullable=False)
     content_hash: Mapped[str] = mapped_column(String(64), nullable=False)
 
@@ -259,7 +345,10 @@ class NormalizedItemRecord(TimestampMixin, Base):
 class StrategyVersionRecord(Base):
     __tablename__ = "strategy_versions"
     __table_args__ = (
-        CheckConstraint("status in ('draft', 'active', 'retired')", name="ck_strategy_versions_status"),
+        CheckConstraint(
+            "status in ('draft', 'active', 'retired')",
+            name="ck_strategy_versions_status",
+        ),
         Index("ix_strategy_versions_channel_status", "channel", "status"),
     )
 
@@ -270,9 +359,15 @@ class StrategyVersionRecord(Base):
     prefilter_prompt_version: Mapped[str] = mapped_column(String(128), nullable=False)
     score_prompt_version: Mapped[str] = mapped_column(String(128), nullable=False)
     rank_formula_version: Mapped[str] = mapped_column(String(128), nullable=False)
-    thresholds_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
-    model_config_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    thresholds_json: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
+    model_config_json: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
     activated_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
     retired_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
 
@@ -280,35 +375,62 @@ class StrategyVersionRecord(Base):
 class PrefilterResultRecord(Base):
     __tablename__ = "prefilter_results"
     __table_args__ = (
-        CheckConstraint("bucket in ('relevant', 'maybe', 'irrelevant')", name="ck_prefilter_results_bucket"),
+        CheckConstraint(
+            "bucket in ('relevant', 'maybe', 'irrelevant')",
+            name="ck_prefilter_results_bucket",
+        ),
         Index("ix_prefilter_results_item_strategy", "item_id", "strategy_version"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    item_id: Mapped[int] = mapped_column(ForeignKey("normalized_items.id", ondelete="CASCADE"), nullable=False)
-    strategy_version: Mapped[str] = mapped_column(ForeignKey("strategy_versions.id"), nullable=False)
+    item_id: Mapped[int] = mapped_column(
+        ForeignKey("normalized_items.id", ondelete="CASCADE"), nullable=False
+    )
+    strategy_version: Mapped[str] = mapped_column(
+        ForeignKey("strategy_versions.id"), nullable=False
+    )
     model: Mapped[str] = mapped_column(String(128), nullable=False)
     bucket: Mapped[str] = mapped_column(String(32), nullable=False)
     is_relevant: Mapped[bool] = mapped_column(Boolean, nullable=False)
     reason: Mapped[str] = mapped_column(Text, default="", nullable=False)
     raw_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
 
 
 class ModelScoreRecord(Base):
     __tablename__ = "model_scores"
     __table_args__ = (
-        CheckConstraint("relevance_score >= 0 and relevance_score <= 100", name="ck_model_scores_relevance"),
-        CheckConstraint("impact_score >= 0 and impact_score <= 100", name="ck_model_scores_impact"),
-        CheckConstraint("novelty_score >= 0 and novelty_score <= 100", name="ck_model_scores_novelty"),
-        CheckConstraint("actionability_score >= 0 and actionability_score <= 100", name="ck_model_scores_actionability"),
-        CheckConstraint("credibility_score >= 0 and credibility_score <= 100", name="ck_model_scores_credibility"),
+        CheckConstraint(
+            "relevance_score >= 0 and relevance_score <= 100",
+            name="ck_model_scores_relevance",
+        ),
+        CheckConstraint(
+            "impact_score >= 0 and impact_score <= 100", name="ck_model_scores_impact"
+        ),
+        CheckConstraint(
+            "novelty_score >= 0 and novelty_score <= 100",
+            name="ck_model_scores_novelty",
+        ),
+        CheckConstraint(
+            "actionability_score >= 0 and actionability_score <= 100",
+            name="ck_model_scores_actionability",
+        ),
+        CheckConstraint(
+            "credibility_score >= 0 and credibility_score <= 100",
+            name="ck_model_scores_credibility",
+        ),
         Index("ix_model_scores_item_strategy", "item_id", "strategy_version"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    item_id: Mapped[int] = mapped_column(ForeignKey("normalized_items.id", ondelete="CASCADE"), nullable=False)
-    strategy_version: Mapped[str] = mapped_column(ForeignKey("strategy_versions.id"), nullable=False)
+    item_id: Mapped[int] = mapped_column(
+        ForeignKey("normalized_items.id", ondelete="CASCADE"), nullable=False
+    )
+    strategy_version: Mapped[str] = mapped_column(
+        ForeignKey("strategy_versions.id"), nullable=False
+    )
     model: Mapped[str] = mapped_column(String(128), nullable=False)
     category: Mapped[str] = mapped_column(String(64), nullable=False)
     relevance_score: Mapped[float] = mapped_column(Float, nullable=False)
@@ -319,27 +441,51 @@ class ModelScoreRecord(Base):
     seller_action_level: Mapped[str | None] = mapped_column(String(32), nullable=True)
     reason: Mapped[str] = mapped_column(Text, default="", nullable=False)
     raw_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
 
 
 class RankedItemRecord(Base):
     __tablename__ = "ranked_items"
     __table_args__ = (
-        CheckConstraint("source_weight >= 0 and source_weight <= 100", name="ck_ranked_items_source_weight"),
-        CheckConstraint("category_weight >= 0 and category_weight <= 100", name="ck_ranked_items_category_weight"),
-        CheckConstraint("freshness_weight >= 0 and freshness_weight <= 100", name="ck_ranked_items_freshness_weight"),
-        CheckConstraint("duplicate_penalty >= 0 and duplicate_penalty <= 100", name="ck_ranked_items_duplicate_penalty"),
+        CheckConstraint(
+            "source_weight >= 0 and source_weight <= 100",
+            name="ck_ranked_items_source_weight",
+        ),
+        CheckConstraint(
+            "category_weight >= 0 and category_weight <= 100",
+            name="ck_ranked_items_category_weight",
+        ),
+        CheckConstraint(
+            "freshness_weight >= 0 and freshness_weight <= 100",
+            name="ck_ranked_items_freshness_weight",
+        ),
+        CheckConstraint(
+            "duplicate_penalty >= 0 and duplicate_penalty <= 100",
+            name="ck_ranked_items_duplicate_penalty",
+        ),
         CheckConstraint(
             "channel_impact_weight >= 0 and channel_impact_weight <= 100",
             name="ck_ranked_items_channel_impact",
         ),
-        CheckConstraint("final_score >= 0 and final_score <= 100", name="ck_ranked_items_final_score"),
-        CheckConstraint("threshold_used >= 0 and threshold_used <= 100", name="ck_ranked_items_threshold"),
+        CheckConstraint(
+            "final_score >= 0 and final_score <= 100",
+            name="ck_ranked_items_final_score",
+        ),
+        CheckConstraint(
+            "threshold_used >= 0 and threshold_used <= 100",
+            name="ck_ranked_items_threshold",
+        ),
         Index("ix_ranked_items_selected_score", "selected", "final_score"),
     )
 
-    item_id: Mapped[int] = mapped_column(ForeignKey("normalized_items.id", ondelete="CASCADE"), primary_key=True)
-    strategy_version: Mapped[str] = mapped_column(ForeignKey("strategy_versions.id"), primary_key=True)
+    item_id: Mapped[int] = mapped_column(
+        ForeignKey("normalized_items.id", ondelete="CASCADE"), primary_key=True
+    )
+    strategy_version: Mapped[str] = mapped_column(
+        ForeignKey("strategy_versions.id"), primary_key=True
+    )
     source_weight: Mapped[float] = mapped_column(Float, nullable=False)
     category_weight: Mapped[float] = mapped_column(Float, nullable=False)
     freshness_weight: Mapped[float] = mapped_column(Float, nullable=False)
@@ -349,7 +495,9 @@ class RankedItemRecord(Base):
     selected: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     threshold_used: Mapped[float] = mapped_column(Float, nullable=False)
     selection_reason: Mapped[str] = mapped_column(Text, default="", nullable=False)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
 
 
 class EventClusterRecord(TimestampMixin, Base):
@@ -357,7 +505,10 @@ class EventClusterRecord(TimestampMixin, Base):
     __table_args__ = (
         CheckConstraint("member_count >= 0", name="ck_event_clusters_member_count"),
         CheckConstraint("source_count >= 0", name="ck_event_clusters_source_count"),
-        CheckConstraint("cluster_score >= 0 and cluster_score <= 100", name="ck_event_clusters_cluster_score"),
+        CheckConstraint(
+            "cluster_score >= 0 and cluster_score <= 100",
+            name="ck_event_clusters_cluster_score",
+        ),
         CheckConstraint(
             "review_status in ('pending', 'approved', 'rejected')",
             name="ck_event_clusters_review_status",
@@ -370,7 +521,9 @@ class EventClusterRecord(TimestampMixin, Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     channel: Mapped[str] = mapped_column(String(32), index=True, nullable=False)
     canonical_title: Mapped[str] = mapped_column(Text, nullable=False)
-    main_item_id: Mapped[int | None] = mapped_column(ForeignKey("normalized_items.id", ondelete="SET NULL"), nullable=True)
+    main_item_id: Mapped[int | None] = mapped_column(
+        ForeignKey("normalized_items.id", ondelete="SET NULL"), nullable=True
+    )
     category: Mapped[str] = mapped_column(String(64), nullable=False)
     first_seen_at: Mapped[datetime] = mapped_column(UtcDateTime(), nullable=False)
     last_seen_at: Mapped[datetime] = mapped_column(UtcDateTime(), nullable=False)
@@ -378,7 +531,9 @@ class EventClusterRecord(TimestampMixin, Base):
     source_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     cluster_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     embedding: Mapped[list[float] | None] = mapped_column(JSON, nullable=True)
-    review_status: Mapped[str] = mapped_column(String(32), default="pending", nullable=False)
+    review_status: Mapped[str] = mapped_column(
+        String(32), default="pending", nullable=False
+    )
     review_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     reviewed_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
     reviewed_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
@@ -387,16 +542,79 @@ class EventClusterRecord(TimestampMixin, Base):
 class ClusterMemberRecord(Base):
     __tablename__ = "cluster_members"
     __table_args__ = (
-        CheckConstraint("relation_score >= 0 and relation_score <= 100", name="ck_cluster_members_relation_score"),
+        CheckConstraint(
+            "relation_score >= 0 and relation_score <= 100",
+            name="ck_cluster_members_relation_score",
+        ),
         Index("ix_cluster_members_source_id", "source_id"),
     )
 
-    cluster_id: Mapped[int] = mapped_column(ForeignKey("event_clusters.id", ondelete="CASCADE"), primary_key=True)
-    item_id: Mapped[int] = mapped_column(ForeignKey("normalized_items.id", ondelete="CASCADE"), primary_key=True)
-    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id", ondelete="CASCADE"), nullable=False)
+    cluster_id: Mapped[int] = mapped_column(
+        ForeignKey("event_clusters.id", ondelete="CASCADE"), primary_key=True
+    )
+    item_id: Mapped[int] = mapped_column(
+        ForeignKey("normalized_items.id", ondelete="CASCADE"), primary_key=True
+    )
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("sources.id", ondelete="CASCADE"), nullable=False
+    )
     relation_score: Mapped[float] = mapped_column(Float, nullable=False)
     is_main: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
+
+
+class EventEvidenceAssessmentRecord(Base):
+    __tablename__ = "event_evidence_assessments"
+    __table_args__ = (
+        CheckConstraint(
+            "verification_status in ('single_source', 'corroborated', 'conflicted', 'insufficient')",
+            name="ck_event_evidence_assessments_status",
+        ),
+        CheckConstraint(
+            "independent_source_count >= 0",
+            name="ck_event_evidence_assessments_independent_sources",
+        ),
+        CheckConstraint(
+            "authoritative_source_count >= 0",
+            name="ck_event_evidence_assessments_authoritative_sources",
+        ),
+        CheckConstraint(
+            "evidence_score >= 0 and evidence_score <= 100",
+            name="ck_event_evidence_assessments_score",
+        ),
+        Index("ix_event_evidence_assessments_status", "verification_status"),
+    )
+
+    event_id: Mapped[int] = mapped_column(
+        ForeignKey("event_clusters.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    model: Mapped[str] = mapped_column(String(128), nullable=False)
+    verification_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    independent_source_count: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False
+    )
+    authoritative_source_count: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False
+    )
+    evidence_score: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    supported_facts_json: Mapped[list[str]] = mapped_column(
+        JSON, default=list, nullable=False
+    )
+    supported_claims_json: Mapped[list[dict[str, Any]]] = mapped_column(
+        JSON, default=list, nullable=False
+    )
+    conflicting_claims_json: Mapped[list[str]] = mapped_column(
+        JSON, default=list, nullable=False
+    )
+    summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    raw_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    analyzed_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
 
 
 class FeedbackEventRecord(Base):
@@ -414,59 +632,92 @@ class FeedbackEventRecord(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    item_id: Mapped[int | None] = mapped_column(ForeignKey("normalized_items.id", ondelete="SET NULL"), nullable=True)
-    cluster_id: Mapped[int | None] = mapped_column(ForeignKey("event_clusters.id", ondelete="SET NULL"), nullable=True)
+    item_id: Mapped[int | None] = mapped_column(
+        ForeignKey("normalized_items.id", ondelete="SET NULL"), nullable=True
+    )
+    cluster_id: Mapped[int | None] = mapped_column(
+        ForeignKey("event_clusters.id", ondelete="SET NULL"), nullable=True
+    )
     channel: Mapped[str] = mapped_column(String(32), nullable=False)
     feedback_type: Mapped[str] = mapped_column(String(32), nullable=False)
     reason: Mapped[str] = mapped_column(Text, default="", nullable=False)
     actor: Mapped[str] = mapped_column(String(128), default="system", nullable=False)
     contact: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[str] = mapped_column(String(32), default="unread", nullable=False)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
 
 
 class DailyDigestRecord(Base):
     __tablename__ = "daily_digests"
     __table_args__ = (
-        UniqueConstraint("channel", "digest_date", "strategy_version", name="uq_daily_digests_channel_date_strategy"),
+        UniqueConstraint(
+            "channel",
+            "digest_date",
+            "strategy_version",
+            name="uq_daily_digests_channel_date_strategy",
+        ),
         Index("ix_daily_digests_channel_date", "channel", "digest_date"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     channel: Mapped[str] = mapped_column(String(32), nullable=False)
     digest_date: Mapped[date] = mapped_column(Date, nullable=False)
-    generated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
-    strategy_version: Mapped[str] = mapped_column(ForeignKey("strategy_versions.id"), nullable=False)
+    generated_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
+    strategy_version: Mapped[str] = mapped_column(
+        ForeignKey("strategy_versions.id"), nullable=False
+    )
     title: Mapped[str] = mapped_column(Text, nullable=False)
-    sections_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+    sections_json: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
     published: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     published_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
 
 
 class EvaluationRunRecord(Base):
     __tablename__ = "evaluation_runs"
     __table_args__ = (
-        CheckConstraint("status in ('pending', 'running', 'succeeded', 'failed')", name="ck_evaluation_runs_status"),
+        CheckConstraint(
+            "status in ('pending', 'running', 'succeeded', 'failed')",
+            name="ck_evaluation_runs_status",
+        ),
         Index("ix_evaluation_runs_channel_created", "channel", "created_at"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     channel: Mapped[str] = mapped_column(String(32), nullable=False)
-    strategy_version: Mapped[str] = mapped_column(ForeignKey("strategy_versions.id"), nullable=False)
+    strategy_version: Mapped[str] = mapped_column(
+        ForeignKey("strategy_versions.id"), nullable=False
+    )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(32), default="pending", nullable=False)
-    request_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
-    metrics_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    request_json: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
+    metrics_json: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
     completed_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
 
 
 class PipelineRunRecord(Base):
     __tablename__ = "pipeline_runs"
     __table_args__ = (
-        CheckConstraint("status in ('running', 'succeeded', 'failed')", name="ck_pipeline_runs_status"),
+        CheckConstraint(
+            "status in ('running', 'succeeded', 'failed')",
+            name="ck_pipeline_runs_status",
+        ),
         Index("ix_pipeline_runs_started_at", "started_at"),
     )
 
@@ -478,12 +729,16 @@ class PipelineRunRecord(Base):
     claimed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     succeeded: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     failed: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
-    raw_documents_inserted: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    raw_documents_inserted: Mapped[int] = mapped_column(
+        Integer, default=0, nullable=False
+    )
     normalized_items: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     ranked_items: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     clusters: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
-    started_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    started_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
     finished_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
 
 
@@ -524,17 +779,29 @@ class PermissionRecord(Base):
 class UserRoleRecord(Base):
     __tablename__ = "user_roles"
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
-    role_id: Mapped[str] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+    role_id: Mapped[str] = mapped_column(
+        ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
 
 
 class RolePermissionRecord(Base):
     __tablename__ = "role_permissions"
 
-    role_id: Mapped[str] = mapped_column(ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True)
-    permission_id: Mapped[str] = mapped_column(ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    role_id: Mapped[str] = mapped_column(
+        ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True
+    )
+    permission_id: Mapped[str] = mapped_column(
+        ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
 
 
 class SessionRecord(Base):
@@ -545,22 +812,34 @@ class SessionRecord(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
     session_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(UtcDateTime(), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
     revoked_at: Mapped[datetime | None] = mapped_column(UtcDateTime(), nullable=True)
 
 
 class UserPreferenceRecord(Base):
     __tablename__ = "user_preferences"
 
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
     theme: Mapped[str] = mapped_column(String(16), default="system", nullable=False)
-    default_channel: Mapped[str] = mapped_column(String(32), default="ai", nullable=False)
+    default_channel: Mapped[str] = mapped_column(
+        String(32), default="ai", nullable=False
+    )
     compact_mode: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
-    updated_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, onupdate=utc_now, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, onupdate=utc_now, nullable=False
+    )
 
 
 class AuditLogRecord(Base):
@@ -571,11 +850,19 @@ class AuditLogRecord(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    actor_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
-    actor_username: Mapped[str] = mapped_column(String(128), default="system", nullable=False)
+    actor_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    actor_username: Mapped[str] = mapped_column(
+        String(128), default="system", nullable=False
+    )
     action: Mapped[str] = mapped_column(String(128), nullable=False)
     target_type: Mapped[str] = mapped_column(String(128), nullable=False)
     target_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     result: Mapped[str] = mapped_column(String(32), default="success", nullable=False)
-    metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(UtcDateTime(), default=utc_now, nullable=False)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, nullable=False
+    )

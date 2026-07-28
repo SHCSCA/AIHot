@@ -100,6 +100,17 @@ export function EventCardExpand({ event, api, showDate, index }: EventCardExpand
   const mainSource = mainMember ?? detailEvent.mainItem ?? event.mainItem;
   const relatedMembers = members.filter((member) => !member.isMain);
   const keyFacts = detailEvent.keyFacts?.filter(Boolean) ?? [];
+  const supportedFacts = detailEvent.supportedFacts?.filter(Boolean) ?? [];
+  const supportedClaims = detailEvent.supportedClaims?.filter((claim) => claim.claim) ?? [];
+  const conflictingClaims = detailEvent.conflictingClaims?.filter(Boolean) ?? [];
+  const verification = verificationMeta(detailEvent.verificationStatus);
+  const evidenceStatus = loading
+    ? "正在核对来源与证据链。"
+    : error
+      ? ""
+      : open
+        ? `证据加载完成，共 ${detailEvent.independentSourceCount ?? detailEvent.sourceCount ?? event.sourceCount} 个独立发布方。`
+        : "";
 
   const detailPortal = typeof document === "undefined" ? null : createPortal(
     <AnimatePresence>
@@ -135,18 +146,57 @@ export function EventCardExpand({ event, api, showDate, index }: EventCardExpand
               </button>
             </header>
 
-            <div className="qi-evidence-body">
-              {loading && <div className="qi-drawer-loading" role="status" aria-live="polite">正在核对来源与证据链...</div>}
+            <div className="qi-evidence-body" aria-busy={loading}>
+              <div className="qi-live-status" role="status" aria-live="polite" aria-atomic="true">{evidenceStatus}</div>
+              {loading && <div className="qi-drawer-loading">正在核对来源与证据链...</div>}
               {error && <p className="error" role="alert">{error}</p>}
               {!loading && !error && (
                 <>
                   <section className="event-detail-section event-detail-member-summary" aria-label="成员来源">
-                    <div className="qi-evidence-section-title"><h3>证据概览</h3><span>{members.length || event.memberCount} 条成员</span></div>
+                    <div className="qi-evidence-section-title"><h3>证据概览</h3><span>{members.length || detailEvent.memberCount || event.memberCount} 条成员</span></div>
                     <div className="event-detail-stats">
-                      <span><strong>{event.sourceCount}</strong> 个来源</span>
-                      <span><strong>{Math.round(event.score)}</strong> 精选分</span>
-                      <span>主来源 <strong>{mainSource?.sourceName ?? "未知"}</strong></span>
+                      <span><strong>{detailEvent.independentSourceCount ?? detailEvent.sourceCount ?? event.sourceCount}</strong> 个独立发布方</span>
+                      <span><strong>{detailEvent.authoritativeSourceCount ?? event.authoritativeSourceCount ?? 0}</strong> 个权威信源</span>
+                      <span><strong>{Math.round(detailEvent.evidenceScore ?? event.evidenceScore ?? 0)}</strong> 证据分</span>
                     </div>
+                  </section>
+
+                  <section className={`event-detail-section qi-verification-panel is-${verification.tone}`} aria-label="交叉验证结论">
+                    <div className="qi-evidence-section-title">
+                      <h3>交叉验证结论</h3>
+                      <span className={`qi-verification-badge is-${verification.tone}`}>{verification.label}</span>
+                    </div>
+                    <p>{detailEvent.evidenceSummary || verification.description}</p>
+                    {(supportedClaims.length > 0 || supportedFacts.length > 0) && (
+                      <div className="qi-evidence-fact-group">
+                        <strong>多源支持事实</strong>
+                        {supportedClaims.length > 0 ? (
+                          <ul>
+                            {supportedClaims.map((supported) => {
+                              const supporterNames = supported.sourceIds
+                                .map((sourceId) => members.find((member) => member.sourceId === sourceId)?.sourceName)
+                                .filter((name): name is string => Boolean(name));
+                              return (
+                                <li key={`${supported.claim}-${supported.publisherKeys.join("-")}`}>
+                                  <span>{supported.claim}</span>
+                                  <small className="qi-evidence-supporters">
+                                    支持方：{supporterNames.length > 0 ? supporterNames.join("、") : supported.publisherKeys.join("、")}
+                                  </small>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <ul>{supportedFacts.map((fact) => <li key={fact}>{fact}</li>)}</ul>
+                        )}
+                      </div>
+                    )}
+                    {conflictingClaims.length > 0 && (
+                      <div className="qi-evidence-fact-group is-conflict">
+                        <strong>待核对冲突</strong>
+                        <ul>{conflictingClaims.map((claim) => <li key={claim}>{claim}</li>)}</ul>
+                      </div>
+                    )}
                   </section>
 
                   <section className="event-detail-section" aria-label="主来源">
@@ -207,9 +257,14 @@ export function EventCardExpand({ event, api, showDate, index }: EventCardExpand
 
           <div className="event-title-row">
             <h2>{event.title}</h2>
-            <strong className={`score-badge ${scoreClass}`} aria-label={`精选分 ${Math.round(event.score)}`}>
-              精选分 {Math.round(event.score)}
-            </strong>
+            <div className="qi-event-signals">
+              <span className={`qi-verification-badge is-${verification.tone}`} aria-label={`交叉验证状态：${verification.label}`}>
+                {verification.label}
+              </span>
+              <strong className={`score-badge ${scoreClass}`} aria-label={`精选分 ${Math.round(event.score)}`}>
+                精选分 {Math.round(event.score)}
+              </strong>
+            </div>
           </div>
 
           {event.mainItem?.imageUrl && (
@@ -295,6 +350,22 @@ function tagClass(tag: string) {
   if (/行动|建议|广告|Listing|FBA|库存|物流|赔付|API/.test(tag)) return "tag-action";
   if (/OpenAI|GPT|Claude|Gemini|Amazon|SP-API/i.test(tag)) return "tag-keyword";
   return "tag-normal";
+}
+
+function verificationMeta(status: PublicEvent["verificationStatus"]) {
+  if (status === "corroborated") {
+    return { label: "已交叉验证", tone: "verified", description: "至少两个独立发布方支持同一组关键事实。" };
+  }
+  if (status === "conflicted") {
+    return { label: "证据有冲突", tone: "conflict", description: "不同来源存在关键说法冲突，建议暂缓行动并继续核对。" };
+  }
+  if (status === "insufficient") {
+    return { label: "证据待补强", tone: "pending", description: "已有多个来源，但共同事实或证据强度仍不足。" };
+  }
+  if (status === "single_source") {
+    return { label: "单一信源", tone: "single", description: "当前只有一个独立发布方，不应视为已完成交叉验证。" };
+  }
+  return { label: "待验证", tone: "pending", description: "该事件尚未完成新一轮证据评估。" };
 }
 
 function SourceEvidenceLink({ item, relation }: { item: MainItem | EventMember; relation: string }) {

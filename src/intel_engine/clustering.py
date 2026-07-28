@@ -8,6 +8,16 @@ from typing import Protocol
 
 
 TITLE_TOKEN_RE = re.compile(r"[a-z0-9\u4e00-\u9fff]+", re.IGNORECASE)
+VERSION_TOKEN_RE = re.compile(
+    r"(?<![a-z0-9])v?(\d+(?:\.\d+){1,4}(?:[-._]?[a-z]+\d*)?)(?![a-z0-9])",
+    re.IGNORECASE,
+)
+BRANDED_VERSION_RE = re.compile(
+    r"\b(gpt|claude|gemini|llama|qwen|mistral|phi|deepseek)"
+    r"[\s_-]*v?(\d+(?:\.\d+)*)\b",
+    re.IGNORECASE,
+)
+YEAR_TOKEN_RE = re.compile(r"\b(20[2-9]\d)\b")
 SOURCE_TIER_ORDER = {
     "T1": 0,
     "T1.5": 1,
@@ -50,8 +60,7 @@ class EventClusterDraft:
 
 
 class EmbeddingProvider(Protocol):
-    def embed(self, text: str) -> list[float]:
-        ...
+    def embed(self, text: str) -> list[float]: ...
 
 
 class StaticEmbeddingProvider:
@@ -76,7 +85,9 @@ def cluster_candidates(
         else:
             matched.append(candidate)
 
-    return [_build_cluster(group, embedding_provider=embedding_provider) for group in groups]
+    return [
+        _build_cluster(group, embedding_provider=embedding_provider) for group in groups
+    ]
 
 
 def _find_group(
@@ -85,19 +96,35 @@ def _find_group(
     title_similarity_threshold: float,
 ) -> list[ClusterCandidate] | None:
     for group in groups:
-        if any(_is_same_event(existing, candidate, title_similarity_threshold) for existing in group):
+        if any(
+            same_event(
+                existing,
+                candidate,
+                title_similarity_threshold=title_similarity_threshold,
+            )
+            for existing in group
+        ):
             return group
     return None
 
 
-def _is_same_event(first: ClusterCandidate, second: ClusterCandidate, title_similarity_threshold: float) -> bool:
+def same_event(
+    first: ClusterCandidate,
+    second: ClusterCandidate,
+    *,
+    title_similarity_threshold: float = 0.84,
+) -> bool:
     if first.channel != second.channel:
         return False
     if first.canonical_url and first.canonical_url == second.canonical_url:
         return True
     if first.content_hash and first.content_hash == second.content_hash:
         return True
-    return _title_similarity(first.title, second.title) >= title_similarity_threshold
+    first_versions = _version_tokens(first.title)
+    second_versions = _version_tokens(second.title)
+    if first_versions and second_versions and first_versions != second_versions:
+        return False
+    return title_similarity(first.title, second.title) >= title_similarity_threshold
 
 
 def _build_cluster(
@@ -106,7 +133,9 @@ def _build_cluster(
     embedding_provider: EmbeddingProvider | None,
 ) -> EventClusterDraft:
     main = max(members, key=_main_candidate_key)
-    published_times = [member.published_at for member in members if member.published_at is not None]
+    published_times = [
+        member.published_at for member in members if member.published_at is not None
+    ]
     embedding = main.embedding
     if embedding is None and embedding_provider is not None:
         embedding = embedding_provider.embed(main.title)
@@ -128,9 +157,16 @@ def _build_cluster(
     )
 
 
-def _main_candidate_key(candidate: ClusterCandidate) -> tuple[int, float, float, datetime | None]:
+def _main_candidate_key(
+    candidate: ClusterCandidate,
+) -> tuple[int, float, float, datetime | None]:
     tier_rank = -SOURCE_TIER_ORDER.get(candidate.source_tier, 99)
-    return (tier_rank, candidate.source_authority_weight, candidate.final_score, candidate.published_at)
+    return (
+        tier_rank,
+        candidate.source_authority_weight,
+        candidate.final_score,
+        candidate.published_at,
+    )
 
 
 def _cluster_key(candidate: ClusterCandidate) -> str:
@@ -141,9 +177,24 @@ def _cluster_key(candidate: ClusterCandidate) -> str:
     return f"title:{_normalize_title(candidate.title)}"
 
 
-def _title_similarity(first: str, second: str) -> float:
-    return SequenceMatcher(a=_normalize_title(first), b=_normalize_title(second)).ratio()
+def title_similarity(first: str, second: str) -> float:
+    return SequenceMatcher(
+        a=_normalize_title(first), b=_normalize_title(second)
+    ).ratio()
 
 
 def _normalize_title(title: str) -> str:
     return " ".join(token.lower() for token in TITLE_TOKEN_RE.findall(title))
+
+
+def _version_tokens(title: str) -> frozenset[str]:
+    tokens = {
+        f"version:{match.group(1).casefold().replace('_', '-')}"
+        for match in VERSION_TOKEN_RE.finditer(title)
+    }
+    tokens.update(
+        f"brand:{match.group(1).casefold()}:{match.group(2).casefold()}"
+        for match in BRANDED_VERSION_RE.finditer(title)
+    )
+    tokens.update(f"year:{match.group(1)}" for match in YEAR_TOKEN_RE.finditer(title))
+    return frozenset(tokens)

@@ -490,6 +490,49 @@
   transform: none !important;
 }
 
+.qi-event-signals {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.qi-verification-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid var(--ui-border);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--ui-surface-2) 88%, transparent);
+  color: var(--ui-muted);
+  font-size: 11px;
+  font-weight: 760;
+  line-height: 1;
+}
+
+.qi-verification-badge.is-verified {
+  border-color: color-mix(in srgb, var(--ui-success) 42%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-success) 10%, var(--ui-surface-2));
+  color: var(--ui-success);
+}
+
+.qi-verification-badge.is-conflict {
+  border-color: color-mix(in srgb, var(--ui-danger) 44%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-danger) 10%, var(--ui-surface-2));
+  color: var(--ui-danger);
+}
+
+.qi-verification-badge.is-single,
+.qi-verification-badge.is-pending {
+  border-color: color-mix(in srgb, var(--ui-warning) 38%, var(--ui-border));
+  background: color-mix(in srgb, var(--ui-warning) 9%, var(--ui-surface-2));
+  color: var(--ui-warning);
+}
+
 .qi-event-card .event-summary {
   max-width: 84ch;
   margin: 14px 0 0;
@@ -580,7 +623,7 @@
 }
 
 .qi-event-evidence-count {
-  color: var(--ui-faint) !important;
+  color: var(--ui-muted) !important;
   font-size: 12px;
 }
 
@@ -639,6 +682,10 @@
   -webkit-backdrop-filter: blur(var(--glass-blur-floating)) saturate(1.08);
 }
 
+.qi-evidence-header > div {
+  min-width: 0;
+}
+
 .qi-evidence-header {
   min-height: 112px;
   display: flex;
@@ -663,6 +710,7 @@
   color: var(--ui-text-strong);
   font-size: 20px;
   line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .qi-evidence-header .icon-button {
@@ -703,7 +751,7 @@
 }
 
 .qi-evidence-section-title span {
-  color: var(--ui-faint);
+  color: var(--ui-muted);
   font-size: 10px;
   font-weight: 800;
 }
@@ -717,6 +765,73 @@
   border-radius: 5px;
   color: var(--ui-muted);
   font-size: 11px;
+}
+
+.qi-verification-panel {
+  position: relative;
+}
+
+.qi-verification-panel::before {
+  content: "";
+  position: absolute;
+  inset: 18px auto 18px -24px;
+  width: 2px;
+  background: var(--ui-warning);
+}
+
+.qi-verification-panel.is-verified::before { background: var(--ui-success); }
+.qi-verification-panel.is-conflict::before { background: var(--ui-danger); }
+
+.qi-verification-panel > p {
+  margin: 0;
+  color: var(--ui-muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.qi-evidence-fact-group {
+  margin-top: 16px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--ui-success) 26%, var(--ui-border-soft));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ui-success) 6%, var(--ui-surface));
+}
+
+.qi-evidence-fact-group.is-conflict {
+  border-color: color-mix(in srgb, var(--ui-danger) 28%, var(--ui-border-soft));
+  background: color-mix(in srgb, var(--ui-danger) 6%, var(--ui-surface));
+}
+
+.qi-evidence-fact-group > strong {
+  color: var(--ui-text-strong);
+  font-size: 12px;
+}
+
+.qi-evidence-fact-group ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  color: var(--ui-muted);
+  font-size: 12px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
+.qi-evidence-fact-group li {
+  margin-block: 6px;
+}
+
+.qi-evidence-fact-group li > span {
+  display: block;
+  color: var(--ui-text);
+}
+
+.qi-evidence-supporters {
+  display: block;
+  margin-top: 3px;
+  color: var(--ui-muted);
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .qi-evidence-body .event-source-link {
@@ -734,10 +849,22 @@
   gap: 5px;
 }
 
-.qi-evidence-body .event-source-link strong { color: var(--ui-text-strong); font-size: 13px; }
+.qi-evidence-body .event-source-link strong { color: var(--ui-text-strong); font-size: 13px; overflow-wrap: anywhere; }
 .qi-evidence-body .event-source-link span { color: var(--ui-muted); font-size: 11px; line-height: 1.5; }
-.qi-evidence-body .event-evidence-chain { margin: 0; padding-left: 20px; color: var(--ui-muted); font-size: 13px; line-height: 1.65; }
+.qi-evidence-body .event-evidence-chain { margin: 0; padding-left: 20px; color: var(--ui-muted); font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
 .qi-drawer-loading { padding: 28px 0; color: var(--ui-muted); font-size: 13px; }
+
+.qi-live-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 @keyframes qi-loading-pulse {
   from { opacity: 0.44; }

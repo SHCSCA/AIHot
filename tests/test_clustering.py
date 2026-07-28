@@ -2,7 +2,13 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from intel_engine.clustering import ClusterCandidate, StaticEmbeddingProvider, cluster_candidates
+import pytest
+
+from intel_engine.clustering import (
+    ClusterCandidate,
+    StaticEmbeddingProvider,
+    cluster_candidates,
+)
 
 
 def _candidate(**overrides):
@@ -27,9 +33,23 @@ def _candidate(**overrides):
 def test_exact_url_or_hash_candidates_join_same_cluster():
     clusters = cluster_candidates(
         [
-            _candidate(item_id=1, canonical_url="https://example.com/a", content_hash="hash-a"),
-            _candidate(item_id=2, source_id="media", source_tier="T2", canonical_url="https://example.com/a", content_hash="hash-b"),
-            _candidate(item_id=3, source_id="blog", source_tier="T3", canonical_url="https://example.com/c", content_hash="hash-a"),
+            _candidate(
+                item_id=1, canonical_url="https://example.com/a", content_hash="hash-a"
+            ),
+            _candidate(
+                item_id=2,
+                source_id="media",
+                source_tier="T2",
+                canonical_url="https://example.com/a",
+                content_hash="hash-b",
+            ),
+            _candidate(
+                item_id=3,
+                source_id="blog",
+                source_tier="T3",
+                canonical_url="https://example.com/c",
+                content_hash="hash-a",
+            ),
         ]
     )
 
@@ -77,3 +97,56 @@ def test_embedding_provider_is_reserved_for_cluster_vectors():
     )
 
     assert clusters[0].embedding == [0.1, 0.2, 0.3]
+
+
+def test_similar_release_titles_with_different_versions_stay_separate():
+    clusters = cluster_candidates(
+        [
+            _candidate(
+                item_id=1,
+                title="Transformers v4.53.0 released",
+                canonical_url="https://example.com/transformers-4-53",
+                content_hash="hash-4-53",
+            ),
+            _candidate(
+                item_id=2,
+                title="Transformers v4.54.0 released",
+                canonical_url="https://example.com/transformers-4-54",
+                content_hash="hash-4-54",
+            ),
+        ]
+    )
+
+    assert len(clusters) == 2
+
+
+@pytest.mark.parametrize(
+    ("first_title", "second_title"),
+    [
+        ("OpenAI launches GPT-4", "OpenAI launches GPT-5"),
+        ("Anthropic releases Claude 3", "Anthropic releases Claude 4"),
+        ("AI industry outlook 2025", "AI industry outlook 2026"),
+    ],
+)
+def test_single_number_model_versions_and_years_stay_separate(
+    first_title,
+    second_title,
+):
+    clusters = cluster_candidates(
+        [
+            _candidate(
+                item_id=1,
+                title=first_title,
+                canonical_url="https://example.com/first",
+                content_hash="hash-first",
+            ),
+            _candidate(
+                item_id=2,
+                title=second_title,
+                canonical_url="https://example.com/second",
+                content_hash="hash-second",
+            ),
+        ]
+    )
+
+    assert len(clusters) == 2

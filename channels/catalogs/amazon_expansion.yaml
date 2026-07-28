@@ -1,0 +1,4214 @@
+catalog_id: amazon_expansion
+channel: amazon
+schema_version: 1
+generated_at: '2026-07-28'
+sources:
+- id: exp_about_amazon_newsroom
+  source_type: rss
+  name: About Amazon Newsroom
+  url: https://www.aboutamazon.com/rss/feed.rss
+  language: en
+  region: global
+  marketplace: global
+  seller_area: policy
+  trust_level: official
+  base_weight: 90
+  default_categories:
+  - policy
+  - product_research
+  parser_type: rss
+  enabled: true
+  publisher_key: amazon
+  source_group: official
+  collection_status: collectable
+  free_access: true
+- id: exp_feedvisor_insights
+  source_type: rss
+  name: Feedvisor Insights
+  url: https://feedvisor.com/feed/
+  language: en
+  region: global
+  marketplace: global
+  seller_area: pricing
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - ads_ppc
+  - product_research
+  parser_type: rss
+  enabled: true
+  publisher_key: feedvisor
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_zonbase_blog
+  source_type: rss
+  name: Zonbase Blog
+  url: https://www.zonbase.com/blog/feed/
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: product_research
+  trust_level: authority
+  base_weight: 72
+  default_categories:
+  - product_research
+  - listing_seo
+  - tools
+  parser_type: rss
+  enabled: true
+  publisher_key: zonbase
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_adverio_blog
+  source_type: rss
+  name: Adverio Amazon Advertising Blog
+  url: https://www.adverio.io/blog/feed/
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: ads
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - ads_ppc
+  - listing_seo
+  parser_type: rss
+  enabled: true
+  publisher_key: adverio
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_dcl_logistics_blog
+  source_type: rss
+  name: DCL Logistics Blog
+  url: https://dclcorp.com/blog/feed/
+  language: en
+  region: global
+  marketplace: global
+  seller_area: logistics
+  trust_level: authority
+  base_weight: 72
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  parser_type: rss
+  enabled: true
+  publisher_key: dcl_logistics
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_zhenhub_blog
+  source_type: rss
+  name: ZhenHub Logistics Blog
+  url: https://zhenhub.com/blog/feed/
+  language: en
+  region: global
+  marketplace: global
+  seller_area: logistics
+  trust_level: authority
+  base_weight: 70
+  default_categories:
+  - fba_logistics
+  - compliance_trade
+  parser_type: rss
+  enabled: true
+  publisher_key: zhenhub
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_cedcommerce_blog
+  source_type: rss
+  name: CedCommerce Blog
+  url: https://cedcommerce.com/blog/feed/
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: marketplaces
+  trust_level: authority
+  base_weight: 72
+  default_categories:
+  - tools
+  - listing_seo
+  - product_research
+  parser_type: rss
+  enabled: true
+  publisher_key: cedcommerce
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_groove_commerce_blog
+  source_type: rss
+  name: Groove Commerce Blog
+  url: https://www.groovecommerce.com/ecommerce-blog/rss.xml
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 68
+  default_categories:
+  - listing_seo
+  - ads_ppc
+  - tools
+  parser_type: rss
+  enabled: true
+  publisher_key: groove_commerce
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_do_dropshipping_blog
+  source_type: rss
+  name: Do Dropshipping
+  url: https://dodropshipping.com/feed/
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: sourcing
+  trust_level: media
+  base_weight: 66
+  default_categories:
+  - product_research
+  - fba_logistics
+  parser_type: rss
+  enabled: true
+  publisher_key: do_dropshipping
+  source_group: media
+  collection_status: collectable
+  free_access: true
+- id: exp_drip_ecommerce_blog
+  source_type: rss
+  name: Drip Ecommerce Blog
+  url: https://www.drip.com/blog/rss.xml
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: marketing
+  trust_level: authority
+  base_weight: 68
+  default_categories:
+  - ads_ppc
+  - listing_seo
+  parser_type: rss
+  enabled: true
+  publisher_key: drip
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_dsers_blog
+  source_type: rss
+  name: DSers Blog
+  url: https://www.dsers.com/blog/rss/
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: sourcing
+  trust_level: authority
+  base_weight: 68
+  default_categories:
+  - product_research
+  - fba_logistics
+  - tools
+  parser_type: rss
+  enabled: true
+  publisher_key: dsers
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_ecommerce_nation
+  source_type: rss
+  name: E-Commerce Nation
+  url: https://www.ecommerce-nation.com/feed/
+  language: en
+  region: global
+  marketplace: global
+  seller_area: industry
+  trust_level: media
+  base_weight: 70
+  default_categories:
+  - product_research
+  - compliance_trade
+  parser_type: rss
+  enabled: true
+  publisher_key: ecommerce_nation
+  source_group: media
+  collection_status: collectable
+  free_access: true
+- id: exp_ecommerce_ceo_feed
+  source_type: rss
+  name: Ecommerce CEO
+  url: https://www.ecommerceceo.com/feed/
+  language: en
+  region: global
+  marketplace: global
+  seller_area: industry
+  trust_level: media
+  base_weight: 68
+  default_categories:
+  - product_research
+  - listing_seo
+  parser_type: rss
+  enabled: true
+  publisher_key: ecommerce_ceo
+  source_group: media
+  collection_status: collectable
+  free_access: true
+- id: exp_ecommerce_news_eu
+  source_type: rss
+  name: Ecommerce News Europe
+  url: https://ecommercenews.eu/feed/
+  language: en
+  region: eu
+  marketplace: eu
+  seller_area: industry
+  trust_level: media
+  base_weight: 74
+  default_categories:
+  - policy
+  - compliance_trade
+  - product_research
+  parser_type: rss
+  enabled: true
+  publisher_key: ecommerce_news_eu
+  source_group: media
+  collection_status: collectable
+  free_access: true
+- id: exp_ecommerce_platforms_feed
+  source_type: rss
+  name: Ecommerce Platforms
+  url: https://ecommerce-platforms.com/feed
+  language: en
+  region: global
+  marketplace: global
+  seller_area: tools
+  trust_level: media
+  base_weight: 66
+  default_categories:
+  - tools
+  - product_research
+  parser_type: rss
+  enabled: true
+  publisher_key: ecommerce_platforms
+  source_group: media
+  collection_status: collectable
+  free_access: true
+- id: exp_ecwid_blog
+  source_type: rss
+  name: Ecwid Ecommerce Blog
+  url: https://www.ecwid.com/blog/feed
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 70
+  default_categories:
+  - tools
+  - listing_seo
+  - ads_ppc
+  parser_type: rss
+  enabled: true
+  publisher_key: ecwid
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_elogic_commerce_feed
+  source_type: rss
+  name: Elogic Commerce Blog
+  url: https://elogic.co/feed/
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 68
+  default_categories:
+  - tools
+  - listing_seo
+  parser_type: rss
+  enabled: true
+  publisher_key: elogic
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_fatbit_ecommerce_feed
+  source_type: rss
+  name: FATbit Ecommerce Blog
+  url: https://www.fatbit.com/fab/feed/
+  language: en
+  region: global
+  marketplace: global
+  seller_area: tools
+  trust_level: authority
+  base_weight: 66
+  default_categories:
+  - tools
+  - product_research
+  parser_type: rss
+  enabled: true
+  publisher_key: fatbit
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_finestshops_feed
+  source_type: rss
+  name: FinestShops Ecommerce Blog
+  url: https://www.finestshops.com/feed
+  language: en
+  region: global
+  marketplace: global
+  seller_area: operations
+  trust_level: authority
+  base_weight: 66
+  default_categories:
+  - tools
+  - listing_seo
+  parser_type: rss
+  enabled: true
+  publisher_key: finestshops
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_hellotax_blog
+  source_type: rss
+  name: hellotax VAT Blog
+  url: https://hellotax.com/blog/feed/
+  language: en
+  region: eu
+  marketplace: eu
+  seller_area: tax
+  trust_level: authority
+  base_weight: 78
+  default_categories:
+  - compliance_trade
+  - fees_margin
+  parser_type: rss
+  enabled: true
+  publisher_key: hellotax
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_human_element_commerce
+  source_type: rss
+  name: Human Element Ecommerce Blog
+  url: https://www.human-element.com/blog/feed/
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 66
+  default_categories:
+  - tools
+  - listing_seo
+  parser_type: rss
+  enabled: true
+  publisher_key: human_element
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_internet_retailing_au
+  source_type: rss
+  name: Internet Retailing Australia
+  url: https://internetretailing.com.au/category/e-commerce/feed/
+  language: en
+  region: au
+  marketplace: au
+  seller_area: industry
+  trust_level: media
+  base_weight: 72
+  default_categories:
+  - product_research
+  - compliance_trade
+  parser_type: rss
+  enabled: true
+  publisher_key: internet_retailing_au
+  source_group: media
+  collection_status: collectable
+  free_access: true
+- id: exp_kyozou_marketplace_blog
+  source_type: rss
+  name: Kyozou Marketplace Blog
+  url: https://www.kyozou.com/feed
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 72
+  default_categories:
+  - tools
+  - fba_logistics
+  - listing_seo
+  parser_type: rss
+  enabled: true
+  publisher_key: kyozou
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_printful_blog
+  source_type: rss
+  name: Printful Ecommerce Blog
+  url: https://www.printful.com/blog/feed
+  language: en
+  region: global
+  marketplace: global
+  seller_area: fulfillment
+  trust_level: authority
+  base_weight: 70
+  default_categories:
+  - product_research
+  - fba_logistics
+  parser_type: rss
+  enabled: true
+  publisher_key: printful
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_salsify_blog
+  source_type: rss
+  name: Salsify Product Experience Blog
+  url: https://www.salsify.com/blog/rss.xml
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: catalog
+  trust_level: authority
+  base_weight: 76
+  default_categories:
+  - listing_seo
+  - tools
+  - product_research
+  parser_type: rss
+  enabled: true
+  publisher_key: salsify
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_sellbrite_feed
+  source_type: rss
+  name: Sellbrite Multichannel Blog
+  url: https://www.sellbrite.com/feed/
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - listing_seo
+  - fba_logistics
+  parser_type: rss
+  enabled: true
+  publisher_key: sellbrite
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_shift4shop_blog
+  source_type: rss
+  name: Shift4Shop Ecommerce Blog
+  url: https://blog.shift4shop.com/rss.xml
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 68
+  default_categories:
+  - tools
+  - listing_seo
+  - ads_ppc
+  parser_type: rss
+  enabled: true
+  publisher_key: shift4shop
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_store_growers_blog
+  source_type: rss
+  name: Store Growers Ecommerce Marketing
+  url: https://www.storegrowers.com/blog/feed/
+  language: en
+  region: global
+  marketplace: global
+  seller_area: marketing
+  trust_level: authority
+  base_weight: 66
+  default_categories:
+  - ads_ppc
+  - listing_seo
+  parser_type: rss
+  enabled: true
+  publisher_key: store_growers
+  source_group: expert
+  collection_status: collectable
+  free_access: true
+- id: exp_webinterpret_blog
+  source_type: rss
+  name: Webinterpret Cross-Border Ecommerce
+  url: https://webinterpret.com/en/blog/feed
+  language: en
+  region: global
+  marketplace: global
+  seller_area: cross_border
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - compliance_trade
+  - listing_seo
+  - tools
+  parser_type: rss
+  enabled: true
+  publisher_key: webinterpret
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_woocommerce_blog
+  source_type: rss
+  name: WooCommerce Blog
+  url: https://woocommerce.com/blog/feed/
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 76
+  default_categories:
+  - tools
+  - listing_seo
+  - product_research
+  parser_type: rss
+  enabled: true
+  publisher_key: woocommerce
+  source_group: first_party
+  collection_status: collectable
+  free_access: true
+- id: exp_xcart_blog
+  source_type: rss
+  name: X-Cart Ecommerce Blog
+  url: https://www.x-cart.com/blog/feed
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 68
+  default_categories:
+  - tools
+  - listing_seo
+  parser_type: rss
+  enabled: true
+  publisher_key: xcart
+  source_group: vendor
+  collection_status: collectable
+  free_access: true
+- id: exp_uk_hmrc_updates
+  source_type: rss
+  name: UK HM Revenue and Customs Updates
+  url: https://www.gov.uk/government/organisations/hm-revenue-customs.atom
+  language: en
+  region: uk
+  marketplace: uk
+  seller_area: tax
+  trust_level: official
+  base_weight: 92
+  default_categories:
+  - compliance_trade
+  - fees_margin
+  parser_type: atom
+  enabled: true
+  publisher_key: uk_hmrc
+  source_group: official
+  collection_status: collectable
+  free_access: true
+- id: exp_uk_trade_department
+  source_type: rss
+  name: UK Department for Business and Trade
+  url: https://www.gov.uk/government/organisations/department-for-business-and-trade.atom
+  language: en
+  region: uk
+  marketplace: uk
+  seller_area: trade
+  trust_level: official
+  base_weight: 90
+  default_categories:
+  - compliance_trade
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: uk_dbt
+  source_group: official
+  collection_status: collectable
+  free_access: true
+- id: exp_uk_competition_authority
+  source_type: rss
+  name: UK Competition and Markets Authority
+  url: https://www.gov.uk/government/organisations/competition-and-markets-authority.atom
+  language: en
+  region: uk
+  marketplace: uk
+  seller_area: compliance
+  trust_level: official
+  base_weight: 90
+  default_categories:
+  - policy
+  - compliance_trade
+  parser_type: atom
+  enabled: true
+  publisher_key: uk_cma
+  source_group: official
+  collection_status: collectable
+  free_access: true
+- id: exp_uk_intellectual_property_office
+  source_type: rss
+  name: UK Intellectual Property Office
+  url: https://www.gov.uk/government/organisations/intellectual-property-office.atom
+  language: en
+  region: uk
+  marketplace: uk
+  seller_area: brand_protection
+  trust_level: official
+  base_weight: 88
+  default_categories:
+  - account_health
+  - compliance_trade
+  parser_type: atom
+  enabled: true
+  publisher_key: uk_ipo
+  source_group: official
+  collection_status: collectable
+  free_access: true
+- id: exp_eu_commission_press
+  source_type: rss
+  name: European Commission Press Corner
+  url: https://ec.europa.eu/commission/presscorner/api/rss?language=en
+  language: en
+  region: eu
+  marketplace: eu
+  seller_area: policy
+  trust_level: official
+  base_weight: 90
+  default_categories:
+  - policy
+  - compliance_trade
+  parser_type: rss
+  enabled: true
+  publisher_key: eu_commission
+  source_group: official
+  collection_status: collectable
+  free_access: true
+- id: exp_supply_chain_dive
+  source_type: rss
+  name: Supply Chain Dive
+  url: https://www.supplychaindive.com/feeds/news/
+  language: en
+  region: global
+  marketplace: global
+  seller_area: logistics
+  trust_level: media
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - compliance_trade
+  parser_type: rss
+  enabled: true
+  publisher_key: supply_chain_dive
+  source_group: media
+  collection_status: collectable
+  free_access: true
+- id: exp_freightwaves_feed
+  source_type: rss
+  name: FreightWaves
+  url: https://www.freightwaves.com/feed
+  language: en
+  region: global
+  marketplace: global
+  seller_area: logistics
+  trust_level: media
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  parser_type: rss
+  enabled: true
+  publisher_key: freightwaves
+  source_group: media
+  collection_status: collectable
+  free_access: true
+- id: exp_supply_chain_brain
+  source_type: rss
+  name: SupplyChainBrain Global Supply Chain
+  url: https://www.supplychainbrain.com/rss/topic/1150-global-supply-chain-management
+  language: en
+  region: global
+  marketplace: global
+  seller_area: logistics
+  trust_level: media
+  base_weight: 72
+  default_categories:
+  - fba_logistics
+  - compliance_trade
+  parser_type: rss
+  enabled: true
+  publisher_key: supply_chain_brain
+  source_group: media
+  collection_status: collectable
+  free_access: true
+- id: exp_supply_chain_247
+  source_type: rss
+  name: Supply Chain 24/7
+  url: https://www.supplychain247.com/rss
+  language: en
+  region: global
+  marketplace: global
+  seller_area: logistics
+  trust_level: media
+  base_weight: 70
+  default_categories:
+  - fba_logistics
+  - tools
+  parser_type: rss
+  enabled: true
+  publisher_key: supply_chain_247
+  source_group: media
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_amzn_amazon_payments_magento_2_plugin_releases
+  source_type: rss
+  name: amzn/amazon-payments-magento-2-plugin Releases
+  url: https://github.com/amzn/amazon-payments-magento-2-plugin/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: official
+  base_weight: 84
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: amazon
+  source_group: official_repo
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_woocommerce_woocommerce_gateway_amazon_pay_releases
+  source_type: rss
+  name: woocommerce/woocommerce-gateway-amazon-pay Releases
+  url: https://github.com/woocommerce/woocommerce-gateway-amazon-pay/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: woocommerce
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_cybrarist_discount_bandit_releases
+  source_type: rss
+  name: Cybrarist/Discount-Bandit Releases
+  url: https://github.com/Cybrarist/Discount-Bandit/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: cybrarist
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_lineofflight_peddler_releases
+  source_type: rss
+  name: lineofflight/peddler Releases
+  url: https://github.com/lineofflight/peddler/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: lineofflight
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_amzn_selling_partner_api_sdk_releases
+  source_type: rss
+  name: amzn/selling-partner-api-sdk Releases
+  url: https://github.com/amzn/selling-partner-api-sdk/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: official
+  base_weight: 84
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: amazon
+  source_group: official_repo
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_amzn_selling_partner_api_samples_releases
+  source_type: rss
+  name: amzn/selling-partner-api-samples Releases
+  url: https://github.com/amzn/selling-partner-api-samples/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: official
+  base_weight: 84
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: amazon
+  source_group: official_repo
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_bizon_selling_partner_api_sdk_releases
+  source_type: rss
+  name: bizon/selling-partner-api-sdk Releases
+  url: https://github.com/bizon/selling-partner-api-sdk/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: bizon
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_malikad778_nexus_inventory_releases
+  source_type: rss
+  name: malikad778/nexus-inventory Releases
+  url: https://github.com/malikad778/nexus-inventory/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: malikad778
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_jasara_php_amzn_selling_partner_api_releases
+  source_type: rss
+  name: jasara/php-amzn-selling-partner-api Releases
+  url: https://github.com/jasara/php-amzn-selling-partner-api/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: jasara
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_genaker_terraformmagentocloud_releases
+  source_type: rss
+  name: Genaker/TerraformMagentoCloud Releases
+  url: https://github.com/Genaker/TerraformMagentoCloud/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: genaker
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_enginterzi_amazon_seller_mcp_releases
+  source_type: rss
+  name: enginterzi/amazon-seller-mcp Releases
+  url: https://github.com/enginterzi/amazon-seller-mcp/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: enginterzi
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_amzn_selling_partner_api_php_release_releases
+  source_type: rss
+  name: amzn/selling-partner-api-php-release Releases
+  url: https://github.com/amzn/selling-partner-api-php-release/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: official
+  base_weight: 84
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: amazon
+  source_group: official_repo
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_bhushankummar_amazon_mws_releases
+  source_type: rss
+  name: bhushankummar/amazon-mws Releases
+  url: https://github.com/bhushankummar/amazon-mws/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: bhushankummar
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_thaiphan_magento2_s3_releases
+  source_type: rss
+  name: thaiphan/magento2-s3 Releases
+  url: https://github.com/thaiphan/magento2-s3/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: thaiphan
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_amzn_amazon_pay_api_sdk_ruby_releases
+  source_type: rss
+  name: amzn/amazon-pay-api-sdk-ruby Releases
+  url: https://github.com/amzn/amazon-pay-api-sdk-ruby/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: official
+  base_weight: 84
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: amazon
+  source_group: official_repo
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_vallic_commerce_amazon_sp_api_releases
+  source_type: rss
+  name: Vallic/commerce_amazon_sp_api Releases
+  url: https://github.com/Vallic/commerce_amazon_sp_api/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: vallic
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_saleweaver_python_amazon_sp_api_releases
+  source_type: rss
+  name: saleweaver/python-amazon-sp-api Releases
+  url: https://github.com/saleweaver/python-amazon-sp-api/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: saleweaver
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_jlevers_selling_partner_api_releases
+  source_type: rss
+  name: jlevers/selling-partner-api Releases
+  url: https://github.com/jlevers/selling-partner-api/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: jlevers
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_jrl84_amazon_sp_api_releases
+  source_type: rss
+  name: jrl84/amazon-sp-api Releases
+  url: https://github.com/jrl84/amazon-sp-api/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: jrl84
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_abuzuhri_amazon_sp_api_csharp_releases
+  source_type: rss
+  name: abuzuhri/Amazon-SP-API-CSharp Releases
+  url: https://github.com/abuzuhri/Amazon-SP-API-CSharp/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: abuzuhri
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_gergab00_sellercontrol_node_v1_releases
+  source_type: rss
+  name: Gergab00/sellercontrol-node-v1 Releases
+  url: https://github.com/Gergab00/sellercontrol-node-v1/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: gergab00
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_rutgerkirkels_shopconnectors_releases
+  source_type: rss
+  name: rutgerkirkels/ShopConnectors Releases
+  url: https://github.com/rutgerkirkels/ShopConnectors/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: rutgerkirkels
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_mageplaza_magento_2_social_login_releases
+  source_type: rss
+  name: mageplaza/magento-2-social-login Releases
+  url: https://github.com/mageplaza/magento-2-social-login/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: mageplaza
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_highsidelabs_laravel_spapi_releases
+  source_type: rss
+  name: highsidelabs/laravel-spapi Releases
+  url: https://github.com/highsidelabs/laravel-spapi/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: highsidelabs
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_patterninc_muffin_man_releases
+  source_type: rss
+  name: patterninc/muffin_man Releases
+  url: https://github.com/patterninc/muffin_man/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: patterninc
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_easykeys_easykeys_shipping_releases
+  source_type: rss
+  name: easykeys/EasyKeys.Shipping Releases
+  url: https://github.com/easykeys/EasyKeys.Shipping/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: easykeys
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_ericcj_amz_sp_api_releases
+  source_type: rss
+  name: ericcj/amz_sp_api Releases
+  url: https://github.com/ericcj/amz_sp_api/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: ericcj
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_renabled_amzn_sp_api_go_releases
+  source_type: rss
+  name: renabled/amzn-sp-api-go Releases
+  url: https://github.com/renabled/amzn-sp-api-go/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: renabled
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_double_break_spapi_php_releases
+  source_type: rss
+  name: double-break/spapi-php Releases
+  url: https://github.com/double-break/spapi-php/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: double-break
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_fond_of_vertigo_amazon_sp_api_releases
+  source_type: rss
+  name: fond-of-vertigo/amazon-sp-api Releases
+  url: https://github.com/fond-of-vertigo/amazon-sp-api/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: fond-of-vertigo
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_houxd_amazon_spapi_releases
+  source_type: rss
+  name: houxd/amazon-spapi Releases
+  url: https://github.com/houxd/amazon-spapi/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: houxd
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_jasara_laravel_selling_partner_api_releases
+  source_type: rss
+  name: jasara/laravel-selling-partner-api Releases
+  url: https://github.com/jasara/laravel-selling-partner-api/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: jasara
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_dropstream_omniauth_amazon_sp_api_releases
+  source_type: rss
+  name: dropstream/omniauth-amazon-sp-api Releases
+  url: https://github.com/dropstream/omniauth-amazon-sp-api/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: dropstream
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_selling_partner_api_selling_partner_api_releases
+  source_type: rss
+  name: selling-partner-api/selling-partner-api Releases
+  url: https://github.com/selling-partner-api/selling-partner-api/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: selling-partner-api
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_zero_to_prod_spapi_lwa_releases
+  source_type: rss
+  name: zero-to-prod/spapi-lwa Releases
+  url: https://github.com/zero-to-prod/spapi-lwa/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: zero-to-prod
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_zero_to_prod_spapi_orders_releases
+  source_type: rss
+  name: zero-to-prod/spapi-orders Releases
+  url: https://github.com/zero-to-prod/spapi-orders/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: zero-to-prod
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_amzn_amazon_marketing_stream_examples_releases
+  source_type: rss
+  name: amzn/amazon-marketing-stream-examples Releases
+  url: https://github.com/amzn/amazon-marketing-stream-examples/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: official
+  base_weight: 84
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: amazon
+  source_group: official_repo
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_vanling1111_amazon_sp_api_go_sdk_releases
+  source_type: rss
+  name: vanling1111/amazon-sp-api-go-sdk Releases
+  url: https://github.com/vanling1111/amazon-sp-api-go-sdk/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: vanling1111
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_ajmnz_selling_partner_api_node_releases
+  source_type: rss
+  name: ajmnz/selling-partner-api-node Releases
+  url: https://github.com/ajmnz/selling-partner-api-node/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: ajmnz
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_singer_io_tap_amazon_sp_releases
+  source_type: rss
+  name: singer-io/tap-amazon-sp Releases
+  url: https://github.com/singer-io/tap-amazon-sp/releases.atom
+  language: en
+  region: global
+  marketplace: amazon
+  seller_area: integrations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - policy
+  parser_type: atom
+  enabled: true
+  publisher_key: singer-io
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_bagisto_bagisto_releases
+  source_type: rss
+  name: bagisto/bagisto Releases
+  url: https://github.com/bagisto/bagisto/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: bagisto
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_saleor_saleor_releases
+  source_type: rss
+  name: saleor/saleor Releases
+  url: https://github.com/saleor/saleor/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: saleor
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_spree_spree_releases
+  source_type: rss
+  name: spree/spree Releases
+  url: https://github.com/spree/spree/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: spree
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_pimcore_pimcore_releases
+  source_type: rss
+  name: pimcore/pimcore Releases
+  url: https://github.com/pimcore/pimcore/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: catalog
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - listing_seo
+  - product_research
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: pimcore
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_magento_inventory_releases
+  source_type: rss
+  name: magento/inventory Releases
+  url: https://github.com/magento/inventory/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: catalog
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - listing_seo
+  - product_research
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: magento
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_woocommerce_woocommerce_gateway_stripe_releases
+  source_type: rss
+  name: woocommerce/woocommerce-gateway-stripe Releases
+  url: https://github.com/woocommerce/woocommerce-gateway-stripe/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: woocommerce
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_woocommerce_woocommerce_google_analytics_integration_releases
+  source_type: rss
+  name: woocommerce/woocommerce-google-analytics-integration Releases
+  url: https://github.com/woocommerce/woocommerce-google-analytics-integration/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: ads
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - ads_ppc
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: woocommerce
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_adyen_adyen_magento2_releases
+  source_type: rss
+  name: Adyen/adyen-magento2 Releases
+  url: https://github.com/Adyen/adyen-magento2/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: adyen
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_magento_ece_tools_releases
+  source_type: rss
+  name: magento/ece-tools Releases
+  url: https://github.com/magento/ece-tools/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: compliance
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - compliance_trade
+  - fees_margin
+  parser_type: atom
+  enabled: true
+  publisher_key: magento
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopify_checkout_sheet_kit_swift_releases
+  source_type: rss
+  name: Shopify/checkout-sheet-kit-swift Releases
+  url: https://github.com/Shopify/checkout-sheet-kit-swift/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: shopify
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_adyen_adyen_commercetools_releases
+  source_type: rss
+  name: Adyen/adyen-commercetools Releases
+  url: https://github.com/Adyen/adyen-commercetools/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: adyen
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_prestashop_ps_googleanalytics_releases
+  source_type: rss
+  name: PrestaShop/ps_googleanalytics Releases
+  url: https://github.com/PrestaShop/ps_googleanalytics/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: ads
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - ads_ppc
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: prestashop
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_prestashop_php_ps_info_releases
+  source_type: rss
+  name: PrestaShop/php-ps-info Releases
+  url: https://github.com/PrestaShop/php-ps-info/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: logistics
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: prestashop
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_woocommerce_woocommerce_square_releases
+  source_type: rss
+  name: woocommerce/woocommerce-square Releases
+  url: https://github.com/woocommerce/woocommerce-square/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: woocommerce
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_magento_magento_cloud_components_releases
+  source_type: rss
+  name: magento/magento-cloud-components Releases
+  url: https://github.com/magento/magento-cloud-components/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: compliance
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - compliance_trade
+  - fees_margin
+  parser_type: atom
+  enabled: true
+  publisher_key: magento
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_sylius_order_releases
+  source_type: rss
+  name: Sylius/Order Releases
+  url: https://github.com/Sylius/Order/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: sylius
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_sylius_syliuspaymentbundle_releases
+  source_type: rss
+  name: Sylius/SyliusPaymentBundle Releases
+  url: https://github.com/Sylius/SyliusPaymentBundle/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: sylius
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_woocommerce_woocommerce_subscriptions_custom_price_string_releases
+  source_type: rss
+  name: woocommerce/woocommerce-subscriptions-custom-price-string Releases
+  url: https://github.com/woocommerce/woocommerce-subscriptions-custom-price-string/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: woocommerce
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_square_squarepointofsalesdk_ios_releases
+  source_type: rss
+  name: square/SquarePointOfSaleSDK-iOS Releases
+  url: https://github.com/square/SquarePointOfSaleSDK-iOS/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: square
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_adyen_adyen_magento2_express_checkout_releases
+  source_type: rss
+  name: Adyen/adyen-magento2-express-checkout Releases
+  url: https://github.com/Adyen/adyen-magento2-express-checkout/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: adyen
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_sylius_payment_releases
+  source_type: rss
+  name: Sylius/Payment Releases
+  url: https://github.com/Sylius/Payment/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: sylius
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_sylius_syliuspayumbundle_releases
+  source_type: rss
+  name: Sylius/SyliusPayumBundle Releases
+  url: https://github.com/Sylius/SyliusPayumBundle/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: sylius
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_spree_spree_stripe_releases
+  source_type: rss
+  name: spree/spree_stripe Releases
+  url: https://github.com/spree/spree_stripe/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: spree
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_stripe_stripe_commercetools_checkout_app_releases
+  source_type: rss
+  name: stripe/stripe-commercetools-checkout-app Releases
+  url: https://github.com/stripe/stripe-commercetools-checkout-app/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: stripe
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_woocommerce_customs_fees_for_woocommerce_releases
+  source_type: rss
+  name: woocommerce/customs-fees-for-woocommerce Releases
+  url: https://github.com/woocommerce/customs-fees-for-woocommerce/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: woocommerce
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_commercetools_connect_shipping_integration_ingrid_releases
+  source_type: rss
+  name: commercetools/connect-shipping-integration-ingrid Releases
+  url: https://github.com/commercetools/connect-shipping-integration-ingrid/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: logistics
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: commercetools
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_prestashop_statssales_releases
+  source_type: rss
+  name: PrestaShop/statssales Releases
+  url: https://github.com/PrestaShop/statssales/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: prestashop
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_sylius_pricehistoryplugin_releases
+  source_type: rss
+  name: Sylius/PriceHistoryPlugin Releases
+  url: https://github.com/Sylius/PriceHistoryPlugin/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: sylius
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_commercetools_connect_giftcard_integration_voucherify_releases
+  source_type: rss
+  name: commercetools/connect-giftcard-integration-voucherify Releases
+  url: https://github.com/commercetools/connect-giftcard-integration-voucherify/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: commercetools
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_stripe_stripe_commercetools_tax_app_releases
+  source_type: rss
+  name: stripe/stripe-commercetools-tax-app Releases
+  url: https://github.com/stripe/stripe-commercetools-tax-app/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: compliance
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - compliance_trade
+  - fees_margin
+  parser_type: atom
+  enabled: true
+  publisher_key: stripe
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_commercetools_connect_payment_integration_cybersource_releases
+  source_type: rss
+  name: commercetools/connect-payment-integration-cybersource Releases
+  url: https://github.com/commercetools/connect-payment-integration-cybersource/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: commercetools
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_pimcore_payment_provider_ogone_releases
+  source_type: rss
+  name: pimcore/payment-provider-ogone Releases
+  url: https://github.com/pimcore/payment-provider-ogone/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: pimcore
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_pimcore_payment_provider_payu_releases
+  source_type: rss
+  name: pimcore/payment-provider-payu Releases
+  url: https://github.com/pimcore/payment-provider-payu/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: pimcore
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_pimcore_payment_provider_unzer_releases
+  source_type: rss
+  name: pimcore/payment-provider-unzer Releases
+  url: https://github.com/pimcore/payment-provider-unzer/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: pimcore
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_commercetools_marketplacer_connector_releases
+  source_type: rss
+  name: commercetools/marketplacer-connector Releases
+  url: https://github.com/commercetools/marketplacer-connector/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: commercetools
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_aimeos_aimeos_laravel_releases
+  source_type: rss
+  name: aimeos/aimeos-laravel Releases
+  url: https://github.com/aimeos/aimeos-laravel/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: aimeos
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_aimeos_aimeos_releases
+  source_type: rss
+  name: aimeos/aimeos Releases
+  url: https://github.com/aimeos/aimeos/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: aimeos
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_aimeos_aimeos_core_releases
+  source_type: rss
+  name: aimeos/aimeos-core Releases
+  url: https://github.com/aimeos/aimeos-core/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: aimeos
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_aimeos_aimeos_headless_releases
+  source_type: rss
+  name: aimeos/aimeos-headless Releases
+  url: https://github.com/aimeos/aimeos-headless/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: aimeos
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_paymenter_paymenter_releases
+  source_type: rss
+  name: Paymenter/Paymenter Releases
+  url: https://github.com/Paymenter/Paymenter/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: paymenter
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_beikeshop_beikeshop_releases
+  source_type: rss
+  name: beikeshop/beikeshop Releases
+  url: https://github.com/beikeshop/beikeshop/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: beikeshop
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_aimeos_aimeos_typo3_releases
+  source_type: rss
+  name: aimeos/aimeos-typo3 Releases
+  url: https://github.com/aimeos/aimeos-typo3/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: aimeos
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_aimeos_aimeos_symfony_releases
+  source_type: rss
+  name: aimeos/aimeos-symfony Releases
+  url: https://github.com/aimeos/aimeos-symfony/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: aimeos
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_stripe_stripe_react_native_releases
+  source_type: rss
+  name: stripe/stripe-react-native Releases
+  url: https://github.com/stripe/stripe-react-native/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: stripe
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_virtocommerce_vc_platform_releases
+  source_type: rss
+  name: VirtoCommerce/vc-platform Releases
+  url: https://github.com/VirtoCommerce/vc-platform/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: compliance
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - compliance_trade
+  - fees_margin
+  parser_type: atom
+  enabled: true
+  publisher_key: virtocommerce
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_stripe_link_cli_releases
+  source_type: rss
+  name: stripe/link-cli Releases
+  url: https://github.com/stripe/link-cli/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: stripe
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_square_in_app_payments_flutter_plugin_releases
+  source_type: rss
+  name: square/in-app-payments-flutter-plugin Releases
+  url: https://github.com/square/in-app-payments-flutter-plugin/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: square
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_paypal_paypal_js_releases
+  source_type: rss
+  name: paypal/paypal-js Releases
+  url: https://github.com/paypal/paypal-js/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: paypal
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_getdokan_dokan_releases
+  source_type: rss
+  name: getdokan/dokan Releases
+  url: https://github.com/getdokan/dokan/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: getdokan
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_baldwin_agency_magento2_module_url_data_integrity_checker_releases
+  source_type: rss
+  name: baldwin-agency/magento2-module-url-data-integrity-checker Releases
+  url: https://github.com/baldwin-agency/magento2-module-url-data-integrity-checker/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: catalog
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - listing_seo
+  - product_research
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: baldwin-agency
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_abdur_rahmaanj_shopcube_releases
+  source_type: rss
+  name: Abdur-rahmaanJ/shopcube Releases
+  url: https://github.com/Abdur-rahmaanJ/shopcube/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: abdur-rahmaanj
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_magepal_magento2_google_tag_manager_releases
+  source_type: rss
+  name: magepal/magento2-google-tag-manager Releases
+  url: https://github.com/magepal/magento2-google-tag-manager/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: ads
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - ads_ppc
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: magepal
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_friends_of_hyva_magento2_react_checkout_releases
+  source_type: rss
+  name: friends-of-hyva/magento2-react-checkout Releases
+  url: https://github.com/friends-of-hyva/magento2-react-checkout/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: friends-of-hyva
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_frappe_books_releases
+  source_type: rss
+  name: frappe/books Releases
+  url: https://github.com/frappe/books/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: frappe
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_mailchimp_mc_magento2_releases
+  source_type: rss
+  name: mailchimp/mc-magento2 Releases
+  url: https://github.com/mailchimp/mc-magento2/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: ads
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - ads_ppc
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: mailchimp
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_adyen_adyen_java_api_library_releases
+  source_type: rss
+  name: Adyen/adyen-java-api-library Releases
+  url: https://github.com/Adyen/adyen-java-api-library/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: adyen
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_square_in_app_payments_react_native_plugin_releases
+  source_type: rss
+  name: square/in-app-payments-react-native-plugin Releases
+  url: https://github.com/square/in-app-payments-react-native-plugin/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: square
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_mageplaza_magento_2_blog_releases
+  source_type: rss
+  name: mageplaza/magento-2-blog Releases
+  url: https://github.com/mageplaza/magento-2-blog/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: mageplaza
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_mollie_magento2_releases
+  source_type: rss
+  name: mollie/magento2 Releases
+  url: https://github.com/mollie/magento2/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: mollie
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_sbodak_magento2_checkout_custom_form_releases
+  source_type: rss
+  name: sbodak/magento2-checkout-custom-form Releases
+  url: https://github.com/sbodak/magento2-checkout-custom-form/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: sbodak
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_woocommerce_wc_smooth_generator_releases
+  source_type: rss
+  name: woocommerce/wc-smooth-generator Releases
+  url: https://github.com/woocommerce/wc-smooth-generator/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: woocommerce
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_magepal_magento2_custom_shipping_rate_releases
+  source_type: rss
+  name: magepal/magento2-custom-shipping-rate Releases
+  url: https://github.com/magepal/magento2-custom-shipping-rate/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: logistics
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fba_logistics
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: magepal
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_markshust_magento2_module_ordergrid_releases
+  source_type: rss
+  name: markshust/magento2-module-ordergrid Releases
+  url: https://github.com/markshust/magento2-module-ordergrid/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: markshust
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_paypal_payflow_gateway_releases
+  source_type: rss
+  name: paypal/payflow-gateway Releases
+  url: https://github.com/paypal/payflow-gateway/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: paypal
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_opengento_magento2_gdpr_releases
+  source_type: rss
+  name: opengento/magento2-gdpr Releases
+  url: https://github.com/opengento/magento2-gdpr/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: compliance
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - compliance_trade
+  - fees_margin
+  parser_type: atom
+  enabled: true
+  publisher_key: opengento
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_adyen_adyen_python_api_library_releases
+  source_type: rss
+  name: Adyen/adyen-python-api-library Releases
+  url: https://github.com/Adyen/adyen-python-api-library/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: adyen
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_easypost_easypost_java_releases
+  source_type: rss
+  name: EasyPost/easypost-java Releases
+  url: https://github.com/EasyPost/easypost-java/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: logistics
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: easypost
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_paypal_paypal_sdk_release_releases
+  source_type: rss
+  name: paypal/paypal-sdk-release Releases
+  url: https://github.com/paypal/paypal-sdk-release/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: paypal
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_boldcommerce_magento2_ordercomments_releases
+  source_type: rss
+  name: boldcommerce/magento2-ordercomments Releases
+  url: https://github.com/boldcommerce/magento2-ordercomments/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: boldcommerce
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_adyen_adyen_pos_mobile_android_releases
+  source_type: rss
+  name: Adyen/adyen-pos-mobile-android Releases
+  url: https://github.com/Adyen/adyen-pos-mobile-android/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: adyen
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_avored_laravel_ecommerce_releases
+  source_type: rss
+  name: avored/laravel-ecommerce Releases
+  url: https://github.com/avored/laravel-ecommerce/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: avored
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_railslove_rack_tracker_releases
+  source_type: rss
+  name: railslove/rack-tracker Releases
+  url: https://github.com/railslove/rack-tracker/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: ads
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - ads_ppc
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: railslove
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_square_in_app_payments_ios_releases
+  source_type: rss
+  name: square/in-app-payments-ios Releases
+  url: https://github.com/square/in-app-payments-ios/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: square
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_square_mobile_payments_sdk_flutter_releases
+  source_type: rss
+  name: square/mobile-payments-sdk-flutter Releases
+  url: https://github.com/square/mobile-payments-sdk-flutter/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: square
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shipengine_shipengine_dotnet_releases
+  source_type: rss
+  name: ShipEngine/shipengine-dotnet Releases
+  url: https://github.com/ShipEngine/shipengine-dotnet/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: logistics
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: shipengine
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_square_mobile_payments_sdk_ios_releases
+  source_type: rss
+  name: square/mobile-payments-sdk-ios Releases
+  url: https://github.com/square/mobile-payments-sdk-ios/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: square
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_square_mobile_payments_sdk_react_native_releases
+  source_type: rss
+  name: square/mobile-payments-sdk-react-native Releases
+  url: https://github.com/square/mobile-payments-sdk-react-native/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: square
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_0xigami_wordpress_nft_plugin_releases
+  source_type: rss
+  name: 0xigami/wordpress-nft-plugin Releases
+  url: https://github.com/0xigami/wordpress-nft-plugin/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: 0xigami
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_square_swift_syntax_prebuilt_releases
+  source_type: rss
+  name: square/swift-syntax-prebuilt Releases
+  url: https://github.com/square/swift-syntax-prebuilt/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: compliance
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - compliance_trade
+  - fees_margin
+  parser_type: atom
+  enabled: true
+  publisher_key: square
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_ever_co_ever_demand_releases
+  source_type: rss
+  name: ever-co/ever-demand Releases
+  url: https://github.com/ever-co/ever-demand/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: logistics
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fba_logistics
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: ever-co
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_stripe_mpp_java_releases
+  source_type: rss
+  name: stripe/mpp-java Releases
+  url: https://github.com/stripe/mpp-java/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: stripe
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_goshippo_shippo_csharp_sdk_releases
+  source_type: rss
+  name: goshippo/shippo-csharp-sdk Releases
+  url: https://github.com/goshippo/shippo-csharp-sdk/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: logistics
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: goshippo
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_firebearstudio_importexportfree_releases
+  source_type: rss
+  name: firebearstudio/importexportfree Releases
+  url: https://github.com/firebearstudio/importexportfree/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: firebearstudio
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_adyen_adyen_salesforce_oms_releases
+  source_type: rss
+  name: Adyen/adyen-salesforce-oms Releases
+  url: https://github.com/Adyen/adyen-salesforce-oms/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: adyen
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_danslo_cleancheckout_releases
+  source_type: rss
+  name: danslo/CleanCheckout Releases
+  url: https://github.com/danslo/CleanCheckout/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: danslo
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopware_braintree_app_releases
+  source_type: rss
+  name: shopware/braintree-app Releases
+  url: https://github.com/shopware/braintree-app/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: shopware
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_adyen_adyen_sap_customer_checkout_releases
+  source_type: rss
+  name: Adyen/adyen-sap-customer-checkout Releases
+  url: https://github.com/Adyen/adyen-sap-customer-checkout/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: adyen
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_medusajs_medusa_releases
+  source_type: rss
+  name: medusajs/medusa Releases
+  url: https://github.com/medusajs/medusa/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: medusajs
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_magento_magento2_releases
+  source_type: rss
+  name: magento/magento2 Releases
+  url: https://github.com/magento/magento2/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: magento
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_woocommerce_woocommerce_releases
+  source_type: rss
+  name: woocommerce/woocommerce Releases
+  url: https://github.com/woocommerce/woocommerce/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: woocommerce
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_nopsolutions_nopcommerce_releases
+  source_type: rss
+  name: nopSolutions/nopCommerce Releases
+  url: https://github.com/nopSolutions/nopCommerce/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: nopsolutions
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_prestashop_prestashop_releases
+  source_type: rss
+  name: PrestaShop/PrestaShop Releases
+  url: https://github.com/PrestaShop/PrestaShop/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: prestashop
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_sylius_sylius_releases
+  source_type: rss
+  name: Sylius/Sylius Releases
+  url: https://github.com/Sylius/Sylius/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: sylius
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_vendurehq_vendure_releases
+  source_type: rss
+  name: vendurehq/vendure Releases
+  url: https://github.com/vendurehq/vendure/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: vendurehq
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_bagisto_nextjs_commerce_releases
+  source_type: rss
+  name: bagisto/nextjs-commerce Releases
+  url: https://github.com/bagisto/nextjs-commerce/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: bagisto
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_solidusio_solidus_releases
+  source_type: rss
+  name: solidusio/solidus Releases
+  url: https://github.com/solidusio/solidus/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: solidusio
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopware_shopware_releases
+  source_type: rss
+  name: shopware/shopware Releases
+  url: https://github.com/shopware/shopware/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopware
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopify_hydrogen_releases
+  source_type: rss
+  name: Shopify/hydrogen Releases
+  url: https://github.com/Shopify/hydrogen/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopify
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopify_shopify_app_releases
+  source_type: rss
+  name: Shopify/shopify_app Releases
+  url: https://github.com/Shopify/shopify_app/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopify
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_saleor_saleor_dashboard_releases
+  source_type: rss
+  name: saleor/saleor-dashboard Releases
+  url: https://github.com/saleor/saleor-dashboard/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: saleor
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopify_shopify_app_js_releases
+  source_type: rss
+  name: Shopify/shopify-app-js Releases
+  url: https://github.com/Shopify/shopify-app-js/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopify
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopify_mobile_buy_sdk_ios_releases
+  source_type: rss
+  name: Shopify/mobile-buy-sdk-ios Releases
+  url: https://github.com/Shopify/mobile-buy-sdk-ios/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopify
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_frappe_ecommerce_integrations_releases
+  source_type: rss
+  name: frappe/ecommerce_integrations Releases
+  url: https://github.com/frappe/ecommerce_integrations/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: frappe
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopify_buy_button_js_releases
+  source_type: rss
+  name: Shopify/buy-button-js Releases
+  url: https://github.com/Shopify/buy-button-js/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopify
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_prestashop_autoupgrade_releases
+  source_type: rss
+  name: PrestaShop/autoupgrade Releases
+  url: https://github.com/PrestaShop/autoupgrade/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: prestashop
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_commercetools_checkout_data_sync_releases
+  source_type: rss
+  name: commercetools/checkout-data-sync Releases
+  url: https://github.com/commercetools/checkout-data-sync/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: commercetools
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_commercetools_connect_giftcard_integration_template_releases
+  source_type: rss
+  name: commercetools/connect-giftcard-integration-template Releases
+  url: https://github.com/commercetools/connect-giftcard-integration-template/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: commercetools
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_commercetools_merchant_center_application_kit_releases
+  source_type: rss
+  name: commercetools/merchant-center-application-kit Releases
+  url: https://github.com/commercetools/merchant-center-application-kit/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: commercetools
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_bagisto_headless_ecommerce_releases
+  source_type: rss
+  name: bagisto/headless-ecommerce Releases
+  url: https://github.com/bagisto/headless-ecommerce/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: bagisto
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopware_core_releases
+  source_type: rss
+  name: shopware/core Releases
+  url: https://github.com/shopware/core/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopware
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_solidusio_solidus_auth_devise_releases
+  source_type: rss
+  name: solidusio/solidus_auth_devise Releases
+  url: https://github.com/solidusio/solidus_auth_devise/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: solidusio
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_commercetools_commercetools_sdk_java_v2_releases
+  source_type: rss
+  name: commercetools/commercetools-sdk-java-v2 Releases
+  url: https://github.com/commercetools/commercetools-sdk-java-v2/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: commercetools
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopware_administration_releases
+  source_type: rss
+  name: shopware/administration Releases
+  url: https://github.com/shopware/administration/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopware
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopify_shopify_function_javascript_releases
+  source_type: rss
+  name: Shopify/shopify-function-javascript Releases
+  url: https://github.com/Shopify/shopify-function-javascript/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopify
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopware_docs_releases
+  source_type: rss
+  name: shopware/docs Releases
+  url: https://github.com/shopware/docs/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopware
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_bigcommerce_storefront_data_hooks_releases
+  source_type: rss
+  name: bigcommerce/storefront-data-hooks Releases
+  url: https://github.com/bigcommerce/storefront-data-hooks/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: bigcommerce
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_magento_meta_for_magento2_releases
+  source_type: rss
+  name: magento/meta-for-magento2 Releases
+  url: https://github.com/magento/meta-for-magento2/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: magento
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopware_app_bundle_symfony_releases
+  source_type: rss
+  name: shopware/app-bundle-symfony Releases
+  url: https://github.com/shopware/app-bundle-symfony/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopware
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopware_app_php_sdk_releases
+  source_type: rss
+  name: shopware/app-php-sdk Releases
+  url: https://github.com/shopware/app-php-sdk/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopware
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopware_conflicts_releases
+  source_type: rss
+  name: shopware/conflicts Releases
+  url: https://github.com/shopware/conflicts/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopware
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_prestashop_ps_apiresources_releases
+  source_type: rss
+  name: PrestaShop/ps_apiresources Releases
+  url: https://github.com/PrestaShop/ps_apiresources/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: prestashop
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_solidusio_solidus_i18n_releases
+  source_type: rss
+  name: solidusio/solidus_i18n Releases
+  url: https://github.com/solidusio/solidus_i18n/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: solidusio
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_unchainedshop_unchained_releases
+  source_type: rss
+  name: unchainedshop/unchained Releases
+  url: https://github.com/unchainedshop/unchained/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: unchainedshop
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_sylius_core_releases
+  source_type: rss
+  name: Sylius/Core Releases
+  url: https://github.com/Sylius/Core/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: sylius
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_genaker_reactmagento2_releases
+  source_type: rss
+  name: Genaker/reactmagento2 Releases
+  url: https://github.com/Genaker/reactmagento2/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: payments
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: genaker
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_solidusio_solidus_subscriptions_releases
+  source_type: rss
+  name: solidusio/solidus_subscriptions Releases
+  url: https://github.com/solidusio/solidus_subscriptions/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: solidusio
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_shopify_upload_to_release_releases
+  source_type: rss
+  name: Shopify/upload-to-release Releases
+  url: https://github.com/Shopify/upload-to-release/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: shopify
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_sylius_syliusadminbundle_releases
+  source_type: rss
+  name: Sylius/SyliusAdminBundle Releases
+  url: https://github.com/Sylius/SyliusAdminBundle/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: sylius
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_prestashop_ps_viewedproduct_releases
+  source_type: rss
+  name: PrestaShop/ps_viewedproduct Releases
+  url: https://github.com/PrestaShop/ps_viewedproduct/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: prestashop
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_prestashop_dashgoals_releases
+  source_type: rss
+  name: PrestaShop/dashgoals Releases
+  url: https://github.com/PrestaShop/dashgoals/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: authority
+  base_weight: 74
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: prestashop
+  source_group: vendor_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_evershopcommerce_evershop_releases
+  source_type: rss
+  name: evershopcommerce/evershop Releases
+  url: https://github.com/evershopcommerce/evershop/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: evershopcommerce
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_idurar_idurar_erp_crm_releases
+  source_type: rss
+  name: idurar/idurar-erp-crm Releases
+  url: https://github.com/idurar/idurar-erp-crm/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: operations
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - fba_logistics
+  - fees_margin
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: idurar
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_django_oscar_django_oscar_releases
+  source_type: rss
+  name: django-oscar/django-oscar Releases
+  url: https://github.com/django-oscar/django-oscar/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: django-oscar
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_marqo_ai_marqo_releases
+  source_type: rss
+  name: marqo-ai/marqo Releases
+  url: https://github.com/marqo-ai/marqo/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: catalog
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - listing_seo
+  - product_research
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: marqo-ai
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_lunarphp_lunar_releases
+  source_type: rss
+  name: lunarphp/lunar Releases
+  url: https://github.com/lunarphp/lunar/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: lunarphp
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_johnbillion_query_monitor_releases
+  source_type: rss
+  name: johnbillion/query-monitor Releases
+  url: https://github.com/johnbillion/query-monitor/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: johnbillion
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_scottyzen_woonuxt_releases
+  source_type: rss
+  name: scottyzen/woonuxt Releases
+  url: https://github.com/scottyzen/woonuxt/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: scottyzen
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_netz98_n98_magerun2_releases
+  source_type: rss
+  name: netz98/n98-magerun2 Releases
+  url: https://github.com/netz98/n98-magerun2/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: netz98
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_store_craft_storecraft_releases
+  source_type: rss
+  name: store-craft/storecraft Releases
+  url: https://github.com/store-craft/storecraft/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: tools
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - tools
+  - product_research
+  parser_type: atom
+  enabled: true
+  publisher_key: store-craft
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true
+- id: exp_gh_smile_sa_elasticsuite_releases
+  source_type: rss
+  name: Smile-SA/elasticsuite Releases
+  url: https://github.com/Smile-SA/elasticsuite/releases.atom
+  language: en
+  region: global
+  marketplace: multichannel
+  seller_area: catalog
+  trust_level: expert
+  base_weight: 68
+  default_categories:
+  - listing_seo
+  - product_research
+  - tools
+  parser_type: atom
+  enabled: true
+  publisher_key: smile-sa
+  source_group: ecosystem_release
+  collection_status: collectable
+  free_access: true

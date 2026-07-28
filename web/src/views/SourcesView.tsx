@@ -1,5 +1,5 @@
-import { Power, PowerOff, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Eye, Power, PowerOff, Search } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { AdminApi } from "../api";
 import { AdminChannelCards, type AdminChannel, usePersistedAdminChannel } from "../components/AdminChannelCards";
 import { MetricCard, MetricGrid } from "../components/MetricCard";
@@ -39,7 +39,6 @@ const newSource: Source = {
   fetchAdapter: "http_article",
   parserType: "website",
   defaultCategories: ["industry"],
-  fetchIntervalMinutes: 720,
   enabled: true,
   visibility: "public",
   sourceGroup: "media",
@@ -71,6 +70,10 @@ export function SourcesView({ api }: { api: AdminApi }) {
   const [formMessage, setFormMessage] = useState<{ tone: "info" | "success" | "error"; text: string } | null>(null);
   const [toggleMessage, setToggleMessage] = useState<{ sourceId: string; tone: "info" | "success" | "error"; text: string } | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [invalidFields, setInvalidFields] = useState<string[]>([]);
+  const idInputRef = useRef<HTMLInputElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setPage(1);
@@ -123,8 +126,16 @@ export function SourcesView({ api }: { api: AdminApi }) {
 
   async function submit() {
     const payload = { ...form, id: form.id.trim(), name: form.name.trim(), url: form.url.trim() };
-    if (!payload.id || !payload.name || !payload.url) {
+    const missingFields = [
+      !payload.id ? "id" : null,
+      !payload.name ? "name" : null,
+      !payload.url ? "url" : null
+    ].filter((field): field is string => field !== null);
+    setInvalidFields(missingFields);
+    if (missingFields.length > 0) {
       setFormMessage({ tone: "error", text: "信源 ID、名称和 URL 不能为空。" });
+      const fieldRefs = { id: idInputRef, name: nameInputRef, url: urlInputRef };
+      fieldRefs[missingFields[0] as keyof typeof fieldRefs].current?.focus();
       return;
     }
     setSubmitting(true);
@@ -132,6 +143,7 @@ export function SourcesView({ api }: { api: AdminApi }) {
     try {
       await api.createSource(payload);
       setForm({ ...newSource, channel });
+      setInvalidFields([]);
       setFormMessage({ tone: "success", text: "信源已保存，连通性测试通过。" });
       setPage(1);
       setWallPage(1);
@@ -166,13 +178,21 @@ export function SourcesView({ api }: { api: AdminApi }) {
           error={error}
         >
           <SourceFilterPanel filters={filters} onChange={(next) => setFilters({ ...filters, ...next })} />
-          {toggleMessage && <p className={`form-message ${toggleMessage.tone}`}>{toggleMessage.text}</p>}
+          {toggleMessage && (
+            <p
+              className={`form-message ${toggleMessage.tone}`}
+              role={toggleMessage.tone === "error" ? "alert" : "status"}
+              aria-live={toggleMessage.tone === "error" ? "assertive" : "polite"}
+            >
+              {toggleMessage.text}
+            </p>
+          )}
           <TableWrap>
             <table>
               <thead><tr><th>信源</th><th>运行状态</th><th>健康/收集</th><th>权重</th><th>抓取方式</th><th>状态</th><th>操作</th></tr></thead>
               <tbody>
                 {sourcePage.items.map((source, index) => (
-                  <tr key={source.id || `empty-${index}`} onClick={() => setSelected(source)}>
+                  <tr key={source.id || `empty-${index}`}>
                     <td>
                       <strong>{sourceDisplayName(source)}</strong>
                       <span>{sourceDisplayId(source)}</span>
@@ -186,7 +206,8 @@ export function SourcesView({ api }: { api: AdminApi }) {
                       <span className={`status ${collectionStatusClass(source.collectionStatus)}`}>
                         {collectionStatusLabel(source.collectionStatus)}
                       </span>
-                      <span>{sourceGroupLabel(source.sourceGroup)} · {sourceTypeLabel(source.sourceType)} · {source.freeAccess === false ? "需授权" : "免费可读"}</span>
+                      <span>{sourceGroupLabel(source.sourceGroup)} · {sourceTypeLabel(source.sourceType)} · 发布方 {formatPublisherKey(source.publisherKey)}</span>
+                      <span>{source.freeAccess === false ? "需授权" : "免费可读"}</span>
                     </td>
                     <td>
                       <strong>{source.authorityWeight}</strong>
@@ -194,17 +215,27 @@ export function SourcesView({ api }: { api: AdminApi }) {
                     </td>
                     <td>
                       <strong>{adapterLabel(source.fetchAdapter)}</strong>
-                      <span>{source.parserType || "默认解析"} · 每 {source.fetchIntervalMinutes} 分钟</span>
+                      <span>{source.parserType || "默认解析"} · 全局每 {formatInterval(source.fetchIntervalMinutes)}抓取</span>
                     </td>
                     <td>
                       <strong>{source.collectionStatus ? collectionStatusLabel(source.collectionStatus) : "未设置"}</strong>
                       <span>{source.notes?.trim() || "无备注"}</span>
                     </td>
                     <td>
-                      <button className={source.enabled ? "danger ghost" : "primary"} disabled={toggleMessage?.sourceId === source.id && toggleMessage.tone === "info"} onClick={(event) => { event.stopPropagation(); void toggle(source); }}>
-                        {source.enabled ? <PowerOff size={15} /> : <Power size={15} />}
-                        {toggleMessage?.sourceId === source.id && toggleMessage.tone === "info" ? "处理中..." : source.enabled ? "停用" : "启用"}
-                      </button>
+                      <div className="inline-actions">
+                        <button className="ghost" type="button" onClick={() => setSelected(source)} aria-label={`查看信源 ${sourceDisplayName(source)}`}>
+                          <Eye size={15} />查看
+                        </button>
+                        <button
+                          className={source.enabled ? "danger ghost" : "primary"}
+                          disabled={toggleMessage?.sourceId === source.id && toggleMessage.tone === "info"}
+                          aria-label={`${toggleMessage?.sourceId === source.id && toggleMessage.tone === "info" ? "正在处理" : source.enabled ? "停用" : "启用"}信源 ${sourceDisplayName(source)}`}
+                          onClick={() => { void toggle(source); }}
+                        >
+                          {source.enabled ? <PowerOff size={15} /> : <Power size={15} />}
+                          {toggleMessage?.sourceId === source.id && toggleMessage.tone === "info" ? "处理中..." : source.enabled ? "停用" : "启用"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -228,21 +259,31 @@ export function SourcesView({ api }: { api: AdminApi }) {
           <PaginationBar page={wallPage} totalPages={wallPageData.totalPages ?? 1} onPageChange={setWallPage} disabled={loading} />
         </Section>
       </div>
-      <Section title="新增信源" description={selected ? `当前查看：${sourceDisplayName(selected)}` : `新增信源会写入 ${channelLabel(channel)}，保存前会检测重复并抓取一次。`}>
-        {selected && <p className="hint">URL：{selected.url || "缺少 URL"}</p>}
+      <Section title="新增信源" description={selected ? `当前查看：${sourceDisplayName(selected)}` : `新增信源会写入 ${channelLabel(channel)}，保存前会检测重复并抓取一次；采集周期统一继承全局策略。`}>
+        {selected && <p className="hint" role="status" aria-live="polite">已选择信源 {sourceDisplayName(selected)}。URL：{selected.url || "缺少 URL"}</p>}
         <div className="form-grid">
-          <label>信源 ID<input value={form.id} onChange={(event) => setForm({ ...form, id: event.target.value })} /></label>
-          <label>名称<input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
-          <label>URL<input value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} /></label>
+          <label>信源 ID<input ref={idInputRef} value={form.id} aria-invalid={invalidFields.includes("id")} aria-describedby={invalidFields.includes("id") ? "source-form-message" : undefined} onChange={(event) => { setForm({ ...form, id: event.target.value }); setInvalidFields((current) => current.filter((field) => field !== "id")); }} /></label>
+          <label>名称<input ref={nameInputRef} value={form.name} aria-invalid={invalidFields.includes("name")} aria-describedby={invalidFields.includes("name") ? "source-form-message" : undefined} onChange={(event) => { setForm({ ...form, name: event.target.value }); setInvalidFields((current) => current.filter((field) => field !== "name")); }} /></label>
+          <label>URL<input ref={urlInputRef} value={form.url} aria-invalid={invalidFields.includes("url")} aria-describedby={invalidFields.includes("url") ? "source-form-message" : undefined} onChange={(event) => { setForm({ ...form, url: event.target.value }); setInvalidFields((current) => current.filter((field) => field !== "url")); }} /></label>
           <label>频道<select value={form.channel} onChange={(event) => setForm({ ...form, channel: event.target.value })}><option value="ai">AI 热点</option><option value="amazon">Amazon 情报</option></select></label>
           <label>等级<select value={form.tier} onChange={(event) => setForm({ ...form, tier: event.target.value })}><option value="T1">T1</option><option value="T1.5">T1.5</option><option value="T2">T2</option><option value="T3">T3</option></select></label>
-          <label>间隔分钟<input value={form.fetchIntervalMinutes} onChange={(event) => setForm({ ...form, fetchIntervalMinutes: Number(event.target.value) })} /></label>
+          <label>采集周期<output className="source-policy-output" aria-describedby="global-source-interval">全局统一策略</output></label>
           <label>信源分组<select value={form.sourceGroup} onChange={(event) => setForm({ ...form, sourceGroup: event.target.value })}><option value="official">官方</option><option value="first_party">一手信源</option><option value="media">资讯</option><option value="social">推文</option><option value="community">社区</option><option value="vendor">服务商</option></select></label>
           <label>收集状态<select value={form.collectionStatus} onChange={(event) => setForm({ ...form, collectionStatus: event.target.value })}><option value="collectable">可抓取</option><option value="pending_api">待接入</option><option value="rate_limited">限流</option><option value="unavailable">不可用</option></select></label>
           <label>贡献编号<input value={form.contributorNo ?? ""} onChange={(event) => setForm({ ...form, contributorNo: event.target.value })} /></label>
           <label>社媒账号<input value={form.socialHandle ?? ""} onChange={(event) => setForm({ ...form, socialHandle: event.target.value })} /></label>
         </div>
-        {formMessage && <p className={`form-message ${formMessage.tone}`}>{formMessage.text}</p>}
+        <p id="global-source-interval" className="hint">周期只在全局采集策略中维护，新增或启停信源无需逐条设置。</p>
+        {formMessage && (
+          <p
+            id="source-form-message"
+            className={`form-message ${formMessage.tone}`}
+            role={formMessage.tone === "error" ? "alert" : "status"}
+            aria-live={formMessage.tone === "error" ? "assertive" : "polite"}
+          >
+            {formMessage.text}
+          </p>
+        )}
         <button className="primary" onClick={submit} disabled={submitting}>{submitting ? "测试中..." : "保存并测试信源"}</button>
       </Section>
     </div>
@@ -289,4 +330,15 @@ function collectionStatusClass(value?: string | null) {
   if (value === "collectable") return "status-enabled";
   if (value === "unavailable") return "status-failed";
   return "status-pending";
+}
+
+function formatPublisherKey(value?: string | null) {
+  if (!value || value === "unknown") return "自动识别";
+  return value.replace(/^(company|github_org|research):/, "");
+}
+
+function formatInterval(minutes?: number) {
+  if (minutes == null) return "全局策略";
+  if (minutes % 60 === 0) return `${minutes / 60} 小时`;
+  return `${minutes} 分钟`;
 }

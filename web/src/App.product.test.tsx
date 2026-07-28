@@ -616,6 +616,10 @@ describe("后台产品化界面", () => {
             score: 86,
             sourceCount: 1,
             memberCount: 1,
+            verificationStatus: "corroborated",
+            independentSourceCount: 2,
+            authoritativeSourceCount: 2,
+            evidenceScore: 92,
             lastSeenAt: "2026-05-13T06:13:00Z",
             sourceGroup: "official",
             sourceType: "rss",
@@ -634,7 +638,28 @@ describe("后台产品化界面", () => {
         nextCursor: null
       }),
       listSources: vi.fn().mockResolvedValue([]),
-      getEventDetail: vi.fn().mockResolvedValue({ event: { id: "1" }, members: [] }),
+      getEventDetail: vi.fn().mockResolvedValue({
+        event: {
+          id: "1",
+          sourceCount: 2,
+          memberCount: 2,
+          verificationStatus: "corroborated",
+          independentSourceCount: 2,
+          authoritativeSourceCount: 2,
+          evidenceScore: 92,
+          evidenceSummary: "两个独立发布方支持同一模型发布事实。",
+          supportedFacts: ["OpenAI 发布新模型能力"],
+          supportedClaims: [
+            {
+              claim: "OpenAI 发布新模型能力",
+              publisherKeys: ["company:openai", "reuters.com"],
+              sourceIds: ["openai_news", "reuters"]
+            }
+          ],
+          conflictingClaims: []
+        },
+        members: []
+      }),
       getDaily: vi.fn().mockResolvedValue({
         id: "daily-1",
         channel: "ai",
@@ -697,6 +722,10 @@ describe("后台产品化界面", () => {
     await userEvent.click(screen.getByRole("button", { name: "证据详情" }));
     const evidenceDialog = await screen.findByRole("dialog", { name: "OpenAI 发布新模型能力" });
     expect(evidenceDialog).toBeInTheDocument();
+    expect(within(evidenceDialog).getByText("交叉验证结论")).toBeInTheDocument();
+    expect(within(evidenceDialog).getByText("两个独立发布方支持同一模型发布事实。")).toBeInTheDocument();
+    expect(within(evidenceDialog).getAllByText("OpenAI 发布新模型能力").length).toBeGreaterThan(1);
+    expect(within(evidenceDialog).getByText("支持方：company:openai、reuters.com")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "关闭事件详情" })).toHaveFocus();
     expect(appRoot).toHaveAttribute("aria-hidden", "true");
     expect(document.body.style.overflow).toBe("hidden");
@@ -706,6 +735,7 @@ describe("后台产品化界面", () => {
     expect(evidenceDialog).toContainElement(document.activeElement as HTMLElement);
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(screen.queryByRole("dialog", { name: "OpenAI 发布新模型能力" })).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "证据详情" })).toHaveFocus();
     expect(appRoot).not.toHaveAttribute("aria-hidden");
     expect(document.body.style.overflow).toBe("");
   });
@@ -1455,6 +1485,11 @@ describe("后台产品化界面", () => {
     expect(screen.getByText("缺少信源 ID")).toBeInTheDocument();
     expect(screen.getByText("203")).toBeInTheDocument();
     expect(screen.getByText("Wall Source")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "查看信源 未命名信源" }));
+    expect(
+      screen.getByText("已选择信源 未命名信源。URL：缺少 URL")
+    ).toHaveAttribute("role", "status");
+    expect(screen.getByRole("button", { name: "停用信源 未命名信源" })).toBeInTheDocument();
     expect(api.listSourcesPage).toHaveBeenCalledWith(expect.objectContaining({ channel: "ai", pageSize: 50 }));
     expect(api.listSourcesPage).toHaveBeenCalledWith(expect.objectContaining({ channel: "ai", pageSize: 6 }));
     await userEvent.click(screen.getAllByRole("button", { name: "下一页" })[0]);
@@ -1484,7 +1519,33 @@ describe("后台产品化界面", () => {
     fireEvent.change(screen.getByLabelText("URL"), { target: { value: "https://openai.com/news/" } });
     await userEvent.click(screen.getByRole("button", { name: "保存并测试信源" }));
 
-    expect(await screen.findByText("信源已存在：当前 ID 已被使用。")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("信源已存在：当前 ID 已被使用。");
+  });
+
+  it("focuses and identifies the first missing source field", async () => {
+    const api = apiStub({
+      createSource: vi.fn(),
+      listSourcesPage: vi.fn().mockResolvedValue({
+        items: [],
+        count: 0,
+        page: 1,
+        pageSize: 50,
+        total: 0,
+        totalPages: 1,
+        hasNext: false,
+        nextCursor: null,
+        metrics: {}
+      })
+    });
+
+    render(<SourcesView api={api} />);
+    await userEvent.click(screen.getByRole("button", { name: "保存并测试信源" }));
+
+    const idInput = screen.getByLabelText("信源 ID");
+    expect(idInput).toHaveFocus();
+    expect(idInput).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("信源 ID、名称和 URL 不能为空。");
+    expect(api.createSource).not.toHaveBeenCalled();
   });
 
   it("loads source diagnostic pages in the health view", async () => {
