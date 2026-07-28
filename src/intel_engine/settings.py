@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     deepseek_base_url: str = Field(default="https://api.deepseek.com")
 
     def __init__(self, **data: object) -> None:
+        if SettingsConfigDict is not None and "_env_file" not in data:
+            env_file_override = os.getenv("INTEL_ENV_FILE")
+            if env_file_override is not None:
+                data["_env_file"] = env_file_override or None
         if "database_url" not in data:
             env_database_url = os.getenv("DATABASE_URL")
             if env_database_url:

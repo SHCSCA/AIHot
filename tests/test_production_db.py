@@ -7,6 +7,17 @@ from intel_engine.models import SourceRecord, SourceStateRecord, StrategyVersion
 from intel_engine.settings import Settings
 
 
+def test_settings_can_disable_dotenv_file_loading(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("LLM_MODEL", raising=False)
+    monkeypatch.setenv("INTEL_ENV_FILE", "")
+    (tmp_path / ".env").write_text("LLM_MODEL=must-not-load\n", encoding="utf-8")
+
+    settings = Settings()
+
+    assert settings.llm_model == "fake-default"
+
+
 def test_settings_uses_database_url_env(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgresql+psycopg://user:pass@db:5432/intel")
 

@@ -158,6 +158,7 @@ Type=oneshot
 User=`$pipeline_user
 WorkingDirectory=$AppDir
 EnvironmentFile=$AppDir/.env
+Environment=INTEL_ENV_FILE=
 ExecStart=$AppDir/.venv/bin/intel-engine pipeline-once --worker-id systemd-pipeline-%i --limit %i
 Nice=5
 TimeoutStartSec=45min
