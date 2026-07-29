@@ -21,6 +21,7 @@ import { FeedbackView } from "./views/FeedbackView";
 import { HealthView } from "./views/HealthView";
 import { PipelineRunsView } from "./views/PipelineRunsView";
 import { PublicFrontPage } from "./views/PublicFrontPage";
+import { SourceWall } from "./views/PublicFrontPage/SourceWall";
 import { QualityView } from "./views/QualityView";
 import { SourcesView } from "./views/SourcesView";
 import { AuditLogsView, RolesView, UsersView } from "./views/AdminAccessView";
@@ -458,7 +459,7 @@ describe("后台产品化界面", () => {
     expect(screen.getByRole("button", { name: "全部热点" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "日报" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "RSS 订阅" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "信源墙" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "信源目录" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "反馈" })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "精选" }));
     await waitFor(() => expect(publicApi.listEvents).toHaveBeenCalledWith(expect.objectContaining({ channel: "amazon" })));
@@ -489,12 +490,13 @@ describe("后台产品化界面", () => {
   });
 
   it("uses live public channel source counts in the overview hero", async () => {
+    const listEvents = vi.fn().mockResolvedValue({ items: [], count: 0, hasNext: false, nextCursor: null });
     const publicApi = {
       listChannels: vi.fn().mockResolvedValue([
         { id: "ai", name: "AI 情报", description: "AI", categories: [], sourceCount: 147 },
         { id: "amazon", name: "Amazon 情报", description: "Amazon", categories: [], sourceCount: 105 }
       ]),
-      listEvents: vi.fn().mockResolvedValue({ items: [], count: 0, hasNext: false, nextCursor: null }),
+      listEvents,
       listSources: vi.fn().mockResolvedValue([]),
       getEventDetail: vi.fn(),
       getDaily: vi.fn().mockResolvedValue(null),
@@ -507,6 +509,10 @@ describe("后台产品化界面", () => {
     const overview = await screen.findByLabelText("AIHOT 情报总览");
     await waitFor(() => expect(within(overview).getByText("105")).toBeInTheDocument());
     expect(publicApi.listChannels).toHaveBeenCalledTimes(1);
+    expect(publicApi.listEvents).toHaveBeenCalledWith(expect.objectContaining({ channel: "amazon", mode: "selected", take: 4 }));
+    const overviewRequest = listEvents.mock.calls[0][0];
+    expect(overviewRequest).not.toHaveProperty("page");
+    expect(overviewRequest).not.toHaveProperty("pageSize");
     expect(within(overview).queryByText("44")).not.toBeInTheDocument();
   });
 
@@ -597,7 +603,7 @@ describe("后台产品化界面", () => {
     expect(screen.queryByLabelText("专注阅读模式")).not.toBeInTheDocument();
   });
 
-  it("adds a calm breathing motion layer to the public intelligence surfaces", async () => {
+  it("uses restrained state-driven motion for public intelligence surfaces", async () => {
     const publicApi = {
       listEvents: vi.fn().mockResolvedValue({
         items: [
@@ -610,6 +616,10 @@ describe("后台产品化界面", () => {
             score: 86,
             sourceCount: 1,
             memberCount: 1,
+            verificationStatus: "corroborated",
+            independentSourceCount: 2,
+            authoritativeSourceCount: 2,
+            evidenceScore: 92,
             lastSeenAt: "2026-05-13T06:13:00Z",
             sourceGroup: "official",
             sourceType: "rss",
@@ -628,7 +638,28 @@ describe("后台产品化界面", () => {
         nextCursor: null
       }),
       listSources: vi.fn().mockResolvedValue([]),
-      getEventDetail: vi.fn().mockResolvedValue({ event: { id: "1" }, members: [] }),
+      getEventDetail: vi.fn().mockResolvedValue({
+        event: {
+          id: "1",
+          sourceCount: 2,
+          memberCount: 2,
+          verificationStatus: "corroborated",
+          independentSourceCount: 2,
+          authoritativeSourceCount: 2,
+          evidenceScore: 92,
+          evidenceSummary: "两个独立发布方支持同一模型发布事实。",
+          supportedFacts: ["OpenAI 发布新模型能力"],
+          supportedClaims: [
+            {
+              claim: "OpenAI 发布新模型能力",
+              publisherKeys: ["company:openai", "reuters.com"],
+              sourceIds: ["openai_news", "reuters"]
+            }
+          ],
+          conflictingClaims: []
+        },
+        members: []
+      }),
       getDaily: vi.fn().mockResolvedValue({
         id: "daily-1",
         channel: "ai",
@@ -668,26 +699,58 @@ describe("后台产品化界面", () => {
       submitFeedback: vi.fn().mockResolvedValue({ id: "1" })
     } as unknown as PublicApi;
 
-    const { container } = render(<PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />);
+    const appRoot = document.createElement("div");
+    appRoot.id = "root";
+    document.body.appendChild(appRoot);
+    const { container } = render(
+      <PublicFrontPage api={publicApi} loginError={null} loginOpen={false} onLogin={vi.fn()} />,
+      { container: appRoot }
+    );
 
-    expect(container.querySelector(".aihot-public-shell")).toHaveAttribute("data-motion", "breathing");
-    expect(await screen.findByTestId("ambient-breathing-field")).toBeInTheDocument();
-    expect(container.querySelector(".brief-primary")).toHaveClass("liquid-glass-floating");
-    expect(container.querySelector(".brief-side-card")).toHaveClass("liquid-glass-panel");
+    expect(container.querySelector(".aihot-public-shell")).toHaveAttribute("data-motion", "settled");
+    expect(await screen.findByLabelText("AIHOT 情报总览")).toBeInTheDocument();
+    expect(screen.queryByTestId("ambient-breathing-field")).not.toBeInTheDocument();
+    expect(container.querySelector(".qi-brief-lead")).toHaveClass("liquid-glass-floating");
+    expect(container.querySelector(".qi-brief-shifts")).toHaveClass("liquid-glass-panel");
 
     await userEvent.click(screen.getByRole("button", { name: "精选" }));
     const eventCard = (await screen.findByText("OpenAI 发布新模型能力")).closest(".aihot-event-card");
-    expect(eventCard).toHaveClass("breathing-card");
-    expect(eventCard).toHaveClass("breathing-idle");
-    expect(eventCard?.querySelector(".event-card-breath")).toHaveAttribute("aria-hidden", "true");
+    expect(eventCard).toHaveClass("qi-event-card");
+    expect(eventCard).not.toHaveClass("breathing-card");
+    expect(eventCard?.querySelector(".event-card-breath")).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "日报" }));
-    expect(await screen.findByTestId("daily-breathing-field")).toBeInTheDocument();
-    const dailyStory = screen.getAllByText("Hy3 预览版登陆 GMI").find((node) => node.closest(".daily-story"));
-    expect(dailyStory?.closest(".daily-story")).toHaveClass("breathing-reveal");
+    await userEvent.click(screen.getByRole("button", { name: "证据详情" }));
+    const evidenceDialog = await screen.findByRole("dialog", { name: "OpenAI 发布新模型能力" });
+    expect(evidenceDialog).toBeInTheDocument();
+    expect(within(evidenceDialog).getByText("交叉验证结论")).toBeInTheDocument();
+    expect(within(evidenceDialog).getByText("两个独立发布方支持同一模型发布事实。")).toBeInTheDocument();
+    expect(within(evidenceDialog).getAllByText("OpenAI 发布新模型能力").length).toBeGreaterThan(1);
+    expect(within(evidenceDialog).getByText("支持方：company:openai、reuters.com")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "关闭事件详情" })).toHaveFocus();
+    expect(appRoot).toHaveAttribute("aria-hidden", "true");
+    expect(document.body.style.overflow).toBe("hidden");
+    await userEvent.tab({ shift: true });
+    expect(evidenceDialog).toContainElement(document.activeElement as HTMLElement);
+    await userEvent.tab();
+    expect(evidenceDialog).toContainElement(document.activeElement as HTMLElement);
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "OpenAI 发布新模型能力" })).not.toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "证据详情" })).toHaveFocus();
+    expect(appRoot).not.toHaveAttribute("aria-hidden");
+    expect(document.body.style.overflow).toBe("");
   });
 
   it("opens the command palette with keyboard navigation from the unified shell", async () => {
+    localStorage.setItem("aihot_cmdk_history", JSON.stringify(["GPT-5  rumored"]));
+    const canonical = document.createElement("link");
+    canonical.rel = "canonical";
+    document.head.appendChild(canonical);
+    const openGraphUrl = document.createElement("meta");
+    openGraphUrl.setAttribute("property", "og:url");
+    document.head.appendChild(openGraphUrl);
+    const robots = document.createElement("meta");
+    robots.name = "robots";
+    document.head.appendChild(robots);
     const fetchMock = vi.fn().mockImplementation((url: string) => {
       if (String(url).startsWith("/api/v1/me")) {
         return Promise.resolve({
@@ -722,11 +785,82 @@ describe("后台产品化界面", () => {
     expect(await screen.findByRole("heading", { name: "总览" })).toBeInTheDocument();
     fireEvent.keyDown(window, { key: "k", ctrlKey: true });
 
-    expect(await screen.findByRole("dialog", { name: "命令面板" })).toBeInTheDocument();
+    const commandDialog = await screen.findByRole("dialog", { name: "命令面板" });
+    expect(commandDialog).toBeInTheDocument();
     expect(screen.getByPlaceholderText("搜索或快速跳转...")).toHaveFocus();
-    expect(screen.getByTestId("cmdk-breathing-frame")).toHaveAttribute("aria-hidden", "true");
-    expect(screen.getByText("快速跳转")).toBeInTheDocument();
-    expect(screen.getByText("热门情报")).toBeInTheDocument();
+    expect(commandDialog.querySelector(".qi-command-panel")).toBeInTheDocument();
+    expect(screen.queryByTestId("cmdk-breathing-frame")).not.toBeInTheDocument();
+    expect(within(commandDialog).getByText("Reader Mode")).toBeInTheDocument();
+    expect(within(commandDialog).getByText("Ops Mode")).toBeInTheDocument();
+    expect(screen.queryByText("GPT-5  rumored")).not.toBeInTheDocument();
+    const commandInput = screen.getByPlaceholderText("搜索或快速跳转...");
+    await userEvent.type(commandInput, "精选");
+    expect(within(commandDialog).getByText("搜索结果")).toBeInTheDocument();
+    expect(within(commandDialog).getByRole("button", { name: /精选/ })).toBeInTheDocument();
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "命令面板" })).not.toBeInTheDocument());
+    await waitFor(() => expect(new URL(canonical.href).pathname).toBe("/selected"));
+    expect(new URL(openGraphUrl.content).pathname).toBe("/selected");
+    expect(robots.content).toContain("index,follow");
+    canonical.remove();
+    openGraphUrl.remove();
+    robots.remove();
+  });
+
+  it("clears stale source rows while a new directory filter is loading", async () => {
+    let resolveFilteredSources!: (value: {
+      items: Array<Record<string, unknown>>;
+      count: number;
+      page: number;
+      pageSize: number;
+      total: number;
+      totalPages: number;
+      hasNext: boolean;
+      nextCursor: null;
+    }) => void;
+    const sourcePage = (name: string) => ({
+      items: [{
+        id: name,
+        name,
+        channel: "ai",
+        sourceType: "rss",
+        sourceGroup: "official",
+        tier: "T1",
+        language: "zh",
+        region: "cn",
+        collectionStatus: "active",
+        fetchAdapter: "rss",
+        parserType: "feed",
+        authorityWeight: 90,
+        noiseLevel: 0.1,
+        fetchIntervalMinutes: 60,
+        enabled: true,
+        url: "https://example.com"
+      }],
+      count: 1,
+      page: 1,
+      pageSize: 6,
+      total: 1,
+      totalPages: 1,
+      hasNext: false,
+      nextCursor: null
+    });
+    const listSourcesPage = vi
+      .fn()
+      .mockResolvedValueOnce(sourcePage("旧信源"))
+      .mockImplementationOnce(() => new Promise((resolve) => { resolveFilteredSources = resolve; }));
+    const publicApi = { listSourcesPage, listSources: vi.fn() } as unknown as PublicApi;
+
+    render(<SourceWall api={publicApi} channel="ai" />);
+    expect(await screen.findByText("旧信源")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "官方/一手" }));
+    await waitFor(() => expect(listSourcesPage).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText("旧信源")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("正在加载信源");
+
+    resolveFilteredSources(sourcePage("新信源"));
+    expect(await screen.findByText("新信源")).toBeInTheDocument();
   });
 
   it("uses a stable sidebar navigation shell with a focused top toolbar", async () => {
@@ -769,7 +903,7 @@ describe("后台产品化界面", () => {
     expect(container.querySelector(".unified-global-nav")).not.toBeInTheDocument();
   });
 
-  it("renders the sidebar brand as an animated artistic wordmark", async () => {
+  it("renders the sidebar brand as a settled artistic wordmark", async () => {
     const fetchMock = vi.fn().mockImplementation((url: string) => {
       if (String(url).startsWith("/api/v1/me")) {
         return Promise.resolve({
@@ -803,11 +937,12 @@ describe("后台产品化界面", () => {
 
     const brand = await screen.findByRole("button", { name: "AIHOT 首页" });
     expect(brand).toHaveClass("unified-brand");
-    expect(brand).toHaveAttribute("data-motion", "brand-breathing");
+    expect(brand).toHaveAttribute("data-motion", "brand-settled");
     expect(within(brand).getByText("AI")).toHaveClass("brand-word");
     expect(within(brand).getByText("HOT")).toHaveClass("brand-word");
-    expect(container.querySelector(".brand-orbit")).toHaveAttribute("aria-hidden", "true");
-    expect(container.querySelector(".brand-glow")).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelector(".brand-core")).toHaveAttribute("aria-hidden", "true");
+    expect(container.querySelector(".brand-orbit")).not.toBeInTheDocument();
+    expect(container.querySelector(".brand-glow")).not.toBeInTheDocument();
   });
 
   it("falls back to the newest archived daily when today's daily payload is empty", async () => {
@@ -929,12 +1064,13 @@ describe("后台产品化界面", () => {
     expect(screen.getByText("入选依据")).toBeInTheDocument();
     expect(screen.getByText("来自官方一手信源，模型能力变化会影响开发者选型。")).toBeInTheDocument();
     expect(screen.getByText("精选分 86")).toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "信源墙" }));
+    await userEvent.click(screen.getByRole("button", { name: "信源目录" }));
     expect(await screen.findByText("X: OpenAI")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "查看档案" }));
     expect(screen.getByText("权威权重")).toBeInTheDocument();
-    expect(screen.getByText("噪声风险")).toBeInTheDocument();
+    expect(screen.getByText("噪声水平")).toBeInTheDocument();
     expect(screen.getByText("AIHOT · 001")).toBeInTheDocument();
-    expect(screen.getByText("待接入")).toBeInTheDocument();
+    expect(screen.getAllByText("待接入").length).toBeGreaterThan(0);
   }, 10000);
 
   it("renders event cards with thumbnails and numbered pagination", async () => {
@@ -1349,6 +1485,11 @@ describe("后台产品化界面", () => {
     expect(screen.getByText("缺少信源 ID")).toBeInTheDocument();
     expect(screen.getByText("203")).toBeInTheDocument();
     expect(screen.getByText("Wall Source")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "查看信源 未命名信源" }));
+    expect(
+      screen.getByText("已选择信源 未命名信源。URL：缺少 URL")
+    ).toHaveAttribute("role", "status");
+    expect(screen.getByRole("button", { name: "停用信源 未命名信源" })).toBeInTheDocument();
     expect(api.listSourcesPage).toHaveBeenCalledWith(expect.objectContaining({ channel: "ai", pageSize: 50 }));
     expect(api.listSourcesPage).toHaveBeenCalledWith(expect.objectContaining({ channel: "ai", pageSize: 6 }));
     await userEvent.click(screen.getAllByRole("button", { name: "下一页" })[0]);
@@ -1378,7 +1519,33 @@ describe("后台产品化界面", () => {
     fireEvent.change(screen.getByLabelText("URL"), { target: { value: "https://openai.com/news/" } });
     await userEvent.click(screen.getByRole("button", { name: "保存并测试信源" }));
 
-    expect(await screen.findByText("信源已存在：当前 ID 已被使用。")).toBeInTheDocument();
+    expect(await screen.findByRole("alert")).toHaveTextContent("信源已存在：当前 ID 已被使用。");
+  });
+
+  it("focuses and identifies the first missing source field", async () => {
+    const api = apiStub({
+      createSource: vi.fn(),
+      listSourcesPage: vi.fn().mockResolvedValue({
+        items: [],
+        count: 0,
+        page: 1,
+        pageSize: 50,
+        total: 0,
+        totalPages: 1,
+        hasNext: false,
+        nextCursor: null,
+        metrics: {}
+      })
+    });
+
+    render(<SourcesView api={api} />);
+    await userEvent.click(screen.getByRole("button", { name: "保存并测试信源" }));
+
+    const idInput = screen.getByLabelText("信源 ID");
+    expect(idInput).toHaveFocus();
+    expect(idInput).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByRole("alert")).toHaveTextContent("信源 ID、名称和 URL 不能为空。");
+    expect(api.createSource).not.toHaveBeenCalled();
   });
 
   it("loads source diagnostic pages in the health view", async () => {

@@ -48,6 +48,8 @@ import { SourcesView } from "./views/SourcesView";
 import { StrategiesView } from "./views/StrategiesView";
 import { roleLabel } from "./labels";
 import "./styles.css";
+import "./styles/quiet-intelligence.css";
+import "./styles/reader-motion.css";
 
 export { SourcesView } from "./views/SourcesView";
 
@@ -94,7 +96,7 @@ const publicItems: NavItem[] = [
   { id: "public:all", label: "全部动态", title: "全部动态", description: "按频道查看全量情报流", icon: List },
   { id: "public:daily", label: "日报", title: "日报", description: "杂志式每日摘要", icon: Newspaper },
   { id: "public:rss", label: "RSS 订阅", title: "RSS 订阅", description: "订阅事件流和日报", icon: Rss },
-  { id: "public:sources", label: "信源墙", title: "信源墙", description: "可信公开信源", icon: RadioTower },
+  { id: "public:sources", label: "信源目录", title: "信源目录", description: "可信公开信源与采集档案", icon: RadioTower },
   { id: "public:feedback", label: "反馈", title: "反馈", description: "提交内容质量反馈", icon: MessageSquare }
 ];
 
@@ -151,6 +153,7 @@ export function App() {
   const activeItem = [...publicItems, ...opsItems, ...labItems, ...adminItems].find((item) => item.id === activeView) ?? publicItems[0];
   const isAdminView = activeView.startsWith("admin:");
   const isLabView = labItems.some((item) => item.id === activeView);
+  const isPublicOverview = activeView === "public:overview";
   const resolvedTheme = theme === "system" ? systemTheme : theme;
   const activeDescription = !isAdminView ? publicDescriptionForChannel(activeItem, channel) : activeItem.description;
 
@@ -193,6 +196,24 @@ export function App() {
   useEffect(() => {
     localStorage.setItem("aihotChannel", channel);
   }, [channel]);
+
+  useEffect(() => {
+    const publicPath = publicPathForView(activeView);
+    const canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    const openGraphUrl = document.querySelector<HTMLMetaElement>('meta[property="og:url"]');
+    const robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+
+    if (publicPath) {
+      const canonicalUrl = new URL(publicPath, window.location.origin).href;
+      if (canonical) canonical.href = canonicalUrl;
+      if (openGraphUrl) openGraphUrl.content = canonicalUrl;
+      if (robots) robots.content = "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1";
+      document.title = activeView === "public:overview" ? "AIHot | AI 与 Amazon 卖家情报工作台" : `${activeItem.title} | AIHot`;
+    } else {
+      if (robots) robots.content = "noindex,nofollow";
+      document.title = `${activeItem.title} | AIHot Ops`;
+    }
+  }, [activeItem.title, activeView]);
 
   async function login(credentials: Credentials) {
     try {
@@ -275,11 +296,9 @@ export function App() {
   return (
     <main className="unified-shell">
       <aside className="unified-sidebar">
-        <button className="unified-brand" data-motion="brand-breathing" onClick={() => activate(publicItems[0])} aria-label="AIHOT 首页">
+        <button className="unified-brand" data-motion="brand-settled" onClick={() => activate(publicItems[0])} aria-label="AIHOT 首页">
           <span className="brand-word brand-word-ai">AI</span>
           <span className="brand-mark-wrap" aria-hidden="true">
-            <span className="brand-glow" aria-hidden="true" />
-            <i className="brand-orbit" aria-hidden="true" />
             <span className="brand-core" aria-hidden="true" />
           </span>
           <span className="brand-word brand-word-hot">HOT</span>
@@ -302,7 +321,7 @@ export function App() {
         </div>
       </aside>
       <section className="unified-main">
-        <header className="unified-topbar" role="banner" aria-label="当前页面工具栏">
+        <header className={isPublicOverview ? "unified-topbar unified-topbar-overview" : "unified-topbar"} role="banner" aria-label="当前页面工具栏">
           <div>
             <p className="eyebrow">{isLabView ? "Lab Mode" : isAdminView ? "Ops Mode" : channel === "ai" ? "Reader Mode · AI 热点" : "Reader Mode · Amazon 情报"}</p>
             <h1>{activeItem.title}</h1>
@@ -605,6 +624,19 @@ function viewFromPath(pathname: string): ActiveView {
   if (pathname.includes("/all")) return "public:all";
   if (pathname.includes("/selected")) return "public:selected";
   return "public:overview";
+}
+
+function publicPathForView(view: ActiveView): string | null {
+  const paths: Partial<Record<ActiveView, string>> = {
+    "public:overview": "/",
+    "public:selected": "/selected",
+    "public:all": "/all",
+    "public:daily": "/daily",
+    "public:rss": "/rss",
+    "public:sources": "/sources",
+    "public:feedback": "/feedback"
+  };
+  return paths[view] ?? null;
 }
 
 function loadTheme(): ThemePreference {

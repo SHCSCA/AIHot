@@ -33,7 +33,6 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [news]
-    crawl_interval_minutes: 60
     parser_type: rss
     enabled: true
   - id: disabled_feed
@@ -45,7 +44,6 @@ sources:
     trust_level: official
     base_weight: 90
     default_categories: [news]
-    crawl_interval_minutes: 60
     parser_type: rss
     enabled: false
 """,
@@ -85,7 +83,10 @@ def test_crawl_enabled_sources_fetches_enabled_sources_and_deduplicates(tmp_path
     second = crawl_enabled_sources(repo, channels_dir=channels_dir, client=client)
     items = repo.list_items(channel="ai")
 
-    assert requested_urls == ["https://example.com/feed.xml", "https://example.com/feed.xml"]
+    assert requested_urls == [
+        "https://example.com/feed.xml",
+        "https://example.com/feed.xml",
+    ]
     assert first.fetched == 1
     assert first.inserted == 1
     assert first.duplicates == 0
@@ -100,7 +101,9 @@ def test_crawl_enabled_sources_filters_channel(tmp_path):
     channels_dir = tmp_path / "channels"
     write_channel_config(channels_dir, "ai")
     (channels_dir / "amazon.yaml").write_text(
-        (channels_dir / "ai.yaml").read_text(encoding="utf-8").replace("id: ai", "id: amazon", 1),
+        (channels_dir / "ai.yaml")
+        .read_text(encoding="utf-8")
+        .replace("id: ai", "id: amazon", 1),
         encoding="utf-8",
     )
     engine = create_engine_for_path(tmp_path / "intel.sqlite3")
@@ -115,7 +118,9 @@ def test_crawl_enabled_sources_filters_channel(tmp_path):
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
 
-    stats = crawl_enabled_sources(repo, channels_dir=channels_dir, channel_id="amazon", client=client)
+    stats = crawl_enabled_sources(
+        repo, channels_dir=channels_dir, channel_id="amazon", client=client
+    )
 
     assert stats.sources == 1
     assert stats.inserted == 1

@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: http://aihot.shcai.top/sitemap.xml
+Sitemap: https://aihot.shcai.top/sitemap.xml

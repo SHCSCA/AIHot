@@ -1,15 +1,28 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import httpx
 from sqlalchemy import select
 
-from intel_engine.db import create_engine_from_settings, init_schema, sessionmaker_for_engine
-from intel_engine.llm import FakeLLMProvider, FakeScreeningProvider, ModelScore, ScreeningResult
+from intel_engine.db import (
+    create_engine_from_settings,
+    init_schema,
+    sessionmaker_for_engine,
+)
+from intel_engine.corroboration import CorroborationMember, corroborate_event
+from intel_engine.llm import (
+    EventEvidenceAnalysis,
+    FakeEventAnalysisProvider,
+    FakeLLMProvider,
+    FakeScreeningProvider,
+    ModelScore,
+    ScreeningResult,
+)
 from intel_engine.models import (
     ClusterMemberRecord,
     EventClusterRecord,
+    EventEvidenceAssessmentRecord,
     FetchJobRecord,
     FetchRunRecord,
     ModelScoreRecord,
@@ -20,12 +33,15 @@ from intel_engine.models import (
     SourceStateRecord,
 )
 from intel_engine.pipeline import (
+    _acquire_cluster_advisory_lock,
     _apply_screening_guardrails,
+    _combine_event_evidence,
     _ensure_active_strategy,
     _fake_score,
     _model_payload,
     _normalize_raw_document,
     _upsert_screening_result,
+    backfill_event_evidence,
     reprocess_existing_items,
     run_pipeline_once,
     run_worker_once,
@@ -36,13 +52,21 @@ from intel_engine.sources import SourceRegistry, SourceUpsert
 
 
 def _session_factory(tmp_path):
-    settings = Settings(database_url=f"sqlite+pysqlite:///{tmp_path / 'production.sqlite3'}")
+    settings = Settings(
+        database_url=f"sqlite+pysqlite:///{tmp_path / 'production.sqlite3'}"
+    )
     engine = create_engine_from_settings(settings)
     init_schema(engine)
     return sessionmaker_for_engine(engine)
 
 
-def _add_source(session, source_id: str, url: str, tier: str = "T1") -> None:
+def _add_source(
+    session,
+    source_id: str,
+    url: str,
+    tier: str = "T1",
+    publisher_key: str | None = None,
+) -> None:
     SourceRegistry(session).upsert_source(
         SourceUpsert(
             id=source_id,
@@ -62,6 +86,7 @@ def _add_source(session, source_id: str, url: str, tier: str = "T1") -> None:
             fetch_interval_minutes=60,
             enabled=True,
             visibility="public",
+            publisher_key=publisher_key,
             notes=None,
         )
     )
@@ -223,7 +248,9 @@ def test_amazon_screening_guardrail_rescues_low_confidence_seller_signal():
         content_type="application/rss+xml",
         body_text="FBA sellers can reconcile missing inventory after products arrive at Amazon fulfillment centers.",
         body_html=None,
-        response_headers_json={"x-intel-title": "The Amazon FBA Perk You May Not Know About"},
+        response_headers_json={
+            "x-intel-title": "The Amazon FBA Perk You May Not Know About"
+        },
         content_hash="amazon-fba-low-confidence",
         fetched_at=now,
     )
@@ -284,7 +311,9 @@ def test_amazon_screening_guardrail_repairs_schema_invalid_seller_signal():
             "at Amazon fulfillment centers."
         ),
         body_html=None,
-        response_headers_json={"x-intel-title": "The Amazon FBA Perk You May Not Know About"},
+        response_headers_json={
+            "x-intel-title": "The Amazon FBA Perk You May Not Know About"
+        },
         content_hash="amazon-fba-schema-invalid",
         fetched_at=now,
     )
@@ -362,7 +391,9 @@ def test_amazon_seller_signal_without_publish_time_uses_fetch_time_for_ingest(tm
                 "arrive at Amazon fulfillment centers."
             ),
             body_html=None,
-            response_headers_json={"x-intel-title": "Amazon FBA inventory reimbursement update"},
+            response_headers_json={
+                "x-intel-title": "Amazon FBA inventory reimbursement update"
+            },
             content_hash="amazon-fba-no-publish-time",
             fetched_at=now,
         )
@@ -392,7 +423,9 @@ def test_amazon_seller_signal_without_publish_time_uses_fetch_time_for_ingest(tm
             now=now,
             screening_provider=provider,
         )
-        item = _normalize_raw_document(session, source, raw_document, screening=screening)
+        item = _normalize_raw_document(
+            session, source, raw_document, screening=screening
+        )
 
     assert screening.screen_status == "accepted"
     assert screening.reason_code == "accepted"
@@ -491,7 +524,9 @@ def test_pipeline_once_produces_public_event_and_isolates_failed_source(tmp_path
     )
 
     with SessionLocal() as session:
-        jobs = session.scalars(select(FetchJobRecord).order_by(FetchJobRecord.source_id)).all()
+        jobs = session.scalars(
+            select(FetchJobRecord).order_by(FetchJobRecord.source_id)
+        ).all()
         broken_state = session.get(SourceStateRecord, "broken_feed")
         raw_count = len(session.scalars(select(RawDocumentRecord)).all())
         item_count = len(session.scalars(select(NormalizedItemRecord)).all())
@@ -522,7 +557,9 @@ def test_worker_marks_adapter_exception_failed_without_stopping_other_jobs(tmp_p
     SessionLocal = _session_factory(tmp_path)
     with SessionLocal() as session:
         _add_source(session, "openai_feed", "https://example.com/openai.xml")
-        _add_source(session, "timeout_feed", "https://example.com/timeout.xml", tier="T2")
+        _add_source(
+            session, "timeout_feed", "https://example.com/timeout.xml", tier="T2"
+        )
         session.commit()
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -530,7 +567,11 @@ def test_worker_marks_adapter_exception_failed_without_stopping_other_jobs(tmp_p
             raise httpx.ConnectTimeout("timeout")
         return httpx.Response(
             200,
-            text=_rss("OpenAI launches GPT-5", "https://example.com/gpt-5", "Important model release details."),
+            text=_rss(
+                "OpenAI launches GPT-5",
+                "https://example.com/gpt-5",
+                "Important model release details.",
+            ),
             headers={"content-type": "application/rss+xml"},
         )
 
@@ -560,8 +601,16 @@ def test_worker_marks_processing_exception_failed_and_continues(tmp_path):
     with SessionLocal() as session:
         _add_source(session, "first_feed", "https://example.com/first.xml")
         _add_source(session, "second_feed", "https://example.com/second.xml")
-        session.add(FetchJobRecord(source_id="first_feed", status="pending", priority=10, run_after=now))
-        session.add(FetchJobRecord(source_id="second_feed", status="pending", priority=20, run_after=now))
+        session.add(
+            FetchJobRecord(
+                source_id="first_feed", status="pending", priority=10, run_after=now
+            )
+        )
+        session.add(
+            FetchJobRecord(
+                source_id="second_feed", status="pending", priority=20, run_after=now
+            )
+        )
         session.commit()
 
     class CrashingProvider:
@@ -571,7 +620,11 @@ def test_worker_marks_processing_exception_failed_and_continues(tmp_path):
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             200,
-            text=_rss("OpenAI launches GPT-5", str(request.url).replace(".xml", "/gpt-5"), "Important model release."),
+            text=_rss(
+                "OpenAI launches GPT-5",
+                str(request.url).replace(".xml", "/gpt-5"),
+                "Important model release.",
+            ),
             headers={"content-type": "application/rss+xml"},
         )
 
@@ -586,7 +639,9 @@ def test_worker_marks_processing_exception_failed_and_continues(tmp_path):
     )
 
     with SessionLocal() as session:
-        jobs = {job.source_id: job for job in session.scalars(select(FetchJobRecord)).all()}
+        jobs = {
+            job.source_id: job for job in session.scalars(select(FetchJobRecord)).all()
+        }
 
     assert stats.claimed == 2
     assert stats.failed == 2
@@ -606,7 +661,11 @@ def test_worker_is_idempotent_for_duplicate_documents(tmp_path):
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             200,
-            text=_rss("OpenAI launches GPT-5", "https://example.com/gpt-5", "Important model release details."),
+            text=_rss(
+                "OpenAI launches GPT-5",
+                "https://example.com/gpt-5",
+                "Important model release details.",
+            ),
             headers={"content-type": "application/rss+xml"},
         )
 
@@ -623,7 +682,11 @@ def test_worker_is_idempotent_for_duplicate_documents(tmp_path):
         screening_provider=screening,
     )
     with SessionLocal() as session:
-        session.add(FetchJobRecord(source_id="openai_feed", status="pending", priority=10, run_after=now))
+        session.add(
+            FetchJobRecord(
+                source_id="openai_feed", status="pending", priority=10, run_after=now
+            )
+        )
         session.commit()
     second = run_worker_once(
         SessionLocal,
@@ -647,6 +710,203 @@ def test_worker_is_idempotent_for_duplicate_documents(tmp_path):
     assert cluster_count == 1
 
 
+def test_later_independent_source_merges_into_event_and_persists_cross_validation(
+    tmp_path,
+):
+    now = datetime(2026, 5, 12, 8, 0, tzinfo=timezone.utc)
+    SessionLocal = _session_factory(tmp_path)
+    with SessionLocal() as session:
+        _add_source(
+            session,
+            "publisher_a_feed",
+            "https://publisher-a.example/feed.xml",
+            publisher_key="publisher:a",
+        )
+        session.commit()
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        source_slug = "a" if "publisher-a" in str(request.url) else "b"
+        return httpx.Response(
+            200,
+            text=_rss(
+                "OpenAI launches GPT-5",
+                f"https://publisher-{source_slug}.example/gpt-5",
+                "OpenAI released GPT-5 with a new reasoning mode.",
+            ),
+            headers={"content-type": "application/rss+xml"},
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    event_analysis = FakeEventAnalysisProvider(
+        EventEvidenceAnalysis(
+            verification_status="corroborated",
+            supported_facts=["OpenAI 发布 GPT-5"],
+            conflicting_claims=[],
+            summary="两个独立发布方支持同一模型发布事实。",
+            confidence_score=93,
+            raw_json={"provider": "fake-ai", "model": "event-evidence-test"},
+        )
+    )
+    run_pipeline_once(
+        SessionLocal,
+        worker_id="worker-a",
+        limit=10,
+        now=now,
+        client=client,
+        llm_provider=_stable_llm_provider(),
+        screening_provider=_stable_screening_provider(),
+        event_analysis_provider=event_analysis,
+    )
+
+    with SessionLocal() as session:
+        SourceRegistry(session).set_enabled("publisher_a_feed", False)
+        _add_source(
+            session,
+            "publisher_b_feed",
+            "https://publisher-b.example/feed.xml",
+            publisher_key="publisher:b",
+        )
+        session.commit()
+
+    run_pipeline_once(
+        SessionLocal,
+        worker_id="worker-b",
+        limit=10,
+        now=now + timedelta(hours=1),
+        client=client,
+        llm_provider=_stable_llm_provider(),
+        screening_provider=_stable_screening_provider(),
+        event_analysis_provider=event_analysis,
+    )
+
+    with SessionLocal() as session:
+        clusters = list(session.scalars(select(EventClusterRecord)).all())
+        members = list(session.scalars(select(ClusterMemberRecord)).all())
+        assessment = session.scalar(select(EventEvidenceAssessmentRecord))
+
+    assert len(clusters) == 1
+    assert clusters[0].source_count == 2
+    assert clusters[0].member_count == 2
+    assert len(members) == 2
+    assert assessment is not None
+    assert assessment.verification_status == "corroborated"
+    assert assessment.independent_source_count == 2
+    assert assessment.authoritative_source_count == 2
+    assert "OpenAI 发布新模型" in assessment.supported_facts_json
+    assert assessment.supported_claims_json == [
+        {
+            "claim": "OpenAI 发布新模型",
+            "publisherKeys": ["publisher:a", "publisher:b"],
+            "sourceIds": ["publisher_a_feed", "publisher_b_feed"],
+        }
+    ]
+    with SessionLocal() as session:
+        existing = session.scalar(select(EventEvidenceAssessmentRecord))
+        assert existing is not None
+        session.delete(existing)
+        session.commit()
+
+    backfill_stats = backfill_event_evidence(SessionLocal)
+
+    with SessionLocal() as session:
+        backfilled = session.scalar(select(EventEvidenceAssessmentRecord))
+    assert backfill_stats.events == 1
+    assert backfilled is not None
+    assert backfilled.verification_status == "corroborated"
+
+
+def test_ai_cannot_upgrade_an_event_without_rule_verified_shared_facts():
+    fallback = corroborate_event(
+        [
+            CorroborationMember(
+                publisher_key="publisher:a",
+                source_tier="T1",
+                title="Publisher A report",
+                key_facts=("release_date: 2026-08-01",),
+            ),
+            CorroborationMember(
+                publisher_key="publisher:b",
+                source_tier="T1",
+                title="Publisher B report",
+                key_facts=("price: 99",),
+            ),
+        ]
+    )
+    ai_analysis = EventEvidenceAnalysis(
+        verification_status="corroborated",
+        supported_facts=["未经来源规则确认的模型结论"],
+        conflicting_claims=[],
+        summary="模型声称已经交叉验证。",
+        confidence_score=99,
+        raw_json={"provider": "fake-ai"},
+    )
+
+    combined = _combine_event_evidence(fallback, ai_analysis)
+
+    assert fallback.verification_status == "insufficient"
+    assert combined.verification_status == "insufficient"
+    assert combined.supported_facts == ()
+    assert combined.evidence_score <= 39
+    assert "不一致" in combined.summary
+
+
+def test_ai_rule_disagreement_downgrades_instead_of_increasing_evidence_score():
+    fallback = corroborate_event(
+        [
+            CorroborationMember(
+                publisher_key="publisher:a",
+                source_tier="T1",
+                title="Publisher A report",
+                key_facts=("OpenAI launched GPT-5",),
+            ),
+            CorroborationMember(
+                publisher_key="publisher:b",
+                source_tier="T1",
+                title="Publisher B report",
+                key_facts=("OpenAI launched GPT-5",),
+            ),
+        ]
+    )
+    ai_analysis = EventEvidenceAnalysis(
+        verification_status="conflicted",
+        supported_facts=[],
+        conflicting_claims=["模型判断来源存在冲突"],
+        summary="模型认为证据冲突。",
+        confidence_score=99,
+        raw_json={"provider": "fake-ai"},
+    )
+
+    combined = _combine_event_evidence(fallback, ai_analysis)
+
+    assert fallback.verification_status == "corroborated"
+    assert combined.verification_status == "insufficient"
+    assert combined.evidence_score <= 39
+    assert combined.evidence_score < fallback.evidence_score
+    assert "不一致" in combined.summary
+
+
+def test_postgresql_event_clustering_uses_channel_advisory_lock():
+    executed = []
+
+    class _Dialect:
+        name = "postgresql"
+
+    class _Bind:
+        dialect = _Dialect()
+
+    class _Session:
+        def get_bind(self):
+            return _Bind()
+
+        def execute(self, statement, parameters):
+            executed.append((str(statement), parameters))
+
+    _acquire_cluster_advisory_lock(_Session(), "ai")
+
+    assert "pg_advisory_xact_lock" in executed[0][0]
+    assert executed[0][1]["lock_key"].endswith(":ai")
+
+
 def test_pipeline_uses_injected_llm_provider_for_model_scores(tmp_path):
     now = datetime(2026, 5, 12, 8, 0, tzinfo=timezone.utc)
     SessionLocal = _session_factory(tmp_path)
@@ -657,7 +917,11 @@ def test_pipeline_uses_injected_llm_provider_for_model_scores(tmp_path):
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
             200,
-            text=_rss("OpenAI launches GPT-5", "https://example.com/gpt-5", "Important model release details."),
+            text=_rss(
+                "OpenAI launches GPT-5",
+                "https://example.com/gpt-5",
+                "Important model release details.",
+            ),
             headers={"content-type": "application/rss+xml"},
         )
 
@@ -777,7 +1041,9 @@ def test_reprocess_existing_items_updates_ai_processed_fields(tmp_path):
         )
     )
 
-    stats = reprocess_existing_items(SessionLocal, channel="ai", limit=1, llm_provider=provider)
+    stats = reprocess_existing_items(
+        SessionLocal, channel="ai", limit=1, llm_provider=provider
+    )
 
     with SessionLocal() as session:
         item = session.scalar(select(NormalizedItemRecord))

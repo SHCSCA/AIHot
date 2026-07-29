@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { RefreshCw } from "lucide-react";
 import type { PublicChannel } from "./index";
 import type { PublicApi } from "../../api";
@@ -42,6 +42,8 @@ function categoryOptions(channel: PublicChannel): CategoryOption[] {
 
 export function FilterBar({ channel, filters, onChange, onRefresh }: FilterBarProps) {
   const categories = categoryOptions(channel);
+  const reducedMotion = useReducedMotion();
+  const activeTransition = reducedMotion ? { duration: 0 } : { type: "spring" as const, stiffness: 520, damping: 42 };
 
   return (
     <section className="aihot-filter-panel liquid-glass-subtle" data-channel={channel}>
@@ -55,10 +57,8 @@ export function FilterBar({ channel, filters, onChange, onRefresh }: FilterBarPr
                 className={filters.sourceGroup === option.value ? "active" : ""}
                 aria-pressed={filters.sourceGroup === option.value}
                 onClick={() => onChange({ sourceGroup: option.value })}
-                whileHover={{ y: -1 }}
-                whileTap={{ scale: 0.98 }}
               >
-                {filters.sourceGroup === option.value && <motion.span className="filter-pill-liquid" layoutId="filter-source-liquid" />}
+                {filters.sourceGroup === option.value && <motion.span className="filter-pill-liquid" layoutId="filter-source-liquid" transition={activeTransition} />}
                 <span>{option.label}</span>
               </motion.button>
             ))}
@@ -72,10 +72,8 @@ export function FilterBar({ channel, filters, onChange, onRefresh }: FilterBarPr
               className={filters.category === "" ? "active" : ""}
               aria-pressed={filters.category === ""}
               onClick={() => onChange({ category: "" })}
-              whileHover={{ y: -1 }}
-              whileTap={{ scale: 0.98 }}
             >
-              {filters.category === "" && <motion.span className="filter-pill-liquid" layoutId="filter-category-liquid" />}
+              {filters.category === "" && <motion.span className="filter-pill-liquid" layoutId="filter-category-liquid" transition={activeTransition} />}
               <span>全部分类</span>
             </motion.button>
             {categories.map((option) => (
@@ -84,10 +82,8 @@ export function FilterBar({ channel, filters, onChange, onRefresh }: FilterBarPr
                 className={filters.category === option.value ? "active" : ""}
                 aria-pressed={filters.category === option.value}
                 onClick={() => onChange({ category: option.value })}
-                whileHover={{ y: -1 }}
-                whileTap={{ scale: 0.98 }}
               >
-                {filters.category === option.value && <motion.span className="filter-pill-liquid" layoutId="filter-category-liquid" />}
+                {filters.category === option.value && <motion.span className="filter-pill-liquid" layoutId="filter-category-liquid" transition={activeTransition} />}
                 <span>{option.shortLabel ?? option.label}</span>
               </motion.button>
             ))}
@@ -106,8 +102,7 @@ export function FilterBar({ channel, filters, onChange, onRefresh }: FilterBarPr
       <motion.button
         className="ghost dark refresh-btn"
         onClick={onRefresh}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileTap={reducedMotion ? undefined : { rotate: -1, y: 1 }}
       >
         <RefreshCw size={15} />刷新
       </motion.button>

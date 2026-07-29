@@ -38,7 +38,7 @@ describe("SourcesView", () => {
     render(<SourcesView api={api} />);
 
     expect((await screen.findAllByText("OpenAI News")).length).toBeGreaterThan(0);
-    await userEvent.click(screen.getByRole("button", { name: "停用" }));
+    await userEvent.click(screen.getByRole("button", { name: "停用信源 OpenAI News" }));
 
     await waitFor(() => expect(api.patchSource).toHaveBeenCalledWith("openai_news", { enabled: false }));
   });

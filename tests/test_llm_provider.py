@@ -5,17 +5,44 @@ import json
 import httpx
 import pytest
 
-from intel_engine.llm import DeepSeekModelProvider, OpenAIModelProvider, build_llm_provider
+from intel_engine.llm import (
+    DeepSeekModelProvider,
+    EventEvidenceAnalysis,
+    OpenAIModelProvider,
+    build_llm_provider,
+)
 from intel_engine.settings import Settings
 
 
 def test_build_llm_provider_defaults_to_fake_provider():
-    provider = build_llm_provider(Settings(llm_provider="fake", llm_model="fake-default"))
+    provider = build_llm_provider(
+        Settings(llm_provider="fake", llm_model="fake-default")
+    )
 
     score = provider.score_item({"title": "OpenAI launches GPT-5"})
 
     assert score.raw_json["provider"] == "fake"
     assert score.category == "general"
+
+
+def test_event_evidence_status_requires_matching_evidence():
+    with pytest.raises(ValueError, match="requires supported_facts"):
+        EventEvidenceAnalysis(
+            verification_status="corroborated",
+            supported_facts=[],
+            conflicting_claims=[],
+            summary="缺少事实。",
+            confidence_score=90,
+        )
+
+    with pytest.raises(ValueError, match="requires conflicting_claims"):
+        EventEvidenceAnalysis(
+            verification_status="conflicted",
+            supported_facts=[],
+            conflicting_claims=[],
+            summary="缺少冲突。",
+            confidence_score=90,
+        )
 
 
 def test_build_llm_provider_rejects_unknown_provider():
@@ -43,7 +70,9 @@ def test_build_llm_provider_supports_deepseek():
 
 
 def test_build_llm_provider_uses_current_deepseek_default_model_when_not_configured():
-    provider = build_llm_provider(Settings(llm_provider="deepseek", deepseek_api_key="test-key"))
+    provider = build_llm_provider(
+        Settings(llm_provider="deepseek", deepseek_api_key="test-key")
+    )
 
     assert isinstance(provider, DeepSeekModelProvider)
     assert provider.model == "deepseek-v4-flash"
@@ -107,6 +136,59 @@ def test_deepseek_provider_posts_json_mode_request_and_parses_model_score():
     assert score.raw_json["usage"] == {"total_tokens": 321}
 
 
+def test_deepseek_provider_analyzes_event_evidence_by_independent_publisher():
+    captured: dict[str, object] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["payload"] = json.loads(request.content.decode("utf-8"))
+        return httpx.Response(
+            200,
+            json={
+                "id": "chatcmpl-evidence",
+                "usage": {"total_tokens": 144},
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(
+                                {
+                                    "verification_status": "corroborated",
+                                    "supported_facts": ["OpenAI 发布 GPT-5"],
+                                    "conflicting_claims": [],
+                                    "summary": "两个独立发布方支持同一事实。",
+                                    "confidence_score": 92,
+                                    "raw_json": {},
+                                },
+                                ensure_ascii=False,
+                            )
+                        }
+                    }
+                ],
+            },
+        )
+
+    provider = DeepSeekModelProvider(
+        model="deepseek-chat",
+        api_key="test-key",
+        timeout_seconds=5,
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    analysis = provider.analyze_event(
+        {
+            "members": [
+                {"publisherKey": "openai", "title": "OpenAI 发布 GPT-5"},
+                {"publisherKey": "reuters", "title": "OpenAI launches GPT-5"},
+            ]
+        }
+    )
+
+    assert captured["payload"]["response_format"] == {"type": "json_object"}
+    assert "publisherKey" in captured["payload"]["messages"][0]["content"]
+    assert analysis.verification_status == "corroborated"
+    assert analysis.supported_facts == ["OpenAI 发布 GPT-5"]
+    assert analysis.raw_json["provider"] == "deepseek"
+    assert analysis.raw_json["model"] == "deepseek-chat"
+
+
 def test_deepseek_provider_normalizes_string_raw_json_from_model_output():
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
@@ -127,7 +209,7 @@ def test_deepseek_provider_normalizes_string_raw_json_from_model_output():
                                     "title_cn": "中文标题",
                                     "reason": "推荐理由。",
                                     "seller_action_level": "review",
-                                    "raw_json": "{\"unexpected\":\"string\"}",
+                                    "raw_json": '{"unexpected":"string"}',
                                 }
                             )
                         }
@@ -192,7 +274,9 @@ def test_deepseek_provider_normalizes_non_string_seller_action_level():
 
 
 def test_deepseek_provider_compacts_long_seller_action_level_text():
-    original_action = "建议立即检查FBA库存报告，确认是否获得应得的赔偿，并了解索赔流程。"
+    original_action = (
+        "建议立即检查FBA库存报告，确认是否获得应得的赔偿，并了解索赔流程。"
+    )
 
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(
@@ -256,7 +340,13 @@ def test_deepseek_provider_filters_generic_english_tags_but_keeps_brand_keywords
                                     "title_cn": "OpenAI 发布新模型",
                                     "reason": "这是来自官方的一手模型更新，值得开发者关注。",
                                     "seller_action_level": "review",
-                                    "tags": ["OpenAI", "news", "模型发布", "AI", "GPT-5"],
+                                    "tags": [
+                                        "OpenAI",
+                                        "news",
+                                        "模型发布",
+                                        "AI",
+                                        "GPT-5",
+                                    ],
                                     "raw_json": {},
                                 }
                             )

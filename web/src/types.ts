@@ -12,10 +12,11 @@ export type Source = {
   fetchAdapter: string;
   parserType: string;
   defaultCategories: string[];
-  fetchIntervalMinutes: number;
+  fetchIntervalMinutes?: number;
   enabled: boolean;
   visibility: string;
   sourceGroup?: string;
+  publisherKey?: string | null;
   contributorNo?: string | null;
   socialHandle?: string | null;
   collectionStatus?: string;
@@ -111,11 +112,18 @@ export type MainItem = {
   sourceGroup?: string | null;
   sourceType?: string | null;
   sourceTier?: string | null;
+  publisherKey?: string | null;
   socialHandle?: string | null;
   publishedAt?: string | null;
   summary?: string;
   imageUrl?: string | null;
   imageAlt?: string | null;
+};
+
+export type SupportedClaim = {
+  claim: string;
+  publisherKeys: string[];
+  sourceIds: string[];
 };
 
 export type EventCluster = {
@@ -140,6 +148,15 @@ export type EventCluster = {
   screenReasonCode?: string | null;
   screenReason?: string | null;
   riskFlags?: string[];
+  verificationStatus?: "single_source" | "corroborated" | "conflicted" | "insufficient" | null;
+  independentSourceCount?: number | null;
+  authoritativeSourceCount?: number | null;
+  evidenceScore?: number;
+  evidenceSummary?: string | null;
+  supportedFacts?: string[];
+  supportedClaims?: SupportedClaim[];
+  conflictingClaims?: string[];
+  evidenceAnalyzedAt?: string | null;
 };
 
 export type PublicEvent = {
@@ -166,6 +183,15 @@ export type PublicEvent = {
   sourceTier?: string | null;
   socialHandle?: string | null;
   windowLabel?: string;
+  verificationStatus?: "single_source" | "corroborated" | "conflicted" | "insufficient" | null;
+  independentSourceCount?: number | null;
+  authoritativeSourceCount?: number | null;
+  evidenceScore?: number;
+  evidenceSummary?: string | null;
+  supportedFacts?: string[];
+  supportedClaims?: SupportedClaim[];
+  conflictingClaims?: string[];
+  evidenceAnalyzedAt?: string | null;
 };
 
 export type PublicEventDetail = {

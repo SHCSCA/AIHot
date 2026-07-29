@@ -8,6 +8,7 @@ from intel_engine.models import (
     ClusterMemberRecord,
     DailyDigestRecord,
     EventClusterRecord,
+    EventEvidenceAssessmentRecord,
     FetchJobRecord,
     FetchRunRecord,
     ModelScoreRecord,
@@ -74,9 +75,17 @@ def app_with_admin_data(tmp_path):
         session.add_all(
             [
                 source,
-                SourceStateRecord(source_id="openai_news", health_score=75, error_streak=1),
+                SourceStateRecord(
+                    source_id="openai_news", health_score=75, error_streak=1
+                ),
                 strategy,
-                FetchJobRecord(source_id="openai_news", status="failed", priority=10, run_after=now, last_error="HTTP 403"),
+                FetchJobRecord(
+                    source_id="openai_news",
+                    status="failed",
+                    priority=10,
+                    run_after=now,
+                    last_error="HTTP 403",
+                ),
             ]
         )
         session.flush()
@@ -206,12 +215,33 @@ def app_with_admin_data(tmp_path):
             )
         )
         session.add(
+            EventEvidenceAssessmentRecord(
+                event_id=cluster.id,
+                provider="rules",
+                model="corroboration-v1",
+                verification_status="single_source",
+                independent_source_count=1,
+                authoritative_source_count=1,
+                evidence_score=44,
+                supported_facts_json=[],
+                supported_claims_json=[],
+                conflicting_claims_json=[],
+                summary="当前只有一个独立发布方，尚未完成交叉验证。",
+                raw_json={"fallbackStatus": "single_source"},
+                analyzed_at=now,
+            )
+        )
+        session.add(
             DailyDigestRecord(
                 channel="ai",
                 digest_date=date(2026, 5, 11),
                 strategy_version="ai-default-v1",
                 title="AI 日报",
-                sections_json={"highlights": [{"eventId": str(cluster.id), "title": cluster.canonical_title}]},
+                sections_json={
+                    "highlights": [
+                        {"eventId": str(cluster.id), "title": cluster.canonical_title}
+                    ]
+                },
                 published=True,
             )
         )

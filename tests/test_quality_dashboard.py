@@ -4,16 +4,34 @@ from datetime import datetime, timezone
 
 from fastapi.testclient import TestClient
 
-from intel_engine.models import FetchRunRecord, RawDocumentRecord, RawScreeningResultRecord
+import intel_engine.routes as routes
+from intel_engine.models import (
+    FetchRunRecord,
+    RawDocumentRecord,
+    RawScreeningResultRecord,
+)
 from tests.admin_helpers import app_with_admin_data, auth_header
 
 
-def test_quality_dashboard_requires_auth_and_returns_channel_funnel(tmp_path):
+class _FixtureDateTime(datetime):
+    @classmethod
+    def now(cls, tz=None):
+        value = cls(2026, 5, 11, 12, 0, tzinfo=timezone.utc)
+        return value if tz is None else value.astimezone(tz)
+
+
+def test_quality_dashboard_requires_auth_and_returns_channel_funnel(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setattr(routes, "datetime", _FixtureDateTime)
     app = app_with_admin_data(tmp_path)
     client = TestClient(app)
 
     unauthenticated = client.get("/api/v1/internal/quality-dashboard?window=720")
-    response = client.get("/api/v1/internal/quality-dashboard?window=720", headers=auth_header())
+    response = client.get(
+        "/api/v1/internal/quality-dashboard?window=720", headers=auth_header()
+    )
 
     assert unauthenticated.status_code == 401
     assert response.status_code == 200
@@ -27,7 +45,8 @@ def test_quality_dashboard_requires_auth_and_returns_channel_funnel(tmp_path):
     assert channel["sourceContributions"][0]["sourceId"] == "openai_news"
 
 
-def test_quality_dashboard_surfaces_rejection_reasons(tmp_path):
+def test_quality_dashboard_surfaces_rejection_reasons(tmp_path, monkeypatch):
+    monkeypatch.setattr(routes, "datetime", _FixtureDateTime)
     app = app_with_admin_data(tmp_path)
     SessionLocal = app.state.production_sessionmaker
     now = datetime(2026, 5, 11, 11, 0, tzinfo=timezone.utc)
@@ -80,7 +99,9 @@ def test_quality_dashboard_surfaces_rejection_reasons(tmp_path):
         )
         session.commit()
 
-    response = TestClient(app).get("/api/v1/internal/quality-dashboard?window=720", headers=auth_header())
+    response = TestClient(app).get(
+        "/api/v1/internal/quality-dashboard?window=720", headers=auth_header()
+    )
 
     assert response.status_code == 200
     channel = response.json()["channels"][0]
@@ -90,5 +111,7 @@ def test_quality_dashboard_surfaces_rejection_reasons(tmp_path):
     assert channel["rejectionSamples"][0]["title"] == "旧教程"
     assert channel["rejectionSamples"][0]["summary"] == "旧教程无新增事件。"
     assert channel["rejectionSamples"][0]["sourceName"] == "OpenAI News"
-    assert channel["rejectionSamples"][0]["url"] == "https://openai.com/news/old-tutorial"
+    assert (
+        channel["rejectionSamples"][0]["url"] == "https://openai.com/news/old-tutorial"
+    )
     assert channel["rejectionSamples"][0]["reason"] == "常青教程或旧知识。"

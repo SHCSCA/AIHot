@@ -6,7 +6,13 @@ from datetime import datetime, timezone
 from fastapi.testclient import TestClient
 
 from intel_engine.main import create_app
-from intel_engine.models import FetchJobRecord, FetchRunRecord, RawDocumentRecord, RawScreeningResultRecord, StrategyVersionRecord
+from intel_engine.models import (
+    FetchJobRecord,
+    FetchRunRecord,
+    RawDocumentRecord,
+    RawScreeningResultRecord,
+    StrategyVersionRecord,
+)
 
 
 def _app(tmp_path):
@@ -54,18 +60,27 @@ def test_internal_sources_can_create_list_and_patch(tmp_path):
     app = _app(tmp_path)
     client = TestClient(app)
 
-    created = client.post("/api/v1/internal/sources", json=_source_payload(), headers=_auth_header())
+    created = client.post(
+        "/api/v1/internal/sources", json=_source_payload(), headers=_auth_header()
+    )
     listed = client.get("/api/v1/internal/sources?channel=ai", headers=_auth_header())
     patched = client.patch(
         "/api/v1/internal/sources/openai_news",
-        json={"enabled": False},
+        json={
+            "enabled": False,
+            "fetchIntervalMinutes": 15,
+            "publisherKey": "github_org:openai",
+        },
         headers=_auth_header(),
     )
 
     assert created.status_code == 200
     assert created.json()["source"]["id"] == "openai_news"
+    assert created.json()["source"]["fetchIntervalMinutes"] == 720
     assert listed.json()["sources"][0]["tier"] == "T1"
     assert patched.json()["source"]["enabled"] is False
+    assert patched.json()["source"]["fetchIntervalMinutes"] == 720
+    assert patched.json()["source"]["publisherKey"] == "company:openai"
 
 
 def test_internal_sources_reject_blank_required_fields(tmp_path):
@@ -73,7 +88,9 @@ def test_internal_sources_reject_blank_required_fields(tmp_path):
     client = TestClient(app)
     payload = {**_source_payload(), "id": " ", "name": "", "url": " "}
 
-    created = client.post("/api/v1/internal/sources", json=payload, headers=_auth_header())
+    created = client.post(
+        "/api/v1/internal/sources", json=payload, headers=_auth_header()
+    )
 
     assert created.status_code == 422
     assert "信源 ID" in created.json()["detail"]["message"]
@@ -84,8 +101,17 @@ def test_internal_sources_reject_duplicate_id_or_url(tmp_path):
     client = TestClient(app)
     payload = _source_payload()
 
-    assert client.post("/api/v1/internal/sources", json=payload, headers=_auth_header()).status_code == 200
-    same_id = client.post("/api/v1/internal/sources", json={**payload, "name": "Other"}, headers=_auth_header())
+    assert (
+        client.post(
+            "/api/v1/internal/sources", json=payload, headers=_auth_header()
+        ).status_code
+        == 200
+    )
+    same_id = client.post(
+        "/api/v1/internal/sources",
+        json={**payload, "name": "Other"},
+        headers=_auth_header(),
+    )
     same_url = client.post(
         "/api/v1/internal/sources",
         json={**payload, "id": "openai_news_copy", "url": "https://openai.com/news"},
@@ -107,7 +133,9 @@ def test_internal_sources_require_connectivity_before_save(tmp_path):
     }
     client = TestClient(app)
 
-    created = client.post("/api/v1/internal/sources", json=_source_payload(), headers=_auth_header())
+    created = client.post(
+        "/api/v1/internal/sources", json=_source_payload(), headers=_auth_header()
+    )
 
     assert created.status_code == 422
     assert created.json()["detail"]["code"] == "source_connectivity_failed"
@@ -117,14 +145,22 @@ def test_internal_sources_require_connectivity_before_save(tmp_path):
 def test_internal_source_states_and_jobs_are_listed(tmp_path):
     app = _app(tmp_path)
     client = TestClient(app)
-    client.post("/api/v1/internal/sources", json=_source_payload(), headers=_auth_header())
+    client.post(
+        "/api/v1/internal/sources", json=_source_payload(), headers=_auth_header()
+    )
     SessionLocal = app.state.production_sessionmaker
     now = datetime(2026, 5, 11, 10, 0, tzinfo=timezone.utc)
     with SessionLocal() as session:
-        session.add(FetchJobRecord(source_id="openai_news", status="pending", priority=10, run_after=now))
+        session.add(
+            FetchJobRecord(
+                source_id="openai_news", status="pending", priority=10, run_after=now
+            )
+        )
         session.commit()
 
-    states = client.get("/api/v1/internal/source-states?channel=ai", headers=_auth_header())
+    states = client.get(
+        "/api/v1/internal/source-states?channel=ai", headers=_auth_header()
+    )
     jobs = client.get("/api/v1/internal/jobs?status=pending", headers=_auth_header())
 
     assert states.status_code == 200
@@ -136,7 +172,9 @@ def test_internal_source_states_and_jobs_are_listed(tmp_path):
 def test_internal_source_diagnostics_exposes_fetch_and_screening_reasons(tmp_path):
     app = _app(tmp_path)
     client = TestClient(app)
-    client.post("/api/v1/internal/sources", json=_source_payload(), headers=_auth_header())
+    client.post(
+        "/api/v1/internal/sources", json=_source_payload(), headers=_auth_header()
+    )
     SessionLocal = app.state.production_sessionmaker
     now = datetime(2026, 5, 11, 10, 0, tzinfo=timezone.utc)
     with SessionLocal() as session:
@@ -208,7 +246,9 @@ def test_internal_source_diagnostics_exposes_fetch_and_screening_reasons(tmp_pat
         )
         session.commit()
 
-    response = client.get("/api/v1/internal/source-diagnostics?channel=ai", headers=_auth_header())
+    response = client.get(
+        "/api/v1/internal/source-diagnostics?channel=ai", headers=_auth_header()
+    )
 
     assert response.status_code == 200
     diagnostic = response.json()["sourceDiagnostics"][0]
@@ -233,11 +273,22 @@ def test_internal_strategy_feedback_and_evaluation_run_endpoints(tmp_path):
         "modelConfig": {"provider": "fake"},
     }
 
-    created_strategy = client.post("/api/v1/internal/strategy-versions", json=strategy_payload, headers=_auth_header())
-    listed_strategy = client.get("/api/v1/internal/strategy-versions?channel=ai", headers=_auth_header())
+    created_strategy = client.post(
+        "/api/v1/internal/strategy-versions",
+        json=strategy_payload,
+        headers=_auth_header(),
+    )
+    listed_strategy = client.get(
+        "/api/v1/internal/strategy-versions?channel=ai", headers=_auth_header()
+    )
     feedback = client.post(
         "/api/v1/internal/feedback-events",
-        json={"channel": "ai", "feedbackType": "false_positive", "reason": "噪声", "actor": "operator"},
+        json={
+            "channel": "ai",
+            "feedbackType": "false_positive",
+            "reason": "噪声",
+            "actor": "operator",
+        },
         headers=_auth_header(),
     )
     evaluation = client.post(

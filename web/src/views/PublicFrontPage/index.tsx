@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Credentials, PublicApi } from "../../api";
+import type { PublicEvent } from "../../types";
 
 import { TopNav } from "./TopNav";
 import { HeroSection } from "./HeroSection";
@@ -56,6 +57,9 @@ export function PublicFrontPage({
   const [page, setPage] = useState(1);
   const [eventVersion, setEventVersion] = useState(0);
   const [sourceCounts, setSourceCounts] = useState<Partial<Record<PublicChannel, number>>>({});
+  const [briefEvents, setBriefEvents] = useState<PublicEvent[]>([]);
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [briefError, setBriefError] = useState<string | null>(null);
   const channel = channelValue ?? internalChannel;
   const section = sectionValue ?? internalSection;
   const theme = themeValue ?? internalTheme;
@@ -85,6 +89,32 @@ export function PublicFrontPage({
       .catch(() => undefined);
     return () => { active = false; };
   }, [api]);
+
+  useEffect(() => {
+    if (section !== "overview" || typeof api.listEvents !== "function") return;
+    let active = true;
+    setBriefEvents([]);
+    setBriefLoading(true);
+    setBriefError(null);
+    api.listEvents({
+      channel,
+      mode: "selected",
+      window: channel === "ai" ? 24 : undefined,
+      take: 4
+    })
+      .then((result) => {
+        if (active) setBriefEvents(result.items.slice(0, 4));
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        setBriefEvents([]);
+        setBriefError(error instanceof Error ? error.message : "请求失败");
+      })
+      .finally(() => {
+        if (active) setBriefLoading(false);
+      });
+    return () => { active = false; };
+  }, [api, channel, section, eventVersion]);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -142,7 +172,7 @@ export function PublicFrontPage({
     all: { title: "全部热点", desc: channelInfo[channel].description },
     daily: { title: channel === "ai" ? "AI 日报" : "Amazon 日报", desc: "基于最近 24 小时精选情报自动生成" },
     rss: { title: "RSS 订阅", desc: "把事件流和日报接入你的阅读器" },
-    sources: { title: "信源墙", desc: "公开展示已收录和待接入的信源贡献" },
+    sources: { title: "信源目录", desc: "核对已收录和待接入信源的层级与采集档案" },
     feedback: { title: "反馈", desc: "用户提交的质量信号会进入后台评估" }
   };
 
@@ -151,7 +181,7 @@ export function PublicFrontPage({
   const activeWindowLabel = channel === "amazon" ? "最近 7 天" : "最近 24 小时";
 
   return (
-    <main className="aihot-public-shell" data-motion="breathing">
+    <main className="aihot-public-shell" data-motion="settled">
       {!embedded && (
         <TopNav
           channel={channel}
@@ -172,7 +202,7 @@ export function PublicFrontPage({
       )}
 
       <section className={embedded ? "aihot-workspace unified-public-workspace" : "aihot-workspace"}>
-        {section !== "daily" && !embedded && (
+        {section !== "daily" && section !== "overview" && !embedded && (
           <header className="aihot-topbar">
             <div>
               <h1>{activeSection.title}</h1>
@@ -190,7 +220,16 @@ export function PublicFrontPage({
         {showLogin && <LoginPanel error={loginError} onLogin={onLogin} />}
 
         {section === "overview" ? (
-          <HeroSection channel={channel} sourceCount={sourceCounts[channel]} />
+          <HeroSection
+            channel={channel}
+            sourceCount={sourceCounts[channel]}
+            events={briefEvents}
+            loading={briefLoading}
+            error={briefError}
+            onOpenSelected={() => switchSection("selected")}
+            onOpenAll={() => switchSection("all")}
+            onOpenDaily={() => switchSection("daily")}
+          />
         ) : section === "daily" ? (
           <DailyReader api={api} channel={channel} />
         ) : section === "rss" ? (

@@ -1,0 +1,559 @@
+/* Quiet Intelligence theme layer. Imported after the legacy sheet. */
+:root,
+[data-theme="dark"] {
+  --ui-bg: #0d0f10;
+  --ui-bg-soft: #121516;
+  --ui-bg-elevated: #181b1d;
+  --ui-surface: #171a1c;
+  --ui-surface-2: #1d2123;
+  --ui-surface-3: #252a2d;
+  --ui-panel: rgba(24, 27, 29, 0.86);
+  --ui-panel-strong: rgba(20, 23, 25, 0.97);
+  --ui-border: rgba(214, 226, 224, 0.16);
+  --ui-border-strong: rgba(99, 211, 197, 0.46);
+  --ui-border-soft: rgba(214, 226, 224, 0.1);
+  --ui-text: #e5eae8;
+  --ui-text-strong: #fafcfb;
+  --ui-muted: #aab5b2;
+  --ui-faint: #818e8a;
+  --ui-placeholder: #74817d;
+  --ui-link: #78d9cf;
+  --ui-focus: rgba(66, 193, 178, 0.3);
+  --ui-selection: rgba(66, 193, 178, 0.24);
+  --ui-accent: #42c1b2;
+  --ui-accent-2: #6ca7e8;
+  --ui-accent-3: #dfaa53;
+  --ui-accent-ink: #071412;
+  --ui-accent-strong: #91e6dc;
+  --ui-danger: #ff7f8b;
+  --ui-warning: #e9ba67;
+  --ui-success: #61d0a6;
+  --ui-info: #82b9f4;
+  --ui-danger-bg: rgba(255, 127, 139, 0.12);
+  --ui-warning-bg: rgba(233, 186, 103, 0.12);
+  --ui-success-bg: rgba(97, 208, 166, 0.12);
+  --ui-info-bg: rgba(130, 185, 244, 0.12);
+  --ui-row-hover: rgba(66, 193, 178, 0.065);
+  --ui-input-bg: rgba(13, 15, 16, 0.88);
+  --ui-input-border: rgba(214, 226, 224, 0.2);
+  --ui-table-head: #1a1e20;
+  --ui-table-row: #151819;
+  --ui-backdrop: rgba(7, 9, 9, 0.72);
+  --ui-shadow: 0 26px 72px rgba(0, 0, 0, 0.38);
+  --ui-shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.22);
+  --ui-shadow-hover: 0 18px 42px rgba(0, 0, 0, 0.28);
+  --glass-subtle: rgba(24, 27, 29, 0.76);
+  --glass-panel: rgba(24, 27, 29, 0.9);
+  --glass-floating: rgba(17, 20, 21, 0.86);
+  --glass-solid: #181b1d;
+  --glass-border: rgba(214, 226, 224, 0.17);
+  --glass-border-strong: rgba(145, 230, 220, 0.34);
+  --glass-highlight: rgba(255, 255, 255, 0.11);
+  --glass-blur-subtle: 10px;
+  --glass-blur-panel: 16px;
+  --glass-blur-floating: 22px;
+  --motion-fast: 110ms;
+  --motion-base: 180ms;
+  --motion-slow: 300ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ui-radius: 8px;
+  --ui-radius-sm: 6px;
+  --ui-sidebar: 264px;
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --ui-bg: #f2f5f3;
+  --ui-bg-soft: #f8faf9;
+  --ui-bg-elevated: #ffffff;
+  --ui-surface: #ffffff;
+  --ui-surface-2: #f0f3f2;
+  --ui-surface-3: #e7ecea;
+  --ui-panel: rgba(255, 255, 255, 0.88);
+  --ui-panel-strong: rgba(255, 255, 255, 0.98);
+  --ui-border: #cad3d0;
+  --ui-border-strong: #389e92;
+  --ui-border-soft: #e1e7e4;
+  --ui-text: #29322f;
+  --ui-text-strong: #101614;
+  --ui-muted: #53635e;
+  --ui-faint: #5c6b66;
+  --ui-placeholder: #5f6e69;
+  --ui-link: #176f67;
+  --ui-focus: rgba(24, 143, 130, 0.22);
+  --ui-selection: rgba(24, 143, 130, 0.16);
+  --ui-accent: #188f82;
+  --ui-accent-2: #3d73b7;
+  --ui-accent-3: #a16c16;
+  --ui-accent-ink: #ffffff;
+  --ui-accent-strong: #106f65;
+  --ui-danger: #b53849;
+  --ui-warning: #82580f;
+  --ui-success: #176f50;
+  --ui-info: #2b609d;
+  --ui-danger-bg: rgba(181, 56, 73, 0.09);
+  --ui-warning-bg: rgba(130, 88, 15, 0.09);
+  --ui-success-bg: rgba(23, 111, 80, 0.09);
+  --ui-info-bg: rgba(43, 96, 157, 0.09);
+  --ui-row-hover: rgba(24, 143, 130, 0.06);
+  --ui-input-bg: #ffffff;
+  --ui-input-border: #bcc8c4;
+  --ui-table-head: #edf1ef;
+  --ui-table-row: #ffffff;
+  --ui-backdrop: rgba(230, 235, 233, 0.76);
+  --ui-shadow: 0 24px 64px rgba(29, 44, 39, 0.13);
+  --ui-shadow-soft: 0 10px 28px rgba(29, 44, 39, 0.075);
+  --ui-shadow-hover: 0 16px 38px rgba(29, 44, 39, 0.12);
+  --glass-subtle: rgba(255, 255, 255, 0.76);
+  --glass-panel: rgba(255, 255, 255, 0.9);
+  --glass-floating: rgba(255, 255, 255, 0.86);
+  --glass-solid: #ffffff;
+  --glass-border: rgba(66, 86, 80, 0.18);
+  --glass-border-strong: rgba(24, 143, 130, 0.34);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+  color-scheme: light;
+}
+
+html {
+  background: var(--ui-bg);
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--ui-bg);
+  color: var(--ui-text);
+  font-family: Inter, "Segoe UI Variable", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 15px;
+  letter-spacing: 0;
+}
+
+body,
+button,
+input,
+select,
+textarea,
+h1,
+h2,
+h3,
+h4,
+p,
+span,
+small,
+strong,
+label,
+th,
+td {
+  letter-spacing: 0 !important;
+}
+
+::selection {
+  background: var(--ui-selection);
+  color: var(--ui-text-strong);
+}
+
+.unified-shell,
+.aihot-public-shell,
+.public-shell,
+.app-shell,
+.workspace,
+.unified-content,
+.login-page {
+  background: var(--ui-bg) !important;
+  color: var(--ui-text);
+}
+
+.unified-sidebar {
+  border-right: 1px solid var(--glass-border) !important;
+  background: color-mix(in srgb, var(--ui-panel-strong) 88%, transparent) !important;
+  box-shadow: 10px 0 34px color-mix(in srgb, var(--ui-bg) 38%, transparent) !important;
+  backdrop-filter: blur(var(--glass-blur-panel)) saturate(1.04);
+  -webkit-backdrop-filter: blur(var(--glass-blur-panel)) saturate(1.04);
+}
+
+.unified-main {
+  background: var(--ui-bg);
+}
+
+.unified-topbar,
+.aihot-topnav,
+.topbar {
+  border-color: var(--glass-border) !important;
+  background: color-mix(in srgb, var(--ui-panel-strong) 92%, transparent) !important;
+  box-shadow: 0 1px 0 var(--glass-highlight) !important;
+  backdrop-filter: blur(var(--glass-blur-panel)) saturate(1.03);
+  -webkit-backdrop-filter: blur(var(--glass-blur-panel)) saturate(1.03);
+}
+
+.unified-brand {
+  min-height: 82px !important;
+  border-color: var(--glass-border) !important;
+  border-radius: 8px !important;
+  background: color-mix(in srgb, var(--ui-surface) 88%, transparent) !important;
+  color: var(--ui-text-strong) !important;
+  box-shadow: inset 0 1px 0 var(--glass-highlight) !important;
+}
+
+.brand-word {
+  color: var(--ui-text-strong) !important;
+  background: none !important;
+  -webkit-text-fill-color: currentColor !important;
+  text-shadow: none !important;
+}
+
+.brand-word-hot {
+  color: var(--ui-accent-strong) !important;
+}
+
+.brand-core {
+  background: var(--ui-accent) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--ui-accent) 12%, transparent) !important;
+}
+
+.unified-nav,
+.unified-channel-switch,
+.topnav-sections {
+  gap: 4px;
+}
+
+.unified-nav > span {
+  color: var(--ui-faint) !important;
+  font-size: 10px !important;
+  font-weight: 760;
+}
+
+.unified-nav button,
+.unified-channel-switch button,
+.topnav-sections button,
+.unified-user,
+.unified-mobile-nav button {
+  border-radius: 6px !important;
+  color: var(--ui-muted) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.unified-nav button.active,
+.unified-nav button:hover,
+.unified-channel-switch button.active,
+.unified-channel-switch button:hover,
+.topnav-sections button.active,
+.topnav-sections button:hover,
+.unified-mobile-nav button.active {
+  border-color: color-mix(in srgb, var(--ui-accent) 24%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-accent) 10%, var(--ui-surface)) !important;
+  color: var(--ui-text-strong) !important;
+}
+
+.unified-command,
+.aihot-search,
+.theme-switcher,
+.segmented-row,
+.source-wall-tools {
+  border-color: var(--ui-border) !important;
+  border-radius: 6px !important;
+  background: color-mix(in srgb, var(--ui-surface) 90%, transparent) !important;
+}
+
+.unified-command input,
+.aihot-search input {
+  color: var(--ui-text) !important;
+}
+
+.command-k-trigger,
+.session-chip,
+.theme-dot {
+  border-color: var(--ui-border) !important;
+  border-radius: 5px !important;
+  background: var(--ui-surface-2) !important;
+  color: var(--ui-muted) !important;
+}
+
+.theme-dot.active {
+  border-color: var(--ui-border-strong) !important;
+  color: var(--ui-text-strong) !important;
+}
+
+.liquid-glass-subtle,
+.liquid-glass-panel,
+.liquid-glass-floating,
+.cmdk-panel,
+.public-login-panel {
+  border-color: var(--glass-border) !important;
+  border-radius: 8px !important;
+  color: var(--ui-text);
+  box-shadow: var(--ui-shadow-soft), inset 0 1px 0 var(--glass-highlight) !important;
+}
+
+.liquid-glass-subtle {
+  background: var(--glass-subtle) !important;
+  backdrop-filter: blur(var(--glass-blur-subtle)) saturate(1.03);
+  -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(1.03);
+}
+
+.liquid-glass-panel {
+  background: var(--glass-panel) !important;
+  backdrop-filter: blur(var(--glass-blur-panel)) saturate(1.03);
+  -webkit-backdrop-filter: blur(var(--glass-blur-panel)) saturate(1.03);
+}
+
+.liquid-glass-floating,
+.cmdk-panel {
+  background: var(--glass-floating) !important;
+  backdrop-filter: blur(var(--glass-blur-floating)) saturate(1.04);
+  -webkit-backdrop-filter: blur(var(--glass-blur-floating)) saturate(1.04);
+}
+
+.section,
+.metric,
+.table-wrap,
+.daily-document,
+.daily-document.dark,
+.daily-story,
+.public-feedback,
+.public-feedback.dark,
+.admin-filter-panel,
+.admin-channel-card,
+.source-directory__list {
+  border-color: var(--ui-border) !important;
+  border-radius: 8px !important;
+  background: var(--ui-panel-strong) !important;
+  color: var(--ui-text);
+  box-shadow: var(--ui-shadow-soft);
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.daily-document,
+.daily-document.dark,
+.daily-story,
+.public-feedback,
+.public-feedback.dark,
+.table-wrap,
+table,
+tbody,
+td {
+  background-color: var(--ui-table-row) !important;
+}
+
+th {
+  background: var(--ui-table-head) !important;
+  color: var(--ui-muted) !important;
+}
+
+td {
+  border-bottom-color: var(--ui-border-soft) !important;
+  color: var(--ui-text) !important;
+}
+
+tr:hover td {
+  background: color-mix(in srgb, var(--ui-accent) 5%, var(--ui-table-row)) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+td strong,
+.metric strong,
+.brand strong {
+  color: var(--ui-text-strong);
+}
+
+p,
+.hint,
+.title-block p,
+.section-head p,
+.daily-cover-summary,
+.daily-story p {
+  color: var(--ui-muted);
+}
+
+button,
+input,
+select,
+textarea {
+  border-radius: 6px !important;
+}
+
+button {
+  border-color: var(--ui-border);
+  background: var(--ui-surface);
+  color: var(--ui-text);
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    background-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard);
+}
+
+button:hover:not(:disabled) {
+  transform: none !important;
+  border-color: var(--ui-border-strong);
+  background: color-mix(in srgb, var(--ui-accent) 7%, var(--ui-surface));
+  color: var(--ui-text-strong);
+  box-shadow: none !important;
+}
+
+button.primary,
+.primary {
+  border-color: var(--ui-accent) !important;
+  background: var(--ui-accent) !important;
+  color: var(--ui-accent-ink) !important;
+  filter: none !important;
+}
+
+button.primary:hover:not(:disabled),
+.primary:hover:not(:disabled) {
+  border-color: var(--ui-accent-strong) !important;
+  background: color-mix(in srgb, var(--ui-accent) 86%, var(--ui-text-strong)) !important;
+}
+
+button.ghost,
+.ghost {
+  background: color-mix(in srgb, var(--ui-surface) 84%, transparent) !important;
+  color: var(--ui-text) !important;
+}
+
+input,
+select,
+textarea,
+.cmdk-input {
+  border-color: var(--ui-input-border) !important;
+  background: var(--ui-input-bg) !important;
+  color: var(--ui-text) !important;
+  caret-color: var(--ui-accent);
+}
+
+input::placeholder,
+textarea::placeholder,
+.cmdk-input::placeholder {
+  color: var(--ui-placeholder) !important;
+  opacity: 1;
+}
+
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--ui-accent) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px var(--ui-focus) !important;
+}
+
+.status,
+.event-tags span,
+.source-directory__state,
+.score-badge {
+  border-radius: 5px !important;
+}
+
+.metric,
+.bento-card,
+.source-wall-card,
+.aihot-event-card,
+.admin-channel-card,
+.rss-card {
+  border-radius: 8px !important;
+}
+
+.metric:hover,
+.bento-card:hover,
+.source-wall-card:hover,
+.aihot-event-card:hover,
+.admin-channel-card:hover,
+.rss-card:hover {
+  transform: none !important;
+}
+
+.cmdk-overlay {
+  background: var(--ui-backdrop) !important;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.cmdk-result {
+  border-radius: 5px !important;
+  color: var(--ui-text) !important;
+}
+
+.cmdk-result.selected,
+.cmdk-result:hover {
+  border-color: color-mix(in srgb, var(--ui-accent) 28%, var(--ui-border)) !important;
+  background: color-mix(in srgb, var(--ui-accent) 9%, var(--ui-surface)) !important;
+  color: var(--ui-text-strong) !important;
+}
+
+.cmdk-section-title,
+.cmdk-footer,
+.cmdk-result-desc {
+  color: var(--ui-faint) !important;
+}
+
+/* Decorative loops are replaced by state-driven Framer Motion transitions. */
+.ambient-breathing-field,
+.daily-breathing-field,
+.event-card-breath,
+.cmdk-breathing-frame,
+.brand-glow,
+.brand-orbit {
+  display: none !important;
+}
+
+.breathing-idle,
+.breathing-wave,
+.breathing-wave path,
+.liquid-motion-breathe,
+.breathing-reveal,
+.unified-brand,
+.unified-brand::before,
+.unified-brand::after,
+.brand-word,
+.brand-core,
+.admin-login-ambient,
+.admin-login-ambient span,
+.admin-login-ambient i,
+.admin-login-symbol,
+.admin-login-symbol::before,
+.admin-login-symbol::after,
+.admin-login-card::before {
+  animation: none !important;
+}
+
+@media (max-width: 720px) {
+  :root,
+  [data-theme="dark"],
+  [data-theme="light"] {
+    --ui-radius: 8px;
+    --ui-radius-sm: 6px;
+  }
+
+  .unified-sidebar,
+  .unified-topbar {
+    backdrop-filter: blur(var(--glass-blur-subtle)) saturate(1.02);
+    -webkit-backdrop-filter: blur(var(--glass-blur-subtle)) saturate(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .unified-sidebar,
+  .unified-topbar,
+  .aihot-topnav,
+  .liquid-glass-subtle,
+  .liquid-glass-panel,
+  .liquid-glass-floating,
+  .cmdk-panel {
+    background: var(--glass-solid) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}

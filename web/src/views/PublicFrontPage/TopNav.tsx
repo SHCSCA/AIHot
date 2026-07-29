@@ -1,5 +1,5 @@
-import { Heart, LockKeyhole, Moon, Monitor, Search, Sparkles, Sun } from "lucide-react";
-import { motion } from "framer-motion";
+import { LockKeyhole, Moon, Monitor, Search, Sparkles, Store, Sun } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import type { PublicChannel, PublicSection } from "./index";
 
 type ThemePreference = "dark" | "light" | "system";
@@ -19,7 +19,7 @@ interface TopNavProps {
 
 const channelItems = [
   { id: "ai" as const, label: "AI 热点", Icon: Sparkles },
-  { id: "amazon" as const, label: "亚马逊情报", Icon: Heart }
+  { id: "amazon" as const, label: "亚马逊情报", Icon: Store }
 ];
 
 const sectionItems = [
@@ -28,7 +28,7 @@ const sectionItems = [
   { id: "all" as const, label: "全部热点" },
   { id: "daily" as const, label: "日报" },
   { id: "rss" as const, label: "RSS 订阅" },
-  { id: "sources" as const, label: "信源墙" },
+  { id: "sources" as const, label: "信源目录" },
   { id: "feedback" as const, label: "反馈" }
 ];
 
@@ -44,6 +44,9 @@ export function TopNav({
   onLoginClick,
   hideLoginControls
 }: TopNavProps) {
+  const reducedMotion = useReducedMotion();
+  const activeTransition = reducedMotion ? { duration: 0 } : { type: "spring" as const, stiffness: 520, damping: 42 };
+
   return (
     <header className="aihot-topnav liquid-glass-panel">
       <div className="topnav-logo">
@@ -55,12 +58,12 @@ export function TopNav({
           <motion.button
             key={id}
             className={channel === id ? "active" : ""}
+            type="button"
             onClick={() => onChannelChange(id)}
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.98 }}
           >
+            {channel === id && <motion.i className="qi-nav-active" layoutId="public-channel-active" transition={activeTransition} aria-hidden="true" />}
             <Icon size={15} />
-            <span>{label}</span>
+            <span className="qi-nav-label">{label}</span>
           </motion.button>
         ))}
       </nav>
@@ -70,11 +73,11 @@ export function TopNav({
           <motion.button
             key={id}
             className={section === id ? "active" : ""}
+            type="button"
             onClick={() => onSectionChange(id)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.98 }}
           >
-            {label}
+            {section === id && <motion.i className="qi-nav-active" layoutId="public-section-active" transition={activeTransition} aria-hidden="true" />}
+            <span className="qi-nav-label">{label}</span>
           </motion.button>
         ))}
       </nav>
@@ -84,6 +87,7 @@ export function TopNav({
           <div className="aihot-search">
             <Search size={16} />
             <input
+              aria-label="搜索公开情报"
               value={filters.q}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="搜索标题/摘要..."

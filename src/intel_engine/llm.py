@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 import httpx
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from intel_engine.settings import Settings
 
@@ -72,14 +72,44 @@ class ScreeningResult(BaseModel):
     raw_json: dict[str, Any] = Field(default_factory=dict)
 
 
+class EventEvidenceAnalysis(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    verification_status: Literal[
+        "single_source",
+        "corroborated",
+        "conflicted",
+        "insufficient",
+    ]
+    supported_facts: list[str] = Field(default_factory=list)
+    conflicting_claims: list[str] = Field(default_factory=list)
+    summary: str
+    confidence_score: float = Field(ge=0, le=100)
+    raw_json: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_status_evidence(self) -> "EventEvidenceAnalysis":
+        if self.verification_status == "corroborated" and not any(
+            fact.strip() for fact in self.supported_facts
+        ):
+            raise ValueError("corroborated analysis requires supported_facts")
+        if self.verification_status == "conflicted" and not any(
+            claim.strip() for claim in self.conflicting_claims
+        ):
+            raise ValueError("conflicted analysis requires conflicting_claims")
+        return self
+
+
 class LLMProvider(Protocol):
-    def score_item(self, payload: dict[str, Any]) -> ModelScore:
-        ...
+    def score_item(self, payload: dict[str, Any]) -> ModelScore: ...
 
 
 class ScreeningProvider(Protocol):
-    def screen_item(self, payload: dict[str, Any]) -> ScreeningResult:
-        ...
+    def screen_item(self, payload: dict[str, Any]) -> ScreeningResult: ...
+
+
+class EventAnalysisProvider(Protocol):
+    def analyze_event(self, payload: dict[str, Any]) -> EventEvidenceAnalysis: ...
 
 
 class FakeLLMProvider:
@@ -97,11 +127,37 @@ class FakeScreeningProvider:
     def screen_item(self, payload: dict[str, Any]) -> ScreeningResult:
         channel = payload.get("channel")
         category = self.result.category
-        if channel == "amazon" and category not in {"policy", "account_health", "fba_logistics", "ads_ppc", "listing_seo", "fees_margin", "product_research", "tools", "compliance_trade"}:
-            source = payload.get("source") if isinstance(payload.get("source"), dict) else {}
-            defaults = source.get("defaultCategories") if isinstance(source, dict) else None
-            category = str(defaults[0]) if isinstance(defaults, list) and defaults else "policy"
+        if channel == "amazon" and category not in {
+            "policy",
+            "account_health",
+            "fba_logistics",
+            "ads_ppc",
+            "listing_seo",
+            "fees_margin",
+            "product_research",
+            "tools",
+            "compliance_trade",
+        }:
+            source = (
+                payload.get("source") if isinstance(payload.get("source"), dict) else {}
+            )
+            defaults = (
+                source.get("defaultCategories") if isinstance(source, dict) else None
+            )
+            category = (
+                str(defaults[0])
+                if isinstance(defaults, list) and defaults
+                else "policy"
+            )
         return self.result.model_copy(update={"category": category})
+
+
+class FakeEventAnalysisProvider:
+    def __init__(self, result: EventEvidenceAnalysis | None = None):
+        self.result = result or default_fake_event_evidence_analysis()
+
+    def analyze_event(self, payload: dict[str, Any]) -> EventEvidenceAnalysis:
+        return self.result
 
 
 class OpenAIModelProvider:
@@ -111,7 +167,9 @@ class OpenAIModelProvider:
         self.client = client
 
     def score_item(self, payload: dict[str, Any]) -> ModelScore:
-        client = self.client or _build_openai_client(timeout_seconds=self.timeout_seconds)
+        client = self.client or _build_openai_client(
+            timeout_seconds=self.timeout_seconds
+        )
         response = client.responses.parse(
             model=self.model,
             input=[
@@ -128,6 +186,28 @@ class OpenAIModelProvider:
             raise RuntimeError("OpenAI response did not match ModelScore schema")
         return parsed
 
+    def analyze_event(self, payload: dict[str, Any]) -> EventEvidenceAnalysis:
+        client = self.client or _build_openai_client(
+            timeout_seconds=self.timeout_seconds
+        )
+        response = client.responses.parse(
+            model=self.model,
+            input=[
+                {
+                    "role": "system",
+                    "content": _event_evidence_system_prompt(),
+                },
+                {"role": "user", "content": str(payload)},
+            ],
+            text_format=EventEvidenceAnalysis,
+        )
+        parsed = response.output_parsed
+        if not isinstance(parsed, EventEvidenceAnalysis):
+            raise RuntimeError(
+                "OpenAI response did not match EventEvidenceAnalysis schema"
+            )
+        return parsed
+
 
 class DeepSeekModelProvider:
     def __init__(
@@ -140,7 +220,9 @@ class DeepSeekModelProvider:
         client: httpx.Client | None = None,
     ):
         if not api_key:
-            raise RuntimeError("DEEPSEEK_API_KEY is required when LLM_PROVIDER=deepseek.")
+            raise RuntimeError(
+                "DEEPSEEK_API_KEY is required when LLM_PROVIDER=deepseek."
+            )
         self.model = model
         self.api_key = api_key
         self.timeout_seconds = timeout_seconds
@@ -217,7 +299,10 @@ class DeepSeekModelProvider:
                         "中文标题必须具体，中文摘要必须说明发生了什么、涉及谁、变化点和影响。"
                     ),
                 },
-                {"role": "user", "content": json.dumps(payload, ensure_ascii=False, default=str)},
+                {
+                    "role": "user",
+                    "content": json.dumps(payload, ensure_ascii=False, default=str),
+                },
             ],
             "response_format": {"type": "json_object"},
             "temperature": 0.1,
@@ -233,7 +318,9 @@ class DeepSeekModelProvider:
         try:
             parsed_content = json.loads(content)
         except json.JSONDecodeError as exc:
-            raise RuntimeError("DeepSeek screening response was not valid JSON.") from exc
+            raise RuntimeError(
+                "DeepSeek screening response was not valid JSON."
+            ) from exc
         if not isinstance(parsed_content, dict):
             raise RuntimeError("DeepSeek screening response JSON must be an object.")
         parsed_content = _normalize_screening_payload(parsed_content)
@@ -249,10 +336,60 @@ class DeepSeekModelProvider:
         )
         return result.model_copy(update={"raw_json": raw_json})
 
-    def _post_chat_completion(self, request_body: dict[str, Any], headers: dict[str, str]) -> httpx.Response:
+    def analyze_event(self, payload: dict[str, Any]) -> EventEvidenceAnalysis:
+        request_body = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": _event_evidence_system_prompt(),
+                },
+                {
+                    "role": "user",
+                    "content": json.dumps(payload, ensure_ascii=False, default=str),
+                },
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.1,
+        }
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        response = self._post_chat_completion(request_body, headers)
+        response.raise_for_status()
+        response_json = response.json()
+        content = _extract_chat_content(response_json)
+        try:
+            parsed_content = json.loads(content)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                "DeepSeek event evidence response was not valid JSON."
+            ) from exc
+        if not isinstance(parsed_content, dict):
+            raise RuntimeError(
+                "DeepSeek event evidence response JSON must be an object."
+            )
+        analysis = EventEvidenceAnalysis.model_validate(parsed_content)
+        raw_json = dict(analysis.raw_json)
+        raw_json.update(
+            {
+                "provider": "deepseek",
+                "model": self.model,
+                "responseId": response_json.get("id"),
+                "usage": response_json.get("usage"),
+            }
+        )
+        return analysis.model_copy(update={"raw_json": raw_json})
+
+    def _post_chat_completion(
+        self, request_body: dict[str, Any], headers: dict[str, str]
+    ) -> httpx.Response:
         url = f"{self.base_url}/chat/completions"
         if self.client is not None:
-            return self.client.post(url, headers=headers, json=request_body, timeout=self.timeout_seconds)
+            return self.client.post(
+                url, headers=headers, json=request_body, timeout=self.timeout_seconds
+            )
         with httpx.Client(timeout=self.timeout_seconds) as client:
             return client.post(url, headers=headers, json=request_body)
 
@@ -298,7 +435,9 @@ def build_screening_provider(settings: Settings | None = None) -> ScreeningProvi
             timeout_seconds=resolved_settings.llm_timeout_seconds,
             base_url=resolved_settings.deepseek_base_url,
         )
-    raise ValueError(f"Unsupported screening provider: {resolved_settings.llm_provider}")
+    raise ValueError(
+        f"Unsupported screening provider: {resolved_settings.llm_provider}"
+    )
 
 
 def build_scoring_provider(settings: Settings | None = None) -> LLMProvider:
@@ -318,6 +457,29 @@ def build_scoring_provider(settings: Settings | None = None) -> LLMProvider:
             timeout_seconds=resolved_settings.llm_timeout_seconds,
         )
     raise ValueError(f"Unsupported scoring provider: {resolved_settings.llm_provider}")
+
+
+def build_event_analysis_provider(
+    settings: Settings | None = None,
+) -> EventAnalysisProvider:
+    resolved_settings = settings or Settings()
+    if resolved_settings.llm_provider == "fake":
+        return FakeEventAnalysisProvider()
+    if resolved_settings.llm_provider == "deepseek":
+        return DeepSeekModelProvider(
+            model=resolved_settings.llm_scoring_model,
+            api_key=resolved_settings.deepseek_api_key,
+            timeout_seconds=resolved_settings.llm_timeout_seconds,
+            base_url=resolved_settings.deepseek_base_url,
+        )
+    if resolved_settings.llm_provider == "openai":
+        return OpenAIModelProvider(
+            model=resolved_settings.llm_model,
+            timeout_seconds=resolved_settings.llm_timeout_seconds,
+        )
+    raise ValueError(
+        f"Unsupported event analysis provider: {resolved_settings.llm_provider}"
+    )
 
 
 def default_fake_model_score() -> ModelScore:
@@ -357,11 +519,38 @@ def default_fake_screening_result() -> ScreeningResult:
     )
 
 
+def default_fake_event_evidence_analysis() -> EventEvidenceAnalysis:
+    return EventEvidenceAnalysis(
+        verification_status="insufficient",
+        supported_facts=[],
+        conflicting_claims=[],
+        summary="Fake provider 不执行事件级交叉验证。",
+        confidence_score=0,
+        raw_json={"provider": "fake", "model": "fake-event-analysis"},
+    )
+
+
+def _event_evidence_system_prompt() -> str:
+    return (
+        "你是情报平台的事件级证据核验器。只输出合法 JSON，不要输出 Markdown。"
+        "JSON 字段必须为 verification_status, supported_facts, conflicting_claims, "
+        "summary, confidence_score, raw_json。verification_status 只能是 "
+        "single_source、corroborated、conflicted、insufficient。"
+        "必须按 publisherKey 判断独立发布方，同一发布方的多个 endpoint 只能算一方。"
+        "只有至少两个独立发布方对同一原子事实形成一致证据时，才能输出 corroborated。"
+        "若日期、金额、版本、政策范围、主体或行动要求存在明确不一致，输出 conflicted。"
+        "不得补充输入中不存在的事实；supported_facts 和 conflicting_claims 必须能在成员内容中定位。"
+        "summary 使用简洁中文说明证据强弱与仍需核对之处，confidence_score 为 0-100。"
+    )
+
+
 def _build_openai_client(*, timeout_seconds: int):
     try:
         from openai import OpenAI
     except ImportError as exc:
-        raise RuntimeError("OpenAI SDK is not installed. Install the optional OpenAI dependency before use.") from exc
+        raise RuntimeError(
+            "OpenAI SDK is not installed. Install the optional OpenAI dependency before use."
+        ) from exc
     return OpenAI(timeout=timeout_seconds)
 
 
@@ -369,7 +558,9 @@ def _extract_chat_content(response_json: dict[str, Any]) -> str:
     try:
         content = response_json["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError) as exc:
-        raise RuntimeError("DeepSeek response did not include choices[0].message.content.") from exc
+        raise RuntimeError(
+            "DeepSeek response did not include choices[0].message.content."
+        ) from exc
     if not isinstance(content, str) or not content.strip():
         raise RuntimeError("DeepSeek response content was empty.")
     return content
@@ -415,7 +606,10 @@ def _compact_seller_action_level(value: object) -> str | None:
         return SELLER_ACTION_ALIASES[normalized]
     if any(keyword in value for keyword in ("立即", "马上", "紧急", "优先", "尽快")):
         return "urgent"
-    if any(keyword in value for keyword in ("行动", "调整", "处理", "索赔", "赔偿", "检查", "核对", "修复")):
+    if any(
+        keyword in value
+        for keyword in ("行动", "调整", "处理", "索赔", "赔偿", "检查", "核对", "修复")
+    ):
         return "act_soon"
     if any(keyword in value for keyword in ("关注", "评估", "查看", "建议", "观察")):
         return "review"

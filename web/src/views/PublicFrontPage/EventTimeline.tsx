@@ -32,11 +32,24 @@ export function EventTimeline({
   onPageChange,
 }: EventTimelineProps) {
   const virtuosoRef = useRef<VirtuosoHandle>(null);
+  const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
   const [events, setEvents] = useState<PublicEvent[]>([]);
   const [pageInfo, setPageInfo] = useState({ totalPages: 1, total: 0 });
   const [eventError, setEventError] = useState<string | null>(null);
   const [eventLoading, setEventLoading] = useState(false);
   const prevFiltersRef = useRef<string>("");
+
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const media = window.matchMedia("(max-width: 640px)");
+    const syncScrollParent = () => {
+      const parent = media.matches ? document.querySelector<HTMLElement>(".unified-main") : null;
+      setScrollParent(parent);
+    };
+    syncScrollParent();
+    media.addEventListener?.("change", syncScrollParent);
+    return () => media.removeEventListener?.("change", syncScrollParent);
+  }, []);
 
   // Scroll position restoration on filter/page changes
   useEffect(() => {
@@ -115,12 +128,13 @@ export function EventTimeline({
       {!eventLoading && events.length === 0 && (
         <p className="hint" role="status">
           {channel === "amazon"
-            ? "Amazon 情报最近 7 天暂无通过质量筛选的公开事件，可切换日期或查看信源墙。"
+            ? "Amazon 情报最近 7 天暂无通过质量筛选的公开事件，可切换日期或查看信源目录。"
             : "暂无符合条件的信息。"}
         </p>
       )}
       {events.length > 0 && (
         <Virtuoso
+          key={scrollParent ? "custom-scroll-parent" : "window-scroll-parent"}
           ref={virtuosoRef}
           data={itemData}
           itemContent={(index, item) => (
@@ -132,10 +146,11 @@ export function EventTimeline({
               showDate={index === 0 || !item.prevLastSeenAt || !sameDay(item.prevLastSeenAt, item.event.lastSeenAt ?? "")}
             />
           )}
-          useWindowScroll
           increaseViewportBy={{ top: 400, bottom: 400 }}
           defaultItemHeight={260}
           initialItemCount={Math.min(itemData.length, EVENT_PAGE_SIZE)}
+          useWindowScroll={!scrollParent}
+          customScrollParent={scrollParent ?? undefined}
         />
       )}
       {events.length > 0 && (

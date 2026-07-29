@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Rss } from "lucide-react";
 import type { PublicChannel } from "./index";
 
@@ -15,18 +15,20 @@ const feedLinks: Array<{ channel: PublicChannel; label: string; url: string; des
 
 export function RssLinks({ channel }: RssLinksProps) {
   const links = feedLinks.filter((link) => link.channel === channel);
+  const reducedMotion = useReducedMotion();
 
   return (
     <section className="rss-grid dark" aria-label="RSS 订阅入口">
-      {links.map((link) => (
+      {links.map((link, index) => (
         <motion.a
           key={link.url}
           href={link.url}
           target="_blank"
           rel="noreferrer"
           className="rss-card liquid-glass-subtle"
-          whileHover={{ scale: 1.03, y: -2 }}
-          whileTap={{ scale: 0.98 }}
+          initial={reducedMotion ? false : { opacity: 0, y: 7 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: reducedMotion ? 0 : 0.24, delay: reducedMotion ? 0 : index * 0.04 }}
         >
           <Rss size={18} />
           <strong>{link.label}</strong>

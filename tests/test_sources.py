@@ -1,15 +1,28 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
 
-from intel_engine.db import create_engine_from_settings, init_schema, sessionmaker_for_engine
+from intel_engine.db import (
+    create_engine_from_settings,
+    init_schema,
+    sessionmaker_for_engine,
+)
 from intel_engine.models import SourceRecord, SourceStateRecord
 from intel_engine.settings import Settings
 from intel_engine.source_seed import seed_sources_from_channel_configs
-from intel_engine.channel_config import CHANNELS_DIR, load_channel_configs
-from intel_engine.sources import SourceRegistry, SourceUpsert
+from intel_engine.channel_config import (
+    CHANNELS_DIR,
+    CollectionPolicy,
+    load_channel_configs,
+)
+from intel_engine.sources import (
+    SourceRegistry,
+    SourceUpsert,
+    normalize_publisher_key,
+    publisher_key_from_url,
+)
 
 
 def _session_factory(tmp_path):
@@ -20,7 +33,7 @@ def _session_factory(tmp_path):
 
 
 def _write_channel_config(channels_dir):
-    channels_dir.mkdir()
+    channels_dir.mkdir(exist_ok=True)
     (channels_dir / "ai.yaml").write_text(
         """
 id: ai
@@ -40,7 +53,6 @@ sources:
     trust_level: official
     base_weight: 95
     default_categories: [ai_models]
-    crawl_interval_minutes: 360
     parser_type: website
     enabled: true
 """,
@@ -74,7 +86,9 @@ def test_seed_maps_yaml_source_to_production_source(tmp_path):
 
     with SessionLocal() as session:
         seed_sources_from_channel_configs(session, channels_dir)
-        source = session.scalar(select(SourceRecord).where(SourceRecord.id == "openai_news"))
+        source = session.scalar(
+            select(SourceRecord).where(SourceRecord.id == "openai_news")
+        )
 
     assert source is not None
     assert source.channel == "ai"
@@ -83,7 +97,7 @@ def test_seed_maps_yaml_source_to_production_source(tmp_path):
     assert source.fetch_adapter == "http_article"
     assert source.authority_weight == 95
     assert source.default_categories == ["ai_models"]
-    assert source.fetch_interval_minutes == 60
+    assert source.fetch_interval_minutes == 720
     assert source.visibility == "public"
     assert source.source_group == "official"
     assert source.collection_status == "collectable"
@@ -93,21 +107,39 @@ def test_seed_maps_yaml_source_to_production_source(tmp_path):
 def test_bundled_channel_configs_have_production_source_coverage():
     configs = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}
 
-    assert len(configs["ai"].sources) >= 100
-    assert len(configs["amazon"].sources) >= 100
-    assert {source.trust_level for source in configs["ai"].sources}.issuperset({"official", "authority", "expert", "media"})
-    assert {source.trust_level for source in configs["amazon"].sources}.issuperset({"official", "authority", "expert", "media"})
-    assert all(60 <= source.base_weight <= 100 for config in configs.values() for source in config.sources)
+    assert len(configs["ai"].sources) >= 300
+    assert len(configs["amazon"].sources) >= 300
+    assert {source.trust_level for source in configs["ai"].sources}.issuperset(
+        {"official", "authority", "expert", "media"}
+    )
+    assert {source.trust_level for source in configs["amazon"].sources}.issuperset(
+        {"official", "authority", "expert", "media"}
+    )
+    assert all(
+        60 <= source.base_weight <= 100
+        for config in configs.values()
+        for source in config.sources
+    )
+    assert all(
+        source.crawl_interval_minutes == 720
+        for config in configs.values()
+        for source in config.sources
+    )
 
 
-def test_bundled_enabled_sources_are_rss_first_for_hourly_production():
+def test_bundled_enabled_sources_are_stable_for_production_collection():
     configs = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}
 
-    stable_hourly_parsers = {"rss", "aihot_api", "html_list"}
+    stable_collection_parsers = {"rss", "atom", "aihot_api", "html_list"}
     for channel_id in ("ai", "amazon"):
-        enabled_sources = [source for source in configs[channel_id].sources if source.enabled]
-        assert len(enabled_sources) >= 15
-        assert all(source.parser_type in stable_hourly_parsers for source in enabled_sources)
+        enabled_sources = [
+            source for source in configs[channel_id].sources if source.enabled
+        ]
+        assert len(enabled_sources) >= 300
+        assert all(
+            source.parser_type in stable_collection_parsers
+            for source in enabled_sources
+        )
         assert all(source.url.startswith("https://") for source in enabled_sources)
 
 
@@ -116,8 +148,12 @@ def test_seed_supports_curated_api_and_html_list_adapters(tmp_path):
 
     with SessionLocal() as session:
         seed_sources_from_channel_configs(session, CHANNELS_DIR)
-        aihot = session.scalar(select(SourceRecord).where(SourceRecord.id == "aihot_virxact_selected"))
-        amazon_ads = session.scalar(select(SourceRecord).where(SourceRecord.id == "amazon_ads_updates"))
+        aihot = session.scalar(
+            select(SourceRecord).where(SourceRecord.id == "aihot_virxact_selected")
+        )
+        amazon_ads = session.scalar(
+            select(SourceRecord).where(SourceRecord.id == "amazon_ads_updates")
+        )
 
     assert aihot is not None
     assert aihot.fetch_adapter == "aihot_api"
@@ -126,8 +162,10 @@ def test_seed_supports_curated_api_and_html_list_adapters(tmp_path):
     assert amazon_ads.fetch_adapter == "html_list"
 
 
-def test_amazon_hourly_sources_prioritize_precise_official_or_seller_feeds():
-    amazon = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}["amazon"]
+def test_amazon_sources_prioritize_precise_official_or_seller_feeds():
+    amazon = {config.id: config for config in load_channel_configs(CHANNELS_DIR)}[
+        "amazon"
+    ]
     sources = {source.id: source for source in amazon.sources}
 
     assert sources["amazon_sp_api_release_notes"].enabled is True
@@ -153,6 +191,74 @@ def test_amazon_hourly_sources_prioritize_precise_official_or_seller_feeds():
     assert sources["sellerapp_blog"].enabled is False
     assert sources["helium10_blog"].metadata.get("collection_status") == "unavailable"
     assert sources["sellerapp_blog"].metadata.get("collection_status") == "unavailable"
+
+
+def test_interval_change_realigns_next_fetch_from_last_success(tmp_path):
+    channels_dir = tmp_path / "channels"
+    _write_channel_config(channels_dir)
+    SessionLocal = _session_factory(tmp_path)
+    now = datetime(2026, 5, 11, 10, 0, tzinfo=timezone.utc)
+
+    with SessionLocal() as session:
+        seed_sources_from_channel_configs(
+            session,
+            channels_dir,
+            policy=CollectionPolicy(crawl_interval_minutes=60),
+        )
+        SourceRegistry(session).update_state(
+            "openai_news",
+            last_success_at=now,
+            next_fetch_at=now + timedelta(minutes=60),
+        )
+        seed_sources_from_channel_configs(
+            session,
+            channels_dir,
+            policy=CollectionPolicy(crawl_interval_minutes=720),
+        )
+        source = session.get(SourceRecord, "openai_news")
+        state = session.get(SourceStateRecord, "openai_news")
+
+    assert source is not None
+    assert source.fetch_interval_minutes == 720
+    assert state is not None
+    assert state.next_fetch_at == now + timedelta(minutes=720)
+
+
+def test_seed_synchronizes_legacy_sources_to_global_policy_and_identity(tmp_path):
+    channels_dir = tmp_path / "channels"
+    _write_channel_config(channels_dir)
+    SessionLocal = _session_factory(tmp_path)
+
+    with SessionLocal() as session:
+        SourceRegistry(session).upsert_source(
+            SourceUpsert(
+                id="legacy_huggingface",
+                channel="ai",
+                source_type="rss",
+                tier="T2",
+                name="Legacy Hugging Face",
+                url="https://huggingface.co/blog/feed.xml",
+                language="en",
+                region="global",
+                marketplace=None,
+                authority_weight=80,
+                noise_level=0.2,
+                fetch_adapter="rss",
+                parser_type="rss",
+                default_categories=["ai_models"],
+                fetch_interval_minutes=60,
+                enabled=True,
+                visibility="public",
+                source_group="media",
+                publisher_key="media:legacy_huggingface",
+            )
+        )
+        seed_sources_from_channel_configs(session, channels_dir)
+        source = session.get(SourceRecord, "legacy_huggingface")
+
+    assert source is not None
+    assert source.fetch_interval_minutes == 720
+    assert source.publisher_key == "company:huggingface"
 
 
 def test_registry_can_upsert_toggle_and_update_state(tmp_path):
@@ -198,10 +304,15 @@ def test_registry_can_upsert_toggle_and_update_state(tmp_path):
             health_score=92,
         )
         session.commit()
-
     with SessionLocal() as session:
-        source = session.scalar(select(SourceRecord).where(SourceRecord.id == "example_feed"))
-        state = session.scalar(select(SourceStateRecord).where(SourceStateRecord.source_id == "example_feed"))
+        source = session.scalar(
+            select(SourceRecord).where(SourceRecord.id == "example_feed")
+        )
+        state = session.scalar(
+            select(SourceStateRecord).where(
+                SourceStateRecord.source_id == "example_feed"
+            )
+        )
 
     assert source is not None
     assert source.enabled is False
@@ -213,3 +324,80 @@ def test_registry_can_upsert_toggle_and_update_state(tmp_path):
     assert state.last_success_at == now
     assert state.duplicate_ratio == 0.1
     assert state.health_score == 92
+
+
+def test_publisher_identity_groups_multiple_endpoints_from_the_same_owner():
+    assert (
+        publisher_key_from_url(
+            "https://github.com/openai/openai-python/releases.atom",
+            "openai_python",
+        )
+        == "github_org:openai"
+    )
+    assert (
+        publisher_key_from_url(
+            "https://github.com/openai/openai-node/releases.atom",
+            "openai_node",
+        )
+        == "github_org:openai"
+    )
+    assert (
+        publisher_key_from_url("https://www.reuters.com/technology/", "reuters")
+        == "reuters.com"
+    )
+    assert (
+        normalize_publisher_key(
+            "github_org:microsoft",
+            "https://github.com/microsoft/semantic-kernel/releases.atom",
+            "semantic_kernel",
+        )
+        == "company:microsoft"
+    )
+    assert (
+        normalize_publisher_key(
+            None,
+            "https://blogs.microsoft.com/ai/feed/",
+            "microsoft_ai",
+        )
+        == "company:microsoft"
+    )
+    assert (
+        normalize_publisher_key(
+            "github_org:huggingface",
+            "https://github.com/huggingface/transformers/releases.atom",
+            "transformers",
+        )
+        == "company:huggingface"
+    )
+    assert (
+        normalize_publisher_key(
+            "github_org:nvidia",
+            "https://github.com/NVIDIA/TensorRT/releases.atom",
+            "tensorrt",
+        )
+        == "company:nvidia"
+    )
+    assert (
+        normalize_publisher_key(
+            "github_org:nvidia-nemo",
+            "https://github.com/NVIDIA-NeMo/NeMo/releases.atom",
+            "nemo",
+        )
+        == "company:nvidia"
+    )
+    assert (
+        normalize_publisher_key(
+            "github_org:google-ai-edge",
+            "https://github.com/google-ai-edge/mediapipe/releases.atom",
+            "mediapipe",
+        )
+        == "company:google"
+    )
+    assert (
+        normalize_publisher_key(
+            None,
+            "https://export.arxiv.org/rss/cs.AI",
+            "arxiv_ai",
+        )
+        == "research:arxiv"
+    )
