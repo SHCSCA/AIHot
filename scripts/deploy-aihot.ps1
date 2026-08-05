@@ -205,7 +205,8 @@ systemctl status aihot-web.service --no-pager -l || true
 exit 1
 "@
 
-$encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($remoteScript))
+$normalizedRemoteScript = $remoteScript -replace "`r",""
+$encoded = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($normalizedRemoteScript))
 ssh @sshArgs $sshTarget "printf '%s' '$encoded' | base64 -d | bash"
 Assert-NativeCommandSucceeded "Run remote deployment"
 
