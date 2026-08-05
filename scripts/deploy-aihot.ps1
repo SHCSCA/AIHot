@@ -6,7 +6,7 @@ param(
   [string]$Branch = "codex/precise-review-model-v1",
   [string]$KeyPath = $env:AIHOT_DEPLOY_KEY,
   [string]$RemoteBundle = "/tmp/aihot-deploy.bundle",
-  [int]$PipelineBatchLimit = 60,
+  [int]$PipelineBatchLimit = 1000,
   [int]$PipelineSmokeLimit = 1,
   [switch]$SkipBuild
 )
@@ -161,17 +161,17 @@ EnvironmentFile=$AppDir/.env
 Environment=INTEL_ENV_FILE=
 ExecStart=$AppDir/.venv/bin/intel-engine pipeline-once --worker-id systemd-pipeline-%i --limit %i
 Nice=5
-TimeoutStartSec=55min
+TimeoutStartSec=120min
 NoNewPrivileges=true
 PrivateTmp=true
 UNIT
 
 cat > /etc/systemd/system/aihot-pipeline.timer <<'UNIT'
 [Unit]
-Description=Scan AIHot due sources hourly
+Description=Scan AIHot due sources daily at 01:00
 
 [Timer]
-OnCalendar=hourly
+OnCalendar=*-*-* 01:00
 Persistent=true
 RandomizedDelaySec=300
 Unit=aihot-pipeline@$PipelineBatchLimit.service
