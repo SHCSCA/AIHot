@@ -153,7 +153,7 @@ UI 基线在 `web/src/styles.css`：深浅色主题、玻璃材质 token、动�
 脚本会在本地构建前端、打包当前 Git commit、上传到服务器项目目录、安装 Python 包、执行 Alembic migration、seed sources，并重启 systemd 服务。不要把 SSH 私钥写入仓库；使用 `-KeyPath` 或 `AIHOT_DEPLOY_KEY` 环境变量。
 
 生产访问入口：`http://aihot.shcai.top/`
-服务器项目目录：`/data/wwwroot/AIHot`
+服务器项目目录：`/data/wwwroot/aihot.shcai.top`
 
 ## 生产目标技术栈
 

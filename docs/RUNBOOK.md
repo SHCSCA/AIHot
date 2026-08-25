@@ -99,7 +99,7 @@ $env:AIHOT_DEPLOY_KEY="<private-key-path>"
 
 ```text
 访问入口：https://aihot.shcai.top/
-服务器项目目录：/data/wwwroot/AIHot
+服务器项目目录：/data/wwwroot/aihot.shcai.top
 服务健康检查：http://127.0.0.1:8003/health
 ```
 
@@ -107,7 +107,7 @@ $env:AIHOT_DEPLOY_KEY="<private-key-path>"
 
 - 不把 SSH 私钥、数据库密码、DeepSeek key 写入仓库。
 - 部署前确认 `git status --short` 中只有预期改动。
-- 生产部署脚本会在服务器保存 reset 前的 diff、status 和 untracked 清单到 `/data/wwwroot/AIHot-deploy-backups/`。
+- 生产部署脚本会在服务器保存 reset 前的 diff、status 和 untracked 清单到项目目录旁的 `<AppDir>-deploy-backups/`。
 
 ## 前端验收重点
 

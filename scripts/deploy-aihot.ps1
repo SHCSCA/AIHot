@@ -2,7 +2,7 @@ param(
   [string]$HostName = "154.217.247.39",
   [int]$Port = 28,
   [string]$User = "root",
-  [string]$AppDir = "/data/wwwroot/AIHot",
+  [string]$AppDir = "/data/wwwroot/aihot.shcai.top",
   [string]$Branch = "codex/precise-review-model-v1",
   [string]$KeyPath = $env:AIHOT_DEPLOY_KEY,
   [string]$RemoteBundle = "/tmp/aihot-deploy.bundle",
@@ -125,7 +125,7 @@ if systemctl list-units \
   exit 1
 fi
 
-backup_dir="/data/wwwroot/AIHot-deploy-backups/`$(date +%Y%m%d%H%M%S)"
+backup_dir="${AppDir}-deploy-backups/`$(date +%Y%m%d%H%M%S)"
 mkdir -p "`$backup_dir"
 git status --short --branch > "`$backup_dir/status.txt" || true
 git diff > "`$backup_dir/worktree.diff" || true
