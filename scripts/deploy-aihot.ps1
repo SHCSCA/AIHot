@@ -3,7 +3,7 @@ param(
   [int]$Port = 28,
   [string]$User = "root",
   [string]$AppDir = "/data/wwwroot/aihot.shcai.top",
-  [string]$Branch = "codex/precise-review-model-v1",
+  [string]$Branch = "main",
   [string]$KeyPath = $env:AIHOT_DEPLOY_KEY,
   [string]$RemoteBundle = "/tmp/aihot-deploy.bundle",
   [int]$PipelineBatchLimit = 1000,
