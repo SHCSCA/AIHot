@@ -48,6 +48,7 @@ from intel_engine.prescreen import PreScreenDecision
 from intel_engine.quality import OPERATIONAL_TIMEZONE, is_within_recent_hours
 from intel_engine.rank_policy import RankPolicy, RankPolicyInput
 from intel_engine.raw_store import RawStore
+from intel_engine.rules import rule_based_score, rule_based_screening
 from intel_engine.review import (
     ACCEPTED_BUCKETS,
     adjusted_selected_threshold,
@@ -63,6 +64,7 @@ from intel_engine.scheduler import (
     schedule_due_sources,
 )
 from intel_engine.settings import Settings
+from intel_engine.system_settings import is_ai_analysis_enabled
 
 
 @dataclass(frozen=True)
@@ -103,6 +105,14 @@ class EvidenceBackfillStats:
     events: int = 0
 
 
+def _resolve_ai_analysis_enabled(
+    session: Session, configured: bool | None
+) -> bool:
+    if configured is not None:
+        return configured
+    return is_ai_analysis_enabled(session)
+
+
 def run_scheduler_once(
     SessionLocal: sessionmaker[Session],
     *,
@@ -126,9 +136,14 @@ def run_worker_once(
     llm_provider: LLMProvider | None = None,
     screening_provider: ScreeningProvider | None = None,
     event_analysis_provider: EventAnalysisProvider | None = None,
+    ai_analysis_enabled: bool | None = None,
 ) -> PipelineStats:
     resolved_now = now or utc_now()
     total = PipelineStats()
+    with SessionLocal() as session:
+        resolved_ai_enabled = _resolve_ai_analysis_enabled(
+            session, ai_analysis_enabled
+        )
     for _index in range(limit):
         with SessionLocal() as session:
             jobs = claim_fetch_jobs(
@@ -148,6 +163,7 @@ def run_worker_once(
                 llm_provider=llm_provider,
                 screening_provider=screening_provider,
                 event_analysis_provider=event_analysis_provider,
+                ai_analysis_enabled=resolved_ai_enabled,
             )
             session.commit()
             total = total.add(stats)
@@ -164,8 +180,13 @@ def run_pipeline_once(
     llm_provider: LLMProvider | None = None,
     screening_provider: ScreeningProvider | None = None,
     event_analysis_provider: EventAnalysisProvider | None = None,
+    ai_analysis_enabled: bool | None = None,
 ) -> PipelineStats:
     resolved_now = now or utc_now()
+    with SessionLocal() as session:
+        resolved_ai_enabled = _resolve_ai_analysis_enabled(
+            session, ai_analysis_enabled
+        )
     scheduled = run_scheduler_once(SessionLocal, now=resolved_now, limit=limit)
     worked = run_worker_once(
         SessionLocal,
@@ -176,6 +197,7 @@ def run_pipeline_once(
         llm_provider=llm_provider,
         screening_provider=screening_provider,
         event_analysis_provider=event_analysis_provider,
+        ai_analysis_enabled=resolved_ai_enabled,
     )
     total = worked.add(scheduled)
     _auto_generate_recent_daily(SessionLocal, now=resolved_now)
@@ -188,15 +210,23 @@ def reprocess_existing_items(
     channel: str | None = None,
     limit: int = 10,
     llm_provider: LLMProvider | None = None,
+    ai_analysis_enabled: bool | None = None,
 ) -> ReprocessStats:
     settings = Settings()
     provider = llm_provider
-    if provider is None and settings.llm_provider != "fake":
-        provider = build_scoring_provider(settings)
 
     processed = 0
     failed = 0
     with SessionLocal() as session:
+        resolved_ai_enabled = _resolve_ai_analysis_enabled(
+            session, ai_analysis_enabled
+        )
+        if (
+            resolved_ai_enabled
+            and provider is None
+            and settings.llm_provider != "fake"
+        ):
+            provider = build_scoring_provider(settings)
         stmt = (
             select(NormalizedItemRecord)
             .order_by(NormalizedItemRecord.fetched_at.desc())
@@ -218,7 +248,12 @@ def reprocess_existing_items(
             strategy = _ensure_active_strategy(session, current.channel)
             try:
                 _upsert_model_score(
-                    session, current, source, strategy, llm_provider=provider
+                    session,
+                    current,
+                    source,
+                    strategy,
+                    llm_provider=provider,
+                    ai_analysis_enabled=resolved_ai_enabled,
                 )
             except Exception:  # noqa: BLE001 - keep historical backfill moving when one item fails.
                 session.rollback()
@@ -236,9 +271,13 @@ def backfill_event_evidence(
     limit: int | None = None,
     use_ai: bool = False,
     event_analysis_provider: EventAnalysisProvider | None = None,
+    ai_analysis_enabled: bool | None = None,
 ) -> EvidenceBackfillStats:
     processed = 0
     with SessionLocal() as session:
+        resolved_ai_enabled = _resolve_ai_analysis_enabled(
+            session, ai_analysis_enabled
+        )
         channels = (
             [channel]
             if channel is not None
@@ -262,9 +301,10 @@ def backfill_event_evidence(
             clusters = list(session.scalars(stmt).all())
             resolved_provider: EventAnalysisProvider | None = None
             provider_error: str | None = None
-            if use_ai or event_analysis_provider is not None:
+            if resolved_ai_enabled and (use_ai or event_analysis_provider is not None):
                 resolved_provider, provider_error = _resolve_event_analysis_provider(
-                    event_analysis_provider
+                    event_analysis_provider,
+                    ai_analysis_enabled=resolved_ai_enabled,
                 )
             for cluster in clusters:
                 _upsert_event_evidence_assessment(
@@ -291,8 +331,14 @@ def process_fetch_job(
     llm_provider: LLMProvider | None = None,
     screening_provider: ScreeningProvider | None = None,
     event_analysis_provider: EventAnalysisProvider | None = None,
+    ai_analysis_enabled: bool | None = None,
 ) -> PipelineStats:
     resolved_now = now or utc_now()
+    resolved_ai_enabled = _resolve_ai_analysis_enabled(session, ai_analysis_enabled)
+    if not resolved_ai_enabled:
+        llm_provider = None
+        screening_provider = None
+        event_analysis_provider = None
     job = _get_job(session, job_id)
     source = _get_source(session, job.source_id)
     try:
@@ -332,6 +378,7 @@ def process_fetch_job(
                 strategy,
                 now=resolved_now,
                 screening_provider=screening_provider,
+                ai_analysis_enabled=resolved_ai_enabled,
             )
             item = _normalize_raw_document(
                 session, source, raw_document, screening=screening
@@ -341,7 +388,12 @@ def process_fetch_job(
             normalized_count += 1
             prefilter = _upsert_prefilter(session, item, strategy)
             model_score = _upsert_model_score(
-                session, item, source, strategy, llm_provider=llm_provider
+                session,
+                item,
+                source,
+                strategy,
+                llm_provider=llm_provider,
+                ai_analysis_enabled=resolved_ai_enabled,
             )
             score_validation = validate_model_score(model_score, channel=source.channel)
             if not score_validation.accepted:
@@ -362,6 +414,7 @@ def process_fetch_job(
             session,
             channel=source.channel,
             event_analysis_provider=event_analysis_provider,
+            ai_analysis_enabled=resolved_ai_enabled,
         )
         mark_job_succeeded(
             session,
@@ -486,6 +539,7 @@ def _upsert_screening_result(
     *,
     now: datetime,
     screening_provider: ScreeningProvider | None = None,
+    ai_analysis_enabled: bool = True,
 ) -> RawScreeningResultRecord:
     existing = session.scalar(
         select(RawScreeningResultRecord)
@@ -494,7 +548,11 @@ def _upsert_screening_result(
         .limit(1)
     )
     result = _screen_raw_document(
-        raw_document, source, now=now, screening_provider=screening_provider
+        raw_document,
+        source,
+        now=now,
+        screening_provider=screening_provider,
+        ai_analysis_enabled=ai_analysis_enabled,
     )
     result = _apply_screening_guardrails(result, raw_document, source)
     published_at = _effective_published_at(source, raw_document, result)
@@ -570,7 +628,10 @@ def _screen_raw_document(
     *,
     now: datetime,
     screening_provider: ScreeningProvider | None,
+    ai_analysis_enabled: bool = True,
 ) -> ScreeningResult:
+    if not ai_analysis_enabled:
+        return rule_based_screening(raw_document, source, now=now)
     provider = screening_provider
     if provider is None:
         try:
@@ -933,6 +994,7 @@ def _upsert_model_score(
     strategy: StrategyVersionRecord,
     *,
     llm_provider: LLMProvider | None = None,
+    ai_analysis_enabled: bool = True,
 ) -> ModelScore:
     existing = session.scalar(
         select(ModelScoreRecord)
@@ -940,7 +1002,12 @@ def _upsert_model_score(
         .where(ModelScoreRecord.strategy_version == strategy.id)
         .limit(1)
     )
-    provider_score = _score_item(item, source, llm_provider=llm_provider)
+    provider_score = _score_item(
+        item,
+        source,
+        llm_provider=llm_provider,
+        ai_analysis_enabled=ai_analysis_enabled,
+    )
     if provider_score.title_cn:
         item.title_cn = provider_score.title_cn
     if provider_score.summary_cn:
@@ -981,7 +1048,10 @@ def _score_item(
     source: SourceRecord,
     *,
     llm_provider: LLMProvider | None,
+    ai_analysis_enabled: bool = True,
 ) -> ModelScore:
+    if not ai_analysis_enabled:
+        return rule_based_score(item, source)
     if llm_provider is not None:
         return llm_provider.score_item(_model_payload(item, source))
 
@@ -1099,11 +1169,14 @@ def _upsert_ranked_item(
     if confidence_score < confidence_threshold:
         selected = False
         selection_reason = "低于精选置信度阈值"
-    if model_score.raw_json.get("provider") != "deepseek" or model_score.raw_json.get(
+    provider = model_score.raw_json.get("provider")
+    if provider not in {"deepseek", "rules"} or model_score.raw_json.get(
         "fallbackReason"
     ):
         selected = False
         selection_reason = "非 DeepSeek 正式精筛结果，不进入精选"
+    elif provider == "rules":
+        selection_reason = f"{selection_reason}（基础规则）"
     ranked = session.get(
         RankedItemRecord, {"item_id": item.id, "strategy_version": strategy.id}
     )
@@ -1135,6 +1208,7 @@ def _persist_ranked_clusters(
     *,
     channel: str,
     event_analysis_provider: EventAnalysisProvider | None = None,
+    ai_analysis_enabled: bool = True,
 ) -> int:
     _acquire_cluster_advisory_lock(session, channel)
     rows = session.execute(
@@ -1186,7 +1260,8 @@ def _persist_ranked_clusters(
         if (candidate := _cluster_main_candidate(session, cluster)) is not None
     }
     resolved_provider, provider_error = _resolve_event_analysis_provider(
-        event_analysis_provider
+        event_analysis_provider,
+        ai_analysis_enabled=ai_analysis_enabled,
     )
 
     created = 0
@@ -1388,7 +1463,11 @@ def _refresh_cluster(session: Session, cluster: EventClusterRecord) -> None:
 
 def _resolve_event_analysis_provider(
     provider: EventAnalysisProvider | None,
+    *,
+    ai_analysis_enabled: bool = True,
 ) -> tuple[EventAnalysisProvider | None, str | None]:
+    if not ai_analysis_enabled:
+        return None, None
     if provider is not None:
         return provider, None
     settings = Settings()

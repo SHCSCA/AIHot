@@ -15,6 +15,7 @@ from intel_engine.db import (
 from intel_engine.routes import router
 from intel_engine.settings import Settings
 from intel_engine.storage import DEFAULT_DB_PATH, create_engine_for_path, init_db
+from intel_engine.system_settings import ensure_system_settings
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
@@ -45,6 +46,7 @@ def create_app(
                 admin_username=settings.admin_username,
                 admin_password=settings.admin_password,
             )
+            ensure_system_settings(session)
             session.commit()
 
     app.include_router(router)

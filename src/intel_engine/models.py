@@ -842,6 +842,19 @@ class UserPreferenceRecord(Base):
     )
 
 
+class SystemSettingsRecord(Base):
+    __tablename__ = "system_settings"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    ai_analysis_enabled: Mapped[bool] = mapped_column(
+        Boolean, default=True, nullable=False
+    )
+    updated_by: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        UtcDateTime(), default=utc_now, onupdate=utc_now, nullable=False
+    )
+
+
 class AuditLogRecord(Base):
     __tablename__ = "audit_logs"
     __table_args__ = (

@@ -64,6 +64,7 @@ def test_init_schema_creates_production_tables(tmp_path):
         "daily_digests",
         "evaluation_runs",
         "pipeline_runs",
+        "system_settings",
     }.issubset(table_names)
 
 

@@ -45,6 +45,7 @@ from intel_engine.models import (
     RawScreeningResultRecord,
     SourceRecord,
     SourceStateRecord,
+    SystemSettingsRecord,
     AuditLogRecord,
     PermissionRecord,
     RolePermissionRecord,
@@ -69,6 +70,8 @@ from intel_engine.sources import (
     normalize_publisher_key,
 )
 from intel_engine.storage import ItemRepository
+from intel_engine.settings import Settings
+from intel_engine.system_settings import ensure_system_settings
 
 
 router = APIRouter()
@@ -235,6 +238,12 @@ class PreferencePatchWrite(BaseModel):
     theme: str | None = None
     default_channel: str | None = Field(default=None, alias="defaultChannel")
     compact_mode: bool | None = Field(default=None, alias="compactMode")
+
+
+class SystemSettingsPatch(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    ai_analysis_enabled: bool = Field(alias="aiAnalysisEnabled")
 
 
 PUBLIC_FEEDBACK_TYPES = {
@@ -939,6 +948,37 @@ def internal_audit_logs(
             ).limit(take)
         ).all()
         return {"auditLogs": [_audit_payload(log) for log in logs]}
+
+
+@router.get("/api/v1/internal/system-settings", dependencies=SYSTEM_MANAGE)
+def internal_system_settings(request: Request) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        settings = ensure_system_settings(session)
+        session.commit()
+        return {"settings": _system_settings_payload(settings)}
+
+
+@router.patch("/api/v1/internal/system-settings", dependencies=SYSTEM_MANAGE)
+def internal_patch_system_settings(
+    request: Request, payload: SystemSettingsPatch
+) -> dict[str, object]:
+    SessionLocal = _production_sessionmaker(request)
+    with SessionLocal() as session:
+        settings = ensure_system_settings(session)
+        settings.ai_analysis_enabled = payload.ai_analysis_enabled
+        settings.updated_by = current_principal(request).username
+        audit_log(
+            request,
+            session,
+            action="system.ai_analysis.update",
+            target_type="system_settings",
+            target_id=settings.id,
+            metadata={"aiAnalysisEnabled": payload.ai_analysis_enabled},
+        )
+        session.commit()
+        session.refresh(settings)
+        return {"settings": _system_settings_payload(settings)}
 
 
 @router.get("/api/v1/internal/dashboard", dependencies=OPS_DASHBOARD)
@@ -3030,6 +3070,20 @@ def _pipeline_run_payload(run: PipelineRunRecord) -> dict[str, object]:
         "errorMessage": run.error_message,
         "startedAt": _iso(run.started_at),
         "finishedAt": _iso(run.finished_at),
+    }
+
+
+def _system_settings_payload(settings: SystemSettingsRecord) -> dict[str, object]:
+    runtime = Settings()
+    ai_enabled = bool(settings.ai_analysis_enabled)
+    return {
+        "id": settings.id,
+        "aiAnalysisEnabled": ai_enabled,
+        "analysisMode": "ai" if ai_enabled else "rules",
+        "provider": runtime.llm_provider if ai_enabled else "rules",
+        "model": runtime.llm_model if ai_enabled else "rules-v1",
+        "updatedBy": settings.updated_by,
+        "updatedAt": _iso(settings.updated_at),
     }
 
 

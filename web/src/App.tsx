@@ -46,6 +46,7 @@ import { CmdKPanel, useCmdKShortcut } from "./views/PublicFrontPage/CmdKPanel";
 import { QualityView } from "./views/QualityView";
 import { SourcesView } from "./views/SourcesView";
 import { StrategiesView } from "./views/StrategiesView";
+import { SystemSettingsView } from "./views/SystemSettingsView";
 import { roleLabel } from "./labels";
 import "./styles.css";
 import "./styles/quiet-intelligence.css";
@@ -570,7 +571,7 @@ function renderContent({
   if (view === "users") return <UsersView api={adminApi} />;
   if (view === "roles") return <RolesView api={adminApi} />;
   if (view === "audit") return <AuditLogsView api={adminApi} />;
-  if (view === "system") return <PermissionState title="系统设置" description="系统配置入口已纳入管理员菜单，具体高风险配置将在后续版本接入。" />;
+  if (view === "system") return <SystemSettingsView api={adminApi} />;
   setInitialDashboard(null);
   return null;
 }

@@ -57,10 +57,10 @@ def test_loads_ai_and_amazon_channels():
     assert configs["amazon"].sources
 
 
-def test_project_collection_policy_defaults_to_twelve_hours():
+def test_project_collection_policy_defaults_to_twenty_four_hours():
     policy = load_collection_policy(COLLECTION_CONFIG_PATH)
 
-    assert policy.crawl_interval_minutes == 720
+    assert policy.crawl_interval_minutes == 1440
 
 
 def test_missing_collection_policy_has_no_hardcoded_fallback(tmp_path):
@@ -74,7 +74,7 @@ def test_source_inherits_project_collection_policy(tmp_path):
 
     source = load_channel_configs(channels_dir)[0].sources[0]
 
-    assert source.crawl_interval_minutes == 720
+    assert source.crawl_interval_minutes == 1440
 
 
 def test_temporary_channels_can_use_an_explicit_collection_policy(tmp_path):

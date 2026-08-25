@@ -97,7 +97,7 @@ def test_seed_maps_yaml_source_to_production_source(tmp_path):
     assert source.fetch_adapter == "http_article"
     assert source.authority_weight == 95
     assert source.default_categories == ["ai_models"]
-    assert source.fetch_interval_minutes == 720
+    assert source.fetch_interval_minutes == 1440
     assert source.visibility == "public"
     assert source.source_group == "official"
     assert source.collection_status == "collectable"
@@ -121,7 +121,7 @@ def test_bundled_channel_configs_have_production_source_coverage():
         for source in config.sources
     )
     assert all(
-        source.crawl_interval_minutes == 720
+        source.crawl_interval_minutes == 1440
         for config in configs.values()
         for source in config.sources
     )
@@ -213,15 +213,15 @@ def test_interval_change_realigns_next_fetch_from_last_success(tmp_path):
         seed_sources_from_channel_configs(
             session,
             channels_dir,
-            policy=CollectionPolicy(crawl_interval_minutes=720),
+            policy=CollectionPolicy(crawl_interval_minutes=1440),
         )
         source = session.get(SourceRecord, "openai_news")
         state = session.get(SourceStateRecord, "openai_news")
 
     assert source is not None
-    assert source.fetch_interval_minutes == 720
+    assert source.fetch_interval_minutes == 1440
     assert state is not None
-    assert state.next_fetch_at == now + timedelta(minutes=720)
+    assert state.next_fetch_at == now + timedelta(minutes=1440)
 
 
 def test_seed_synchronizes_legacy_sources_to_global_policy_and_identity(tmp_path):
@@ -257,7 +257,7 @@ def test_seed_synchronizes_legacy_sources_to_global_policy_and_identity(tmp_path
         source = session.get(SourceRecord, "legacy_huggingface")
 
     assert source is not None
-    assert source.fetch_interval_minutes == 720
+    assert source.fetch_interval_minutes == 1440
     assert source.publisher_key == "company:huggingface"
 
 

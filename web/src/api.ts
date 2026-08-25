@@ -18,6 +18,7 @@ import type {
   SourceState,
   StrategyVersion,
   SessionInfo,
+  SystemSettings,
   UserAccount,
   Role,
   Permission,
@@ -524,6 +525,17 @@ export class AdminApi {
 
   async listAuditLogs(filters: { actor?: string; action?: string; take?: number } = {}): Promise<AuditLog[]> {
     return (await this.request<{ auditLogs: AuditLog[] }>(`/api/v1/internal/audit-logs${query(filters)}`)).auditLogs;
+  }
+
+  async getSystemSettings(): Promise<SystemSettings> {
+    return (await this.request<{ settings: SystemSettings }>("/api/v1/internal/system-settings")).settings;
+  }
+
+  async updateSystemSettings(payload: { aiAnalysisEnabled: boolean }): Promise<SystemSettings> {
+    return (await this.request<{ settings: SystemSettings }>("/api/v1/internal/system-settings", {
+      method: "PATCH",
+      body: JSON.stringify(payload)
+    })).settings;
   }
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {

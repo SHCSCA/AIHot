@@ -139,7 +139,7 @@ def test_mark_job_succeeded_uses_global_interval_for_next_fetch(tmp_path):
     assert state.error_streak == 0
     assert state.items_per_run == 3
     assert state.avg_latency_ms == 250
-    assert state.next_fetch_at == now + timedelta(minutes=720)
+    assert state.next_fetch_at == now + timedelta(minutes=1440)
 
 
 def test_mark_job_failed_requeues_with_backoff(tmp_path):
@@ -199,4 +199,4 @@ def test_repeated_stale_job_is_stopped_and_source_is_deferred(tmp_path):
     assert job.status == "dead"
     assert state is not None
     assert state.backoff_until == recovered_at + timedelta(hours=4)
-    assert state.next_fetch_at == recovered_at + timedelta(minutes=720)
+    assert state.next_fetch_at == recovered_at + timedelta(minutes=1440)

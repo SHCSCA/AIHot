@@ -164,14 +164,17 @@ def auto_review_decision(
         return AutoReviewDecision("rejected", "初筛未通过，自动拒绝。")
     if score is None or ranked is None:
         return AutoReviewDecision("pending", "精筛或排序结果缺失，暂不发布。")
-    if score.raw_json.get("provider") != "deepseek" or score.raw_json.get("fallbackReason"):
-        return AutoReviewDecision("rejected", "非 DeepSeek 正式精筛结果，自动拒绝。")
+    provider = score.raw_json.get("provider")
+    if provider not in {"deepseek", "rules"} or score.raw_json.get("fallbackReason"):
+        return AutoReviewDecision("rejected", "非正式精筛结果，自动拒绝。")
     if not is_publishable_original_url(item.canonical_url, source.url):
         return AutoReviewDecision("rejected", "原文链接未通过安全校验。")
     if not item.title_cn or not item.summary_cn or not score.reason:
-        return AutoReviewDecision("rejected", "缺少 AI 中文标题、摘要或推荐理由。")
+        return AutoReviewDecision("rejected", "缺少标题、摘要或推荐理由。")
     if screening.confidence_score < 70:
         return AutoReviewDecision("rejected", "初筛置信度不足。")
+    if provider == "rules":
+        return AutoReviewDecision("approved", "基础规则初筛与精筛均通过，允许进入公开信息流。")
     return AutoReviewDecision("approved", "AI 初筛与精筛均通过，允许进入公开信息流。")
 
 
@@ -193,7 +196,9 @@ def public_cluster_ready(
         return False
     if screening.screen_status != "accepted":
         return False
-    if score.raw_json.get("provider") != "deepseek" or score.raw_json.get("fallbackReason"):
+    if score.raw_json.get("provider") not in {"deepseek", "rules"} or score.raw_json.get(
+        "fallbackReason"
+    ):
         return False
     if not item.title_cn or not item.summary_cn or not score.reason:
         return False

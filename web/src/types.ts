@@ -232,6 +232,16 @@ export type SessionInfo = {
   authenticated: boolean;
 };
 
+export type SystemSettings = {
+  id: string;
+  aiAnalysisEnabled: boolean;
+  analysisMode: "ai" | "rules";
+  provider: string;
+  model: string;
+  updatedBy: string | null;
+  updatedAt: string | null;
+};
+
 export type UserAccount = {
   id: string;
   username: string;

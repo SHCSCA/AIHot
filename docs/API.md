@@ -272,7 +272,11 @@ PATCH /api/v1/internal/roles/{role_id}
 GET /api/v1/internal/audit-logs
 GET /api/v1/internal/pipeline-runs
 POST /api/v1/internal/pipeline-runs
+GET /api/v1/internal/system-settings
+PATCH /api/v1/internal/system-settings
 ```
+
+系统设置接口需要 `system.manage` 权限。`aiAnalysisEnabled=true` 时流水线使用当前环境配置的 AI provider；关闭后使用 `rules-v1` 完成初筛、评分和确定性交叉验证，不会发起 AI provider 请求。切换动作写入操作审计。
 
 内部 API 认证和初始化账号来自环境变量：
 

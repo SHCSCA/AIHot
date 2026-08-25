@@ -76,10 +76,10 @@ def test_internal_sources_can_create_list_and_patch(tmp_path):
 
     assert created.status_code == 200
     assert created.json()["source"]["id"] == "openai_news"
-    assert created.json()["source"]["fetchIntervalMinutes"] == 720
+    assert created.json()["source"]["fetchIntervalMinutes"] == 1440
     assert listed.json()["sources"][0]["tier"] == "T1"
     assert patched.json()["source"]["enabled"] is False
-    assert patched.json()["source"]["fetchIntervalMinutes"] == 720
+    assert patched.json()["source"]["fetchIntervalMinutes"] == 1440
     assert patched.json()["source"]["publisherKey"] == "company:openai"
 
 

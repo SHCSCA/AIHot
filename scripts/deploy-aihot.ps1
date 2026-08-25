@@ -33,7 +33,10 @@ function Assert-RequiredFilesCommitted {
     "channels/catalogs/ai_expansion.yaml",
     "channels/catalogs/amazon_expansion.yaml",
     "migrations/versions/20260728_0008_event_evidence_assessments.py",
-    "src/intel_engine/corroboration.py"
+    "migrations/versions/20260825_0009_ai_analysis_settings.py",
+    "src/intel_engine/corroboration.py",
+    "src/intel_engine/rules.py",
+    "src/intel_engine/system_settings.py"
   )
   foreach ($requiredFile in $requiredFiles) {
     git cat-file -e "HEAD:$requiredFile"

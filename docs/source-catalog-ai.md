@@ -123,7 +123,7 @@ GitHub 的 `releases.atom` 也由 `rss` parser 处理。
 
 - 网络验证是 2026-07-28 的快照；发布方可能迁移 feed、启用 WAF 或停止发布，
   生产仍需持续健康检查。
-- GitHub release feed 可证明 endpoint 可采集，但不能保证每 12 小时都有新 release。
+- GitHub release feed 可证明 endpoint 可采集，但不能保证每天都有新 release。
   新鲜度应按发布方实际节奏评估，不能把“无新条目”误判为抓取失败。
 - 当前 RSS adapter 每次最多接收 5 条并按频道滚动窗口过滤；高频 arXiv feed
   可能发生截断，上线前应评估分页和窗口策略。

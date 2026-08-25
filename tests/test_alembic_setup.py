@@ -33,5 +33,6 @@ def test_initial_migration_declares_production_tables():
         "feedback_events",
         "daily_digests",
         "evaluation_runs",
+        "system_settings",
     ):
         assert table_name in migration_text
